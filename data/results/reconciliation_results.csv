@@ -1,238 +1,133 @@
-settlement_id,bank_transaction_id,stage,decision,confidence,reason,status
-setl_0001,bank_0001,exact,match,1.0,Exact deterministic match.,matched
-setl_0002,bank_0002,exact,match,1.0,Exact deterministic match.,matched
-setl_0003,bank_0003,exact,match,1.0,Exact deterministic match.,matched
-setl_0004,bank_0004,exact,match,1.0,Exact deterministic match.,matched
-setl_0005,bank_0005,exact,match,1.0,Exact deterministic match.,matched
-setl_0007,bank_0007,exact,match,1.0,Exact deterministic match.,matched
-setl_0008,bank_0008,exact,match,1.0,Exact deterministic match.,matched
-setl_0009,bank_0009,exact,match,1.0,Exact deterministic match.,matched
-setl_0010,bank_0010,exact,match,1.0,Exact deterministic match.,matched
-setl_0012,bank_0012,exact,match,1.0,Exact deterministic match.,matched
-setl_0013,bank_0013,exact,match,1.0,Exact deterministic match.,matched
-setl_0014,bank_0014,exact,match,1.0,Exact deterministic match.,matched
-setl_0015,bank_0015,exact,match,1.0,Exact deterministic match.,matched
-setl_0017,bank_0017,exact,match,1.0,Exact deterministic match.,matched
-setl_0018,bank_0018,exact,match,1.0,Exact deterministic match.,matched
-setl_0019,bank_0019,exact,match,1.0,Exact deterministic match.,matched
-setl_0020,bank_0020,exact,match,1.0,Exact deterministic match.,matched
-setl_0023,bank_0023,exact,match,1.0,Exact deterministic match.,matched
-setl_0024,bank_0024,exact,match,1.0,Exact deterministic match.,matched
-setl_0025,bank_0025,exact,match,1.0,Exact deterministic match.,matched
-setl_0026,bank_0026,exact,match,1.0,Exact deterministic match.,matched
-setl_0029,bank_0029,exact,match,1.0,Exact deterministic match.,matched
-setl_0030,bank_0030,exact,match,1.0,Exact deterministic match.,matched
-setl_0031,bank_0031,exact,match,1.0,Exact deterministic match.,matched
-setl_0032,bank_0032,exact,match,1.0,Exact deterministic match.,matched
-setl_0033,bank_0033,exact,match,1.0,Exact deterministic match.,matched
-setl_0034,bank_0034,exact,match,1.0,Exact deterministic match.,matched
-setl_0035,bank_0035,exact,match,1.0,Exact deterministic match.,matched
-setl_0036,bank_0036,exact,match,1.0,Exact deterministic match.,matched
-setl_0037,bank_0037,exact,match,1.0,Exact deterministic match.,matched
-setl_0038,bank_0038,exact,match,1.0,Exact deterministic match.,matched
-setl_0039,bank_0039,exact,match,1.0,Exact deterministic match.,matched
-setl_0040,bank_0040,exact,match,1.0,Exact deterministic match.,matched
-setl_0041,bank_0041,exact,match,1.0,Exact deterministic match.,matched
-setl_0043,bank_0043,exact,match,1.0,Exact deterministic match.,matched
-setl_0045,bank_0045,exact,match,1.0,Exact deterministic match.,matched
-setl_0046,bank_0046,exact,match,1.0,Exact deterministic match.,matched
-setl_0048,bank_0048,exact,match,1.0,Exact deterministic match.,matched
-setl_0049,bank_0049,exact,match,1.0,Exact deterministic match.,matched
-setl_0050,bank_0050,exact,match,1.0,Exact deterministic match.,matched
-setl_0053,bank_0053,exact,match,1.0,Exact deterministic match.,matched
-setl_0055,bank_0055,exact,match,1.0,Exact deterministic match.,matched
-setl_0056,bank_0056,exact,match,1.0,Exact deterministic match.,matched
-setl_0057,bank_0057,exact,match,1.0,Exact deterministic match.,matched
-setl_0058,bank_0058,exact,match,1.0,Exact deterministic match.,matched
-setl_0059,bank_0059,exact,match,1.0,Exact deterministic match.,matched
-setl_0060,bank_0060,exact,match,1.0,Exact deterministic match.,matched
-setl_0061,bank_0061,exact,match,1.0,Exact deterministic match.,matched
-setl_0062,bank_0062,exact,match,1.0,Exact deterministic match.,matched
-setl_0063,bank_0063,exact,match,1.0,Exact deterministic match.,matched
-setl_0064,bank_0064,exact,match,1.0,Exact deterministic match.,matched
-setl_0065,bank_0065,exact,match,1.0,Exact deterministic match.,matched
-setl_0067,bank_0067,exact,match,1.0,Exact deterministic match.,matched
-setl_0068,bank_0068,exact,match,1.0,Exact deterministic match.,matched
-setl_0069,bank_0069,exact,match,1.0,Exact deterministic match.,matched
-setl_0070,bank_0070,exact,match,1.0,Exact deterministic match.,matched
-setl_0071,bank_0071,exact,match,1.0,Exact deterministic match.,matched
-setl_0072,bank_0072,exact,match,1.0,Exact deterministic match.,matched
-setl_0073,bank_0073,exact,match,1.0,Exact deterministic match.,matched
-setl_0074,bank_0074,exact,match,1.0,Exact deterministic match.,matched
-setl_0075,bank_0075,exact,match,1.0,Exact deterministic match.,matched
-setl_0076,bank_0076,exact,match,1.0,Exact deterministic match.,matched
-setl_0077,bank_0077,exact,match,1.0,Exact deterministic match.,matched
-setl_0080,bank_0080,exact,match,1.0,Exact deterministic match.,matched
-setl_0081,bank_0081,exact,match,1.0,Exact deterministic match.,matched
-setl_0083,bank_0083,exact,match,1.0,Exact deterministic match.,matched
-setl_0084,bank_0084,exact,match,1.0,Exact deterministic match.,matched
-setl_0085,bank_0085,exact,match,1.0,Exact deterministic match.,matched
-setl_0086,bank_0086,exact,match,1.0,Exact deterministic match.,matched
-setl_0088,bank_0088,exact,match,1.0,Exact deterministic match.,matched
-setl_0089,bank_0089,exact,match,1.0,Exact deterministic match.,matched
-setl_0091,bank_0091,exact,match,1.0,Exact deterministic match.,matched
-setl_0092,bank_0092,exact,match,1.0,Exact deterministic match.,matched
-setl_0093,bank_0093,exact,match,1.0,Exact deterministic match.,matched
-setl_0094,bank_0094,exact,match,1.0,Exact deterministic match.,matched
-setl_0096,bank_0096,exact,match,1.0,Exact deterministic match.,matched
-setl_0097,bank_0097,exact,match,1.0,Exact deterministic match.,matched
-setl_0098,bank_0098,exact,match,1.0,Exact deterministic match.,matched
-setl_0099,bank_0099,exact,match,1.0,Exact deterministic match.,matched
-setl_0100,bank_0100,exact,match,1.0,Exact deterministic match.,matched
-setl_0102,bank_0102,exact,match,1.0,Exact deterministic match.,matched
-setl_0103,bank_0103,exact,match,1.0,Exact deterministic match.,matched
-setl_0104,bank_0104,exact,match,1.0,Exact deterministic match.,matched
-setl_0105,bank_0105,exact,match,1.0,Exact deterministic match.,matched
-setl_0106,bank_0106,exact,match,1.0,Exact deterministic match.,matched
-setl_0107,bank_0107,exact,match,1.0,Exact deterministic match.,matched
-setl_0108,bank_0108,exact,match,1.0,Exact deterministic match.,matched
-setl_0110,bank_0110,exact,match,1.0,Exact deterministic match.,matched
-setl_0111,bank_0111,exact,match,1.0,Exact deterministic match.,matched
-setl_0113,bank_0113,exact,match,1.0,Exact deterministic match.,matched
-setl_0114,bank_0114,exact,match,1.0,Exact deterministic match.,matched
-setl_0115,bank_0115,exact,match,1.0,Exact deterministic match.,matched
-setl_0116,bank_0116,exact,match,1.0,Exact deterministic match.,matched
-setl_0117,bank_0117,exact,match,1.0,Exact deterministic match.,matched
-setl_0119,bank_0119,exact,match,1.0,Exact deterministic match.,matched
-setl_0120,bank_0120,exact,match,1.0,Exact deterministic match.,matched
-setl_0121,bank_0121,exact,match,1.0,Exact deterministic match.,matched
-setl_0122,bank_0122,exact,match,1.0,Exact deterministic match.,matched
-setl_0124,bank_0124,exact,match,1.0,Exact deterministic match.,matched
-setl_0125,bank_0125,exact,match,1.0,Exact deterministic match.,matched
-setl_0126,bank_0126,exact,match,1.0,Exact deterministic match.,matched
-setl_0127,bank_0127,exact,match,1.0,Exact deterministic match.,matched
-setl_0128,bank_0128,exact,match,1.0,Exact deterministic match.,matched
-setl_0129,bank_0129,exact,match,1.0,Exact deterministic match.,matched
-setl_0130,bank_0130,exact,match,1.0,Exact deterministic match.,matched
-setl_0131,bank_0131,exact,match,1.0,Exact deterministic match.,matched
-setl_0132,bank_0132,exact,match,1.0,Exact deterministic match.,matched
-setl_0133,bank_0133,exact,match,1.0,Exact deterministic match.,matched
-setl_0134,bank_0134,exact,match,1.0,Exact deterministic match.,matched
-setl_0135,bank_0135,exact,match,1.0,Exact deterministic match.,matched
-setl_0138,bank_0138,exact,match,1.0,Exact deterministic match.,matched
-setl_0139,bank_0139,exact,match,1.0,Exact deterministic match.,matched
-setl_0141,bank_0141,exact,match,1.0,Exact deterministic match.,matched
-setl_0142,bank_0142,exact,match,1.0,Exact deterministic match.,matched
-setl_0143,bank_0143,exact,match,1.0,Exact deterministic match.,matched
-setl_0144,bank_0144,exact,match,1.0,Exact deterministic match.,matched
-setl_0147,bank_0147,exact,match,1.0,Exact deterministic match.,matched
-setl_0148,bank_0148,exact,match,1.0,Exact deterministic match.,matched
-setl_0151,bank_0151,exact,match,1.0,Exact deterministic match.,matched
-setl_0152,bank_0152,exact,match,1.0,Exact deterministic match.,matched
-setl_0153,bank_0153,exact,match,1.0,Exact deterministic match.,matched
-setl_0154,bank_0154,exact,match,1.0,Exact deterministic match.,matched
-setl_0156,bank_0156,exact,match,1.0,Exact deterministic match.,matched
-setl_0157,bank_0157,exact,match,1.0,Exact deterministic match.,matched
-setl_0160,bank_0160,exact,match,1.0,Exact deterministic match.,matched
-setl_0161,bank_0161,exact,match,1.0,Exact deterministic match.,matched
-setl_0162,bank_0162,exact,match,1.0,Exact deterministic match.,matched
-setl_0163,bank_0163,exact,match,1.0,Exact deterministic match.,matched
-setl_0164,bank_0164,exact,match,1.0,Exact deterministic match.,matched
-setl_0165,bank_0165,exact,match,1.0,Exact deterministic match.,matched
-setl_0166,bank_0166,exact,match,1.0,Exact deterministic match.,matched
-setl_0167,bank_0167,exact,match,1.0,Exact deterministic match.,matched
-setl_0168,bank_0168,exact,match,1.0,Exact deterministic match.,matched
-setl_0169,bank_0169,exact,match,1.0,Exact deterministic match.,matched
-setl_0170,bank_0170,exact,match,1.0,Exact deterministic match.,matched
-setl_0171,bank_0171,exact,match,1.0,Exact deterministic match.,matched
-setl_0172,bank_0172,exact,match,1.0,Exact deterministic match.,matched
-setl_0173,bank_0173,exact,match,1.0,Exact deterministic match.,matched
-setl_0176,bank_0176,exact,match,1.0,Exact deterministic match.,matched
-setl_0177,bank_0177,exact,match,1.0,Exact deterministic match.,matched
-setl_0179,bank_0179,exact,match,1.0,Exact deterministic match.,matched
-setl_0181,bank_0181,exact,match,1.0,Exact deterministic match.,matched
-setl_0182,bank_0182,exact,match,1.0,Exact deterministic match.,matched
-setl_0183,bank_0183,exact,match,1.0,Exact deterministic match.,matched
-setl_0184,bank_0184,exact,match,1.0,Exact deterministic match.,matched
-setl_0186,bank_0186,exact,match,1.0,Exact deterministic match.,matched
-setl_0188,bank_0188,exact,match,1.0,Exact deterministic match.,matched
-setl_0189,bank_0189,exact,match,1.0,Exact deterministic match.,matched
-setl_0190,bank_0190,exact,match,1.0,Exact deterministic match.,matched
-setl_0192,bank_0192,exact,match,1.0,Exact deterministic match.,matched
-setl_0193,bank_0193,exact,match,1.0,Exact deterministic match.,matched
-setl_0194,bank_0194,exact,match,1.0,Exact deterministic match.,matched
-setl_0195,bank_0195,exact,match,1.0,Exact deterministic match.,matched
-setl_0197,bank_0197,exact,match,1.0,Exact deterministic match.,matched
-setl_0198,bank_0198,exact,match,1.0,Exact deterministic match.,matched
-setl_0199,bank_0199,exact,match,1.0,Exact deterministic match.,matched
-setl_0200,bank_0200,exact,match,1.0,Exact deterministic match.,matched
-setl_0201,bank_0201,exact,match,1.0,Exact deterministic match.,matched
-setl_0202,bank_0202,exact,match,1.0,Exact deterministic match.,matched
-setl_0203,bank_0203,exact,match,1.0,Exact deterministic match.,matched
-setl_0204,bank_0204,exact,match,1.0,Exact deterministic match.,matched
-setl_0205,bank_0205,exact,match,1.0,Exact deterministic match.,matched
-setl_0206,bank_0206,exact,match,1.0,Exact deterministic match.,matched
-setl_0207,bank_0207,exact,match,1.0,Exact deterministic match.,matched
-setl_0208,bank_0208,exact,match,1.0,Exact deterministic match.,matched
-setl_0209,bank_0209,exact,match,1.0,Exact deterministic match.,matched
-setl_0210,bank_0210,exact,match,1.0,Exact deterministic match.,matched
-setl_0211,bank_0211,exact,match,1.0,Exact deterministic match.,matched
-setl_0212,bank_0212,exact,match,1.0,Exact deterministic match.,matched
-setl_0213,bank_0213,exact,match,1.0,Exact deterministic match.,matched
-setl_0214,bank_0214,exact,match,1.0,Exact deterministic match.,matched
-setl_0215,bank_0215,exact,match,1.0,Exact deterministic match.,matched
-setl_0216,bank_0216,exact,match,1.0,Exact deterministic match.,matched
-setl_0217,bank_0217,exact,match,1.0,Exact deterministic match.,matched
-setl_0219,bank_0219,exact,match,1.0,Exact deterministic match.,matched
-setl_0011,bank_0011,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0011,bank_split_0003,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0044,bank_0044,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0044,bank_split_0008,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0051,bank_0051,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0051,bank_split_0005,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0087,bank_0087,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0087,bank_split_0001,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0109,bank_0109,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0109,bank_split_0002,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0140,bank_0140,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0140,bank_split_0006,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0155,bank_0155,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0155,bank_split_0004,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0180,bank_0180,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0180,bank_split_0007,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0187,bank_0187,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0187,bank_split_0010,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0191,bank_0191,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0191,bank_split_0009,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0220,bank_0220,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0220,bank_split_0011,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0006,bank_0006,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0016,bank_0016,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0021,bank_0021,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0027,bank_0027,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0028,bank_0028,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0042,bank_0042,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0047,bank_0047,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0052,bank_0052,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0054,bank_0054,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0066,bank_0066,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0078,bank_0078,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0079,bank_0079,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0082,bank_0082,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0090,bank_0090,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0095,bank_0095,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0101,bank_0101,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0112,bank_0112,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0118,bank_0118,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0123,bank_0123,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0136,bank_0136,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0137,bank_0137,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0145,bank_0145,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0146,bank_0146,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0149,bank_0149,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0150,bank_0150,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0158,bank_0158,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0159,bank_0159,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0174,bank_0174,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0175,bank_0175,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0178,bank_0178,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0185,bank_0185,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0196,bank_0196,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0218,bank_0218,tolerance,match,1.0,Tolerance-stage match.,matched
-setl_0022,bank_0022,llm,match,0.85,"Both records reference the same UTR in the description, and the amounts are within a small discrepancy likely due to fees, with dates one day apart.",matched
-setl_orphan_0001,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
-setl_orphan_0002,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
-setl_orphan_0003,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
-setl_orphan_0004,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
-setl_orphan_0005,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
-setl_orphan_0006,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review
+settlement_id,bank_transaction_id,stage,decision,confidence,reason,status,amount,date
+ORD10012,UPI2026060165911072,exact,match,1.0,Exact deterministic match.,matched,3799.69,2026-06-06
+ORD10048,CV1048,exact,match,1.0,Exact deterministic match.,matched,21059.68,2026-06-14
+ORD10017,UPI2026070011852706,exact,match,1.0,Exact deterministic match.,matched,33270.39,2026-06-25
+ORD10011,UPI2026073062911825,exact,match,1.0,Exact deterministic match.,matched,42522.81,2026-06-21
+ORD10007,UPI2026065088385884,exact,match,1.0,Exact deterministic match.,matched,24327.39,2026-07-05
+ORD10001,UPI2026064130181318,exact,match,1.0,Exact deterministic match.,matched,16043.3,2026-06-10
+ORD10016,UPI2026070815950167,exact,match,1.0,Exact deterministic match.,matched,19778.33,2026-06-18
+ORD10046,CV1046,exact,match,1.0,Exact deterministic match.,matched,26097.23,2026-07-01
+ORD10010,UPI2026070837798772,exact,match,1.0,Exact deterministic match.,matched,16918.02,2026-07-02
+ORD10015,UPI2026072207169822,exact,match,1.0,Exact deterministic match.,matched,6707.46,2026-06-16
+ORD10018,UPI2026061571905175,exact,match,1.0,Exact deterministic match.,matched,1078.04,2026-07-08
+ORD10047,CV1047,exact,match,1.0,Exact deterministic match.,matched,40819.83,2026-06-09
+ORD10045,CV1045,exact,match,1.0,Exact deterministic match.,matched,21775.37,2026-07-10
+ORD10014,UPI2026068409227733,exact,match,1.0,Exact deterministic match.,matched,45651.07,2026-06-23
+ORD10043,CV1043,exact,match,1.0,Exact deterministic match.,matched,16146.47,2026-07-04
+ORD10044,CV1044,exact,match,1.0,Exact deterministic match.,matched,9681.89,2026-06-03
+ORD10009,UPI2026063362020162,exact,match,1.0,Exact deterministic match.,matched,42506.47,2026-06-29
+ORD10003,UPI2026063777474002,exact,match,1.0,Exact deterministic match.,matched,20876.35,2026-07-07
+ORD10008,UPI2026070029931756,exact,match,1.0,Exact deterministic match.,matched,14888.12,2026-06-12
+ORD10050,CV1050,exact,match,1.0,Exact deterministic match.,matched,19615.73,2026-07-02
+ORD10004,UPI2026063805590276,exact,match,1.0,Exact deterministic match.,matched,28605.57,2026-06-04
+ORD10005,UPI2026066770359601,exact,match,1.0,Exact deterministic match.,matched,26452.46,2026-07-07
+ORD10041,CV1041,exact,match,1.0,Exact deterministic match.,matched,26027.13,2026-07-04
+ORD10042,CV1042,exact,match,1.0,Exact deterministic match.,matched,37749.65,2026-06-10
+ORD10049,CV1049,exact,match,1.0,Exact deterministic match.,matched,32191.97,2026-06-10
+ORD10002,UPI2026067837935886,exact,match,1.0,Exact deterministic match.,matched,44165.7,2026-06-14
+ORD10006,UPI2026060655016296,exact,match,1.0,Exact deterministic match.,matched,31167.49,2026-06-24
+ORD10013,UPI2026069503644041,exact,match,1.0,Exact deterministic match.,matched,15360.46,2026-07-07
+ORD10012,UPI2026060165911072,exact,match,1.0,Exact deterministic match.,matched,3799.69,2026-06-06
+ORD10017,UPI2026070011852706,exact,match,1.0,Exact deterministic match.,matched,33270.39,2026-06-25
+ORD10011,UPI2026073062911825,exact,match,1.0,Exact deterministic match.,matched,42522.81,2026-06-21
+ORD10007,UPI2026065088385884,exact,match,1.0,Exact deterministic match.,matched,24327.39,2026-07-05
+ORD10001,UPI2026064130181318,exact,match,1.0,Exact deterministic match.,matched,16043.3,2026-06-10
+ORD10016,UPI2026070815950167,exact,match,1.0,Exact deterministic match.,matched,19778.33,2026-06-18
+ORD10010,UPI2026070837798772,exact,match,1.0,Exact deterministic match.,matched,16918.02,2026-07-02
+ORD10015,UPI2026072207169822,exact,match,1.0,Exact deterministic match.,matched,6707.46,2026-06-16
+ORD10018,UPI2026061571905175,exact,match,1.0,Exact deterministic match.,matched,1078.04,2026-07-08
+ORD10014,UPI2026068409227733,exact,match,1.0,Exact deterministic match.,matched,45651.07,2026-06-23
+ORD10009,UPI2026063362020162,exact,match,1.0,Exact deterministic match.,matched,42506.47,2026-06-29
+ORD10003,UPI2026063777474002,exact,match,1.0,Exact deterministic match.,matched,20876.35,2026-07-07
+ORD10008,UPI2026070029931756,exact,match,1.0,Exact deterministic match.,matched,14888.12,2026-06-12
+ORD10004,UPI2026063805590276,exact,match,1.0,Exact deterministic match.,matched,28605.57,2026-06-04
+ORD10005,UPI2026066770359601,exact,match,1.0,Exact deterministic match.,matched,26452.46,2026-07-07
+ORD10002,UPI2026067837935886,exact,match,1.0,Exact deterministic match.,matched,44165.7,2026-06-14
+ORD10006,UPI2026060655016296,exact,match,1.0,Exact deterministic match.,matched,31167.49,2026-06-24
+ORD10013,UPI2026069503644041,exact,match,1.0,Exact deterministic match.,matched,15360.46,2026-07-07
+ORD10038,UTR130971191036,exact,match,1.0,Exact deterministic match.,matched,36475.57,2026-06-09
+ORD10033,UTR885044013168,exact,match,1.0,Exact deterministic match.,matched,4568.45,2026-07-13
+ORD10035,UTR241704338575,exact,match,1.0,Exact deterministic match.,matched,19765.97,2026-06-06
+ORD10032,UTR821164519235,exact,match,1.0,Exact deterministic match.,matched,23666.84,2026-07-10
+ORD10037,UTR898738891307,exact,match,1.0,Exact deterministic match.,matched,26835.23,2026-06-09
+ORD10040,UTR561780971572,exact,match,1.0,Exact deterministic match.,matched,43589.69,2026-07-13
+ORD10039,UTR164987466619,exact,match,1.0,Exact deterministic match.,matched,24555.27,2026-07-08
+ORD10034,UTR980840883459,exact,match,1.0,Exact deterministic match.,matched,43172.42,2026-06-28
+ORD10036,UTR823591853229,exact,match,1.0,Exact deterministic match.,matched,43932.81,2026-07-12
+UPI2026069052794342,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026068409227733,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070837798772,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026067837935886,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026072920096425,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070815950167,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026072207169822,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026064317150806,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070011852706,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026067370028956,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063805590276,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026061571905175,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063362020162,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026066770359601,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070029931756,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063777474002,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026069503644041,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026073062911825,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026064130181318,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026060655016296,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026060165911072,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026065088385884,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1042,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1049,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1041,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2004,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1050,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1048,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1043,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1044,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2005,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2001,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2002,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2003,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1045,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1046,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV1047,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+CV2006,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026069052794342,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026068409227733,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070837798772,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026067837935886,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026072920096425,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070815950167,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026072207169822,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026064317150806,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070011852706,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026067370028956,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063805590276,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026061571905175,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063362020162,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026066770359601,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026070029931756,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026063777474002,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026069503644041,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026073062911825,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026064130181318,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026060655016296,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026060165911072,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,
+UPI2026065088385884,,reconciler,review,0.0,No deterministic or ML candidate resolved this settlement.,manual_review,,

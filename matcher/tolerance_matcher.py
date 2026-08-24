@@ -23,17 +23,29 @@ MIN_NARRATION_SIMILARITY = 0.50
 # LOAD DATA
 # ============================================================
 
+def _safe_read_csv(path, default_cols=None):
+    if not Path(path).exists():
+        return pd.DataFrame(columns=default_cols or [])
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame(columns=default_cols or [])
+
+
 def load_data():
-    settlements = pd.read_csv(
-        GENERATED_DIR / "razorpay_settlements.csv"
+    settlements = _safe_read_csv(
+        GENERATED_DIR / "razorpay_settlements.csv",
+        ["settlement_id", "order_id", "payment_id", "utr", "amount", "status", "created_at"]
     )
 
-    bank = pd.read_csv(
-        GENERATED_DIR / "bank_statement.csv"
+    bank = _safe_read_csv(
+        GENERATED_DIR / "bank_statement.csv",
+        ["bank_transaction_id", "date", "utr", "amount", "description"]
     )
 
-    exact_matches = pd.read_csv(
-        RESULTS_DIR / "exact_matches.csv"
+    exact_matches = _safe_read_csv(
+        RESULTS_DIR / "exact_matches.csv",
+        ["settlement_id", "bank_transaction_id"]
     )
 
     return settlements, bank, exact_matches

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  {% include "_nav.html" %}
+
+  <section class="overview-panel">
+    <div class="overview-hero">
+      <h1 class="overview-headline">Welcome back to<br><span class="ghost">Ledger</span></h1>
+      <p class="overview-subhead">
+        Reconciliation that reasons in the open — rules first, machine learning second,
+        LLM only for genuine ambiguity. Every outcome lands in one Exception Ledger you
+        can question in plain language.
+      </p>
+      <div class="overview-cta-row">
+        <a class="btn btn-primary" href="{{ url_for('dashboard') }}">
+          Go to Dashboard
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn-login" href="{{ url_for('talk_to_ledger') }}">Talk to Ledger</a>
+      </div>
+    </div>
+
+    {% if data_available %}
+    <div class="stat-cards-lg">
+      <div class="stat-card-lg">
+        <div class="stat-card-lg-value">{{ percent_auto_matched ~ '%' if percent_auto_matched is not none else '—' }}</div>
+        <div class="stat-card-lg-label">Matched automatically</div>
+        <div class="stat-card-lg-hint">No human touch — rules and matching did the work</div>
+      </div>
+      <div class="stat-card-lg">
+        <div class="stat-card-lg-value">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '—' }}</div>
+        <div class="stat-card-lg-label">Reconciled overall</div>
+        <div class="stat-card-lg-hint">Of {{ total_transactions }} transactions, {{ open_exceptions }} needed a person</div>
+      </div>
+      <div class="stat-card-lg">
+        <div class="stat-card-lg-value">{{ manual_matched if manual_matched is not none else '—' }}</div>
+        <div class="stat-card-lg-label">Manual / LLM reviewed</div>
+        <div class="stat-card-lg-hint">Resolved with human or LLM judgment, not guessed</div>
+      </div>
+    </div>
+
+    <div class="info-box-row">
+      <div class="info-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Every committed match balances to the penny. Anything that doesn't balance stays flagged, not buried, in the Exception Ledger.</span>
+      </div>
+      <div class="info-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>{{ open_exceptions }} exception{{ '' if open_exceptions == 1 else 's' }} currently open — reviewable in plain language from Talk to Ledger.</span>
+      </div>
+    </div>
+
+    <div class="engine-card">
+      <div class="engine-card-header">
+        <span>RECONCILIATION ENGINE</span>
+        <span class="engine-status"><span class="dot"></span> Active</span>
+      </div>
+
+      {% if latest_match_row %}
+      <div class="engine-row engine-row-matched">
+        <div class="engine-row-fields">
+          {% for key, value in latest_match_row.items() %}
+            {% if loop.index0 < 4 %}
+            <div class="engine-field">
+              <span class="engine-field-label">{{ key }}</span>
+              <span class="engine-field-value">{{ value }}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <span class="engine-matched-tag">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13.5 6.5l4 4-4 4M6.5 17.5l-4-4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          MATCHED
+        </span>
+      </div>
+      {% else %}
+      <div class="engine-row-empty">No matched transaction rows found yet in reconciliation_results.csv.</div>
+      {% endif %}
+
+      <div class="engine-metrics">
+        <div class="engine-metric">
+          <div class="label">Reconciled Overall</div>
+          <div class="value">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '—' }}</div>
+        </div>
+        <div class="engine-metric">
+          <div class="label">Open Exceptions</div>
+          <div class="value">{{ open_exceptions }}</div>
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="empty-state" style="max-width:520px;margin:0 auto;">
+      <h3>No reconciliation data yet</h3>
+      <p>
+        {% if not results_file_found %}
+        Place your <code>data/results/reconciliation_results.csv</code> file to see live stats here.
+        {% else %}
+        <code>reconciliation_results.csv</code> was found but has no rows yet.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+</body>
+</html>

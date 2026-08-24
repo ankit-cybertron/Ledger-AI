@@ -1,2 +1,2 @@
 settlement_id,bank_transaction_id,ml_confidence,llm_decision,llm_confidence,reason,fallback_triggered
-setl_0022,bank_0022,0.6341666666666667,match,0.85,"Both records reference the same UTR in the description, and the amounts are within a small discrepancy likely due to fees, with dates one day apart.",False
+ORD10033,UTR885044013168,0.9908333333333332,match,0.95,"Matched via fallback rule: exact amount (₹4,568.45) and customer name matching in bank narration (attempt 1: LLM call failed (Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}})).",False

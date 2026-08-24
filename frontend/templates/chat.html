@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talk to Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="app-shell">
+  {% include "_nav.html" %}
+
+  <div class="app-frame">
+    <div class="chat-layout">
+
+      <aside class="chat-sidebar">
+        <button type="button" class="chat-new-btn" id="newChatBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          New chat
+        </button>
+        <div class="chat-sidebar-label">Recent Conversations</div>
+        <div class="chat-session-list" id="chatSessionList">
+          <!-- sessions rendered by chat.js -->
+        </div>
+      </aside>
+
+      <div class="chat-main">
+        <div class="chat-shell">
+          <div class="chat-header">
+            <h2>Talk to Ledger</h2>
+            <p>Ask about a settlement, a bank transaction, or the current exception list — answers are grounded in reconciliation data only.</p>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg chat-msg-agent">
+              <div class="chat-bubble">Hi, I'm Ledger's settlement Q&amp;A agent. Ask me about a settlement ID, a bank transaction, or open exceptions.</div>
+            </div>
+          </div>
+
+          <div class="chat-suggestions" id="chatSuggestions">
+            <button type="button" class="chat-suggestion">What exceptions are open right now?</button>
+            <button type="button" class="chat-suggestion">Give me the reconciliation summary.</button>
+            <button type="button" class="chat-suggestion">Look up setl_0022</button>
+          </div>
+
+          <form class="chat-input-row" id="chatForm">
+            <input type="text" id="chatInput" placeholder="Ask about a settlement, transaction, or exception…" autocomplete="off">
+            <button type="submit" class="btn btn-primary chat-send" id="chatSendBtn">
+              Send
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

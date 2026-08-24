@@ -76,11 +76,11 @@ def normalize_bank_ids(value):
 
 def load_csv(path):
     if not path.exists():
-        raise FileNotFoundError(
-            f"Required file not found: {path}"
-        )
-
-    return pd.read_csv(path)
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path)
+    except Exception:
+        return pd.DataFrame()
 
 
 # ============================================================
@@ -99,6 +99,9 @@ def load_exact_matches():
     exact = load_csv(
         EXACT_RESULTS_PATH
     )
+
+    if exact.empty:
+        return []
 
     required = {
         "settlement_id",
@@ -123,21 +126,20 @@ def load_exact_matches():
 
         for bank_id in bank_ids:
 
-            results.append(
-                {
-                    "settlement_id": row[
-                        "settlement_id"
-                    ],
-                    "bank_transaction_id": bank_id,
-                    "stage": "exact",
-                    "decision": "match",
-                    "confidence": 1.0,
-                    "reason": (
-                        "Exact deterministic match."
-                    ),
-                    "status": "matched",
-                }
-            )
+            res_dict = {
+                "settlement_id": row["settlement_id"],
+                "bank_transaction_id": bank_id,
+                "stage": "exact",
+                "decision": "match",
+                "confidence": 1.0,
+                "reason": "Exact deterministic match.",
+                "status": "matched",
+            }
+            if "amount" in row and pd.notna(row["amount"]):
+                res_dict["amount"] = row["amount"]
+            if "date" in row and pd.notna(row["date"]):
+                res_dict["date"] = row["date"]
+            results.append(res_dict)
 
     return results
 
@@ -159,6 +161,9 @@ def load_tolerance_matches(
     tolerance = load_csv(
         TOLERANCE_RESULTS_PATH
     )
+
+    if tolerance.empty:
+        return []
 
     required = {
         "settlement_id",
@@ -234,6 +239,9 @@ def load_ml_candidates(
         CONFIDENCE_RESULTS_PATH
     )
 
+    if predictions.empty:
+        return []
+
     required = {
         "settlement_id",
         "bank_transaction_id",
@@ -249,6 +257,11 @@ def load_ml_candidates(
             "confidence_predictions.csv is "
             f"missing columns: {sorted(missing)}"
         )
+
+    active_settlements = load_csv(SETTLEMENTS_PATH)
+    if not active_settlements.empty and "settlement_id" in active_settlements.columns:
+        valid_ids = set(active_settlements["settlement_id"].astype(str))
+        predictions = predictions[predictions["settlement_id"].astype(str).isin(valid_ids)]
 
     candidates = []
 

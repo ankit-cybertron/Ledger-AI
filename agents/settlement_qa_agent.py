@@ -4,13 +4,22 @@ import os
 from dotenv import load_dotenv
 from groq import Groq
 
-from settlement_qa import (
-    get_settlement,
-    search_settlements_by_amount,
-    list_exceptions,
-    get_reconciliation_summary,
-    get_bank_transaction,
-)
+try:
+    from settlement_qa import (
+        get_settlement,
+        search_settlements_by_amount,
+        list_exceptions,
+        get_reconciliation_summary,
+        get_bank_transaction,
+    )
+except (ImportError, ValueError):
+    from .settlement_qa import (
+        get_settlement,
+        search_settlements_by_amount,
+        list_exceptions,
+        get_reconciliation_summary,
+        get_bank_transaction,
+    )
 
 
 # ============================================================
@@ -21,7 +30,7 @@ load_dotenv()
 
 MODEL = os.getenv(
     "GROQ_MODEL",
-    "openai/gpt-oss-120b",
+    "llama-3.3-70b-versatile",
 )
 
 
@@ -426,118 +435,150 @@ def answer_question(
     )
 '''
 
+def fallback_direct_query(question):
+    """Direct query against backend data when LLM is unavailable or API key invalid."""
+    q = question.lower().strip()
+    
+    if "exception" in q:
+        data = list_exceptions()
+        exc_list = data.get("exceptions", [])
+        if not exc_list:
+            return "No open exceptions found in reconciliation data."
+        res = f"### Open Exceptions ({data.get('count', 0)})\n\n"
+        res += "| Exception ID | Settlement ID | Stage | Priority | Reason |\n"
+        res += "|---|---|---|---|---|\n"
+        for item in exc_list[:10]:
+            res += f"| {item.get('exception_id','-')} | {item.get('settlement_id','-')} | {item.get('stage','-')} | {item.get('priority','-')} | {item.get('reason','-')} |\n"
+        return res
+
+    if "summary" in q or "status" in q or "overall" in q:
+        summary = get_reconciliation_summary()
+        res = "### Reconciliation Summary\n\n"
+        res += f"- **Total Settlements**: {summary.get('total_settlements', 0)}\n"
+        res += f"- **Matched**: {summary.get('matched', 0)}\n"
+        res += f"- **Manual Review**: {summary.get('manual_review', 0)}\n"
+        res += f"- **Unmatched**: {summary.get('unmatched', 0)}\n"
+        res += f"- **Match Rate**: {summary.get('match_rate', 0) * 100:.1f}%\n"
+        res += f"- **Open Exceptions**: {summary.get('open_exceptions', 0)}\n"
+        return res
+
+    import re
+    match = re.search(r"setl_\d+", q)
+    if match:
+        setl_id = match.group(0)
+        res_data = get_settlement(setl_id)
+        if not res_data.get("found"):
+            return f"Settlement `{setl_id}` was not found in the dataset."
+        settlement = res_data.get("settlement", {})
+        return (
+            f"### Settlement {setl_id}\n\n"
+            f"- **Amount**: ₹{settlement.get('amount', 0):,.2f}\n"
+            f"- **Status**: `{res_data.get('overall_status')}`\n"
+            f"- **Date**: {settlement.get('settlement_date')}\n"
+            f"- **UTR**: `{settlement.get('utr', 'N/A')}`\n"
+        )
+
+    if q in {"hi", "hello", "hey", "help"}:
+        summary = get_reconciliation_summary()
+        return (
+            f"Hello! I am Ledger's Settlement Q&A Agent.\n\n"
+            f"Current status: **{summary.get('total_settlements', 0)} total settlements** "
+            f"({summary.get('matched', 0)} matched, {summary.get('open_exceptions', 0)} open exceptions).\n\n"
+            "You can ask me about:\n"
+            "- *'Give me the reconciliation summary'*\n"
+            "- *'What exceptions are open right now?'*\n"
+            "- *'Look up setl_0022'*"
+        )
+
+    return (
+        "I checked the reconciliation data. "
+        "You can ask me for 'reconciliation summary', 'list open exceptions', or look up a settlement ID like 'setl_0022'."
+    )
+
+
 def answer_question(
     question,
     conversation_history=None,
 ):
     """
     Ask the Settlement Q&A Agent a question.
-
-    The model may call the explicitly defined read-only
-    Ledger tools repeatedly until it has enough evidence
-    to produce a final answer.
+    Calls Groq LLM with tools if GROQ_API_KEY is valid, otherwise uses direct backend queries.
     """
-
     api_key = os.getenv("GROQ_API_KEY")
-
     if not api_key:
-        raise RuntimeError(
-            "GROQ_API_KEY is not set."
-        )
+        return fallback_direct_query(question)
 
-    client = Groq(api_key=api_key)
+    try:
+        client = Groq(api_key=api_key)
 
-    messages = [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT,
-        }
-    ]
+        messages = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            }
+        ]
 
-    if conversation_history:
-        messages.extend(conversation_history)
-
-    messages.append(
-        {
-            "role": "user",
-            "content": question,
-        }
-    )
-
-    while True:
-
-        response = client.chat.completions.create(
-            model=MODEL,
-            temperature=0,
-            tools=TOOLS,
-            tool_choice="auto",
-            messages=messages,
-        )
-
-        message = response.choices[0].message
-
-        # --------------------------------------------------------
-        # MODEL HAS ENOUGH EVIDENCE
-        # --------------------------------------------------------
-
-        if not message.tool_calls:
-            return (
-                message.content.strip()
-                if message.content
-                else "I could not produce a grounded answer."
-            )
-
-        # --------------------------------------------------------
-        # ADD ASSISTANT TOOL-CALL MESSAGE
-        # --------------------------------------------------------
+        if conversation_history:
+            messages.extend(conversation_history)
 
         messages.append(
             {
-                "role": "assistant",
-                "content": message.content,
-                "tool_calls": [
-                    {
-                        "id": tool_call.id,
-                        "type": "function",
-                        "function": {
-                            "name": tool_call.function.name,
-                            "arguments": tool_call.function.arguments,
-                        },
-                    }
-                    for tool_call in message.tool_calls
-                ],
+                "role": "user",
+                "content": question,
             }
         )
 
-        # --------------------------------------------------------
-        # EXECUTE EVERY REQUESTED READ-ONLY TOOL
-        # --------------------------------------------------------
-
-        for tool_call in message.tool_calls:
-
-            function_name = (
-                tool_call.function.name
+        while True:
+            response = client.chat.completions.create(
+                model=MODEL,
+                temperature=0,
+                tools=TOOLS,
+                tool_choice="auto",
+                messages=messages,
             )
 
-            arguments = json.loads(
-                tool_call.function.arguments
-            )
+            message = response.choices[0].message
 
-            result = execute_tool(
-                function_name,
-                arguments,
-            )
+            if not message.tool_calls:
+                return (
+                    message.content.strip()
+                    if message.content
+                    else "I could not produce a grounded answer."
+                )
 
             messages.append(
                 {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": json.dumps(
-                        result,
-                        default=str,
-                    ),
+                    "role": "assistant",
+                    "content": message.content,
+                    "tool_calls": [
+                        {
+                            "id": tool_call.id,
+                            "type": "function",
+                            "function": {
+                                "name": tool_call.function.name,
+                                "arguments": tool_call.function.arguments,
+                            },
+                        }
+                        for tool_call in message.tool_calls
+                    ],
                 }
             )
+
+            for tool_call in message.tool_calls:
+                function_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
+                result = execute_tool(function_name, arguments)
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": json.dumps(result, default=str),
+                    }
+                )
+
+    except Exception as exc:
+        print(f"[Settlement Q&A Agent Note] LLM call note: {exc}")
+        return fallback_direct_query(question)
 
 # ============================================================
 # CLI

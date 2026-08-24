@@ -1,0 +1,1983 @@
+{
+  "statements": [
+    {
+      "id": "stmt_1787602778269",
+      "name": "02 INTERNAL ORDER BOOK",
+      "source_type": "orders",
+      "statement_type_label": "UPI",
+      "color": "#ec4899",
+      "filename": "02_internal_order_book.xlsx",
+      "row_count": 50,
+      "created_at": "2026-08-25 01:49:38",
+      "updated_at": "2026-08-25 01:49:38",
+      "rows": [
+        {
+          "order_id": "ORD10038",
+          "date": "2026-06-09",
+          "description": "Karan Malhotra",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 36475.57,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11"
+        },
+        {
+          "order_id": "ORD10033",
+          "date": "2026-07-13",
+          "description": "Arjun Menon",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 4568.45,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-15"
+        },
+        {
+          "order_id": "ORD10012",
+          "date": "2026-06-06",
+          "description": "Varun Chopra",
+          "Payment Mode": "UPI",
+          "amount": 3799.69,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-08"
+        },
+        {
+          "order_id": "ORD10048",
+          "date": "2026-06-14",
+          "description": "Nisha Patel",
+          "Payment Mode": "Cash",
+          "amount": 21059.68,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-15"
+        },
+        {
+          "order_id": "ORD10017",
+          "date": "2026-06-25",
+          "description": "Rohan Gupta",
+          "Payment Mode": "UPI",
+          "amount": 33270.39,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-27"
+        },
+        {
+          "order_id": "ORD10011",
+          "date": "2026-06-21",
+          "description": "Pooja Desai",
+          "Payment Mode": "UPI",
+          "amount": 42522.81,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-23"
+        },
+        {
+          "order_id": "ORD10007",
+          "date": "2026-07-05",
+          "description": "Siddharth Jain",
+          "Payment Mode": "UPI",
+          "amount": 24327.39,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-07"
+        },
+        {
+          "order_id": "ORD10001",
+          "date": "2026-06-10",
+          "description": "Priya Sharma",
+          "Payment Mode": "UPI",
+          "amount": 16043.3,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-12"
+        },
+        {
+          "order_id": "ORD10016",
+          "date": "2026-06-18",
+          "description": "Deepak Sinha",
+          "Payment Mode": "UPI",
+          "amount": 19778.33,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-20"
+        },
+        {
+          "order_id": "ORD10046",
+          "date": "2026-07-01",
+          "description": "Varun Chopra",
+          "Payment Mode": "Cash",
+          "amount": 26097.23,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-02"
+        },
+        {
+          "order_id": "ORD10035",
+          "date": "2026-06-06",
+          "description": "Ananya Nair",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 19765.97,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-08"
+        },
+        {
+          "order_id": "ORD10028",
+          "date": "2026-07-03",
+          "description": "Ishita Bose",
+          "Payment Mode": "Card",
+          "amount": 26494.76,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05"
+        },
+        {
+          "order_id": "ORD10010",
+          "date": "2026-07-02",
+          "description": "Tanvi Saxena",
+          "Payment Mode": "UPI",
+          "amount": 16918.02,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-04"
+        },
+        {
+          "order_id": "ORD10015",
+          "date": "2026-06-16",
+          "description": "Aisha Khan",
+          "Payment Mode": "UPI",
+          "amount": 6707.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-18"
+        },
+        {
+          "order_id": "ORD10018",
+          "date": "2026-07-08",
+          "description": "Neha Reddy",
+          "Payment Mode": "UPI",
+          "amount": 1078.04,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-10"
+        },
+        {
+          "order_id": "ORD10020",
+          "date": "2026-07-14",
+          "description": "Arjun Menon",
+          "Payment Mode": "Card",
+          "amount": 22418.36,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-16"
+        },
+        {
+          "order_id": "ORD10047",
+          "date": "2026-06-09",
+          "description": "Arjun Menon",
+          "Payment Mode": "Cash",
+          "amount": 40819.83,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-10"
+        },
+        {
+          "order_id": "ORD10045",
+          "date": "2026-07-10",
+          "description": "Sanjay Verma",
+          "Payment Mode": "Cash",
+          "amount": 21775.37,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-11"
+        },
+        {
+          "order_id": "ORD10014",
+          "date": "2026-06-23",
+          "description": "Sneha Iyer",
+          "Payment Mode": "UPI",
+          "amount": 45651.07,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-25"
+        },
+        {
+          "order_id": "ORD10032",
+          "date": "2026-07-10",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 23666.84,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-12"
+        },
+        {
+          "order_id": "ORD10043",
+          "date": "2026-07-04",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Cash",
+          "amount": 16146.47,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05"
+        },
+        {
+          "order_id": "ORD10044",
+          "date": "2026-06-03",
+          "description": "Sanjay Verma",
+          "Payment Mode": "Cash",
+          "amount": 9681.89,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-04"
+        },
+        {
+          "order_id": "ORD10037",
+          "date": "2026-06-09",
+          "description": "Nisha Patel",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 26835.23,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11"
+        },
+        {
+          "order_id": "ORD10040",
+          "date": "2026-07-13",
+          "description": "Yash Trivedi",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43589.69,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-15"
+        },
+        {
+          "order_id": "ORD10009",
+          "date": "2026-06-29",
+          "description": "Rohan Gupta",
+          "Payment Mode": "UPI",
+          "amount": 42506.47,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-01"
+        },
+        {
+          "order_id": "ORD10003",
+          "date": "2026-07-07",
+          "description": "Nikhil Shetty",
+          "Payment Mode": "UPI",
+          "amount": 20876.35,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09"
+        },
+        {
+          "order_id": "ORD10031",
+          "date": "2026-06-24",
+          "description": "Sneha Iyer",
+          "Payment Mode": "Card",
+          "amount": 46339.99,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-26"
+        },
+        {
+          "order_id": "ORD10008",
+          "date": "2026-06-12",
+          "description": "Ishita Bose",
+          "Payment Mode": "UPI",
+          "amount": 14888.12,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-14"
+        },
+        {
+          "order_id": "ORD10050",
+          "date": "2026-07-02",
+          "description": "Deepak Sinha",
+          "Payment Mode": "Cash",
+          "amount": 19615.73,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-03"
+        },
+        {
+          "order_id": "ORD10039",
+          "date": "2026-07-08",
+          "description": "Kavya Pillai",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 24555.27,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-10"
+        },
+        {
+          "order_id": "ORD10004",
+          "date": "2026-06-04",
+          "description": "Kavya Pillai",
+          "Payment Mode": "UPI",
+          "amount": 28605.57,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-06"
+        },
+        {
+          "order_id": "ORD10005",
+          "date": "2026-07-07",
+          "description": "Deepak Sinha",
+          "Payment Mode": "UPI",
+          "amount": 26452.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09"
+        },
+        {
+          "order_id": "ORD10019",
+          "date": "2026-06-21",
+          "description": "Radhika Nambiar",
+          "Payment Mode": "Card",
+          "amount": 29770.61,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-23"
+        },
+        {
+          "order_id": "ORD10034",
+          "date": "2026-06-28",
+          "description": "Siddharth Jain",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43172.42,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-30"
+        },
+        {
+          "order_id": "ORD10041",
+          "date": "2026-07-04",
+          "description": "Radhika Nambiar",
+          "Payment Mode": "Cash",
+          "amount": 26027.13,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05"
+        },
+        {
+          "order_id": "ORD10025",
+          "date": "2026-07-01",
+          "description": "Ananya Nair",
+          "Payment Mode": "Card",
+          "amount": 36036.6,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-03"
+        },
+        {
+          "order_id": "ORD10042",
+          "date": "2026-06-10",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Cash",
+          "amount": 37749.65,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11"
+        },
+        {
+          "order_id": "ORD10029",
+          "date": "2026-06-15",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Card",
+          "amount": 39779.8,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-17"
+        },
+        {
+          "order_id": "ORD10030",
+          "date": "2026-06-13",
+          "description": "Pooja Desai",
+          "Payment Mode": "Card",
+          "amount": 23167.0,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-15"
+        },
+        {
+          "order_id": "ORD10036",
+          "date": "2026-07-12",
+          "description": "Deepak Sinha",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43932.81,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-14"
+        },
+        {
+          "order_id": "ORD10049",
+          "date": "2026-06-10",
+          "description": "Vikram Rao",
+          "Payment Mode": "Cash",
+          "amount": 32191.97,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11"
+        },
+        {
+          "order_id": "ORD10002",
+          "date": "2026-06-14",
+          "description": "Divya Krishnan",
+          "Payment Mode": "UPI",
+          "amount": 44165.7,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-16"
+        },
+        {
+          "order_id": "ORD10024",
+          "date": "2026-06-30",
+          "description": "Neha Reddy",
+          "Payment Mode": "Card",
+          "amount": 41248.82,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-02"
+        },
+        {
+          "order_id": "ORD10006",
+          "date": "2026-06-24",
+          "description": "Varun Chopra",
+          "Payment Mode": "UPI",
+          "amount": 31167.49,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-26"
+        },
+        {
+          "order_id": "ORD10021",
+          "date": "2026-06-04",
+          "description": "Karan Malhotra",
+          "Payment Mode": "Card",
+          "amount": 30945.53,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-06"
+        },
+        {
+          "order_id": "ORD10023",
+          "date": "2026-06-10",
+          "description": "Pooja Desai",
+          "Payment Mode": "Card",
+          "amount": 29974.93,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-12"
+        },
+        {
+          "order_id": "ORD10013",
+          "date": "2026-07-07",
+          "description": "Manish Agarwal",
+          "Payment Mode": "UPI",
+          "amount": 15360.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09"
+        },
+        {
+          "order_id": "ORD10027",
+          "date": "2026-06-17",
+          "description": "Aisha Khan",
+          "Payment Mode": "Card",
+          "amount": 33917.14,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-19"
+        },
+        {
+          "order_id": "ORD10022",
+          "date": "2026-06-01",
+          "description": "Kavya Pillai",
+          "Payment Mode": "Card",
+          "amount": 3022.68,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-03"
+        },
+        {
+          "order_id": "ORD10026",
+          "date": "2026-07-05",
+          "description": "Amit Kulkarni",
+          "Payment Mode": "Card",
+          "amount": 7536.07,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-07"
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787602757607",
+      "name": "03 UPI PAYMENT",
+      "source_type": "razorpay",
+      "statement_type_label": "UPI",
+      "color": "#e0b054",
+      "filename": "03_upi_payment.xlsx",
+      "row_count": 22,
+      "created_at": "2026-08-25 01:49:17",
+      "updated_at": "2026-08-25 01:49:17",
+      "rows": [
+        {
+          "settlement_id": "UPI2026069052794342",
+          "description": "cust862@oksbi",
+          "date": "2026-06-17",
+          "Time": "14:10:00",
+          "amount": 42285.69,
+          "Status": "FAILED",
+          "utr": ""
+        },
+        {
+          "settlement_id": "UPI2026068409227733",
+          "description": "sneha14@paytm",
+          "date": "2026-06-23",
+          "Time": "10:39:00",
+          "amount": 45651.07,
+          "Status": "SUCCESS",
+          "utr": 942750785275.0
+        },
+        {
+          "settlement_id": "UPI2026070837798772",
+          "description": "tanvi23@okaxis",
+          "date": "2026-07-02",
+          "Time": "14:02:00",
+          "amount": 16918.02,
+          "Status": "SUCCESS",
+          "utr": 729462142330.0
+        },
+        {
+          "settlement_id": "UPI2026067837935886",
+          "description": "divya11@ybl",
+          "date": "2026-06-14",
+          "Time": "08:05:00",
+          "amount": 44165.7,
+          "Status": "SUCCESS",
+          "utr": 199817887524.0
+        },
+        {
+          "settlement_id": "UPI2026072920096425",
+          "description": "cust332@okicici",
+          "date": "2026-06-18",
+          "Time": "15:00:00",
+          "amount": 2152.48,
+          "Status": "SUCCESS",
+          "utr": 443092246455.0
+        },
+        {
+          "settlement_id": "UPI2026070815950167",
+          "description": "deepak51@ybl",
+          "date": "2026-06-18",
+          "Time": "22:08:00",
+          "amount": 19778.33,
+          "Status": "SUCCESS",
+          "utr": 558300484154.0
+        },
+        {
+          "settlement_id": "UPI2026072207169822",
+          "description": "aisha56@paytm",
+          "date": "2026-06-16",
+          "Time": "14:25:00",
+          "amount": 6707.46,
+          "Status": "SUCCESS",
+          "utr": 280734720487.0
+        },
+        {
+          "settlement_id": "UPI2026064317150806",
+          "description": "cust858@okicici",
+          "date": "2026-07-11",
+          "Time": "10:25:00",
+          "amount": 1183.26,
+          "Status": "SUCCESS",
+          "utr": 914435098991.0
+        },
+        {
+          "settlement_id": "UPI2026070011852706",
+          "description": "rohan28@okicici",
+          "date": "2026-06-25",
+          "Time": "11:09:00",
+          "amount": 33270.39,
+          "Status": "SUCCESS",
+          "utr": 822550752886.0
+        },
+        {
+          "settlement_id": "UPI2026067370028956",
+          "description": "cust47@oksbi",
+          "date": "2026-07-13",
+          "Time": "12:38:00",
+          "amount": 9396.08,
+          "Status": "FAILED",
+          "utr": ""
+        },
+        {
+          "settlement_id": "UPI2026063805590276",
+          "description": "kavya59@okhdfcbank",
+          "date": "2026-06-04",
+          "Time": "11:02:00",
+          "amount": 28605.57,
+          "Status": "SUCCESS",
+          "utr": 560805363094.0
+        },
+        {
+          "settlement_id": "UPI2026061571905175",
+          "description": "neha91@paytm",
+          "date": "2026-07-08",
+          "Time": "10:16:00",
+          "amount": 1078.04,
+          "Status": "SUCCESS",
+          "utr": 685914913775.0
+        },
+        {
+          "settlement_id": "UPI2026063362020162",
+          "description": "rohan38@oksbi",
+          "date": "2026-06-29",
+          "Time": "12:38:00",
+          "amount": 42506.47,
+          "Status": "SUCCESS",
+          "utr": 282184450280.0
+        },
+        {
+          "settlement_id": "UPI2026066770359601",
+          "description": "deepak35@ybl",
+          "date": "2026-07-07",
+          "Time": "12:35:00",
+          "amount": 26452.46,
+          "Status": "SUCCESS",
+          "utr": 736097780706.0
+        },
+        {
+          "settlement_id": "UPI2026070029931756",
+          "description": "ishita40@ybl",
+          "date": "2026-06-12",
+          "Time": "19:49:00",
+          "amount": 14888.12,
+          "Status": "SUCCESS",
+          "utr": 676815177813.0
+        },
+        {
+          "settlement_id": "UPI2026063777474002",
+          "description": "nikhil9@okaxis",
+          "date": "2026-07-07",
+          "Time": "09:14:00",
+          "amount": 20876.35,
+          "Status": "SUCCESS",
+          "utr": 168494888361.0
+        },
+        {
+          "settlement_id": "UPI2026069503644041",
+          "description": "manish61@okicici",
+          "date": "2026-07-07",
+          "Time": "18:52:00",
+          "amount": 15360.46,
+          "Status": "SUCCESS",
+          "utr": 480828963614.0
+        },
+        {
+          "settlement_id": "UPI2026073062911825",
+          "description": "pooja33@okhdfcbank",
+          "date": "2026-06-21",
+          "Time": "13:44:00",
+          "amount": 42522.81,
+          "Status": "SUCCESS",
+          "utr": 978663959323.0
+        },
+        {
+          "settlement_id": "UPI2026064130181318",
+          "description": "priya82@okhdfcbank",
+          "date": "2026-06-10",
+          "Time": "14:41:00",
+          "amount": 16043.3,
+          "Status": "SUCCESS",
+          "utr": 741520749048.0
+        },
+        {
+          "settlement_id": "UPI2026060655016296",
+          "description": "varun68@paytm",
+          "date": "2026-06-24",
+          "Time": "09:35:00",
+          "amount": 31167.49,
+          "Status": "SUCCESS",
+          "utr": 778860817844.0
+        },
+        {
+          "settlement_id": "UPI2026060165911072",
+          "description": "varun94@ybl",
+          "date": "2026-06-06",
+          "Time": "12:30:00",
+          "amount": 3799.69,
+          "Status": "SUCCESS",
+          "utr": 903419457547.0
+        },
+        {
+          "settlement_id": "UPI2026065088385884",
+          "description": "siddharth7@okicici",
+          "date": "2026-07-05",
+          "Time": "14:49:00",
+          "amount": 24327.39,
+          "Status": "SUCCESS",
+          "utr": 602182356871.0
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787600673898",
+      "name": "04 CARD PAYMENT",
+      "source_type": "razorpay",
+      "filename": "04_card_payment.xlsx",
+      "row_count": 17,
+      "created_at": "2026-08-25 01:14:33",
+      "updated_at": "2026-08-25 01:14:33",
+      "rows": [
+        {
+          "Auth Code": "314301",
+          "Card Network": "VISA",
+          "Card Last 4": 8486.0,
+          "date": "2026-06-24",
+          "amount": 46339.99,
+          "Status": "CAPTURED",
+          "utr": "PGREF936446",
+          "bank_transaction_id": "PGREF936446"
+        },
+        {
+          "Auth Code": "658463",
+          "Card Network": "RuPay",
+          "Card Last 4": 2718.0,
+          "date": "2026-06-17",
+          "amount": 33917.14,
+          "Status": "CAPTURED",
+          "utr": "PGREF494912",
+          "bank_transaction_id": "PGREF494912"
+        },
+        {
+          "Auth Code": "728836",
+          "Card Network": "VISA",
+          "Card Last 4": 6435.0,
+          "date": "2026-07-11",
+          "amount": 12688.39,
+          "Status": "DECLINED",
+          "utr": "PGREF879319",
+          "bank_transaction_id": "PGREF879319"
+        },
+        {
+          "Auth Code": "479324",
+          "Card Network": "VISA",
+          "Card Last 4": 4767.0,
+          "date": "2026-07-01",
+          "amount": 36036.6,
+          "Status": "CAPTURED",
+          "utr": "PGREF189225",
+          "bank_transaction_id": "PGREF189225"
+        },
+        {
+          "Auth Code": "392991",
+          "Card Network": "VISA",
+          "Card Last 4": 9707.0,
+          "date": "2026-06-15",
+          "amount": 39779.8,
+          "Status": "CAPTURED",
+          "utr": "PGREF813728",
+          "bank_transaction_id": "PGREF813728"
+        },
+        {
+          "Auth Code": "459279",
+          "Card Network": "Amex",
+          "Card Last 4": 9282.0,
+          "date": "2026-06-30",
+          "amount": 41248.82,
+          "Status": "CAPTURED",
+          "utr": "PGREF246074",
+          "bank_transaction_id": "PGREF246074"
+        },
+        {
+          "Auth Code": "729908",
+          "Card Network": "MasterCard",
+          "Card Last 4": 7381.0,
+          "date": "2026-06-04",
+          "amount": 30945.53,
+          "Status": "CAPTURED",
+          "utr": "PGREF901438",
+          "bank_transaction_id": "PGREF901438"
+        },
+        {
+          "Auth Code": "466497",
+          "Card Network": "MasterCard",
+          "Card Last 4": 9016.0,
+          "date": "2026-06-13",
+          "amount": 23167.0,
+          "Status": "CAPTURED",
+          "utr": "PGREF376606",
+          "bank_transaction_id": "PGREF376606"
+        },
+        {
+          "Auth Code": "318054",
+          "Card Network": "RuPay",
+          "Card Last 4": 9096.0,
+          "date": "2026-06-01",
+          "amount": 3022.68,
+          "Status": "CAPTURED",
+          "utr": "PGREF256723",
+          "bank_transaction_id": "PGREF256723"
+        },
+        {
+          "Auth Code": "604913",
+          "Card Network": "RuPay",
+          "Card Last 4": 4814.0,
+          "date": "2026-07-14",
+          "amount": 22418.36,
+          "Status": "CAPTURED",
+          "utr": "PGREF188586",
+          "bank_transaction_id": "PGREF188586"
+        },
+        {
+          "Auth Code": "180467",
+          "Card Network": "MasterCard",
+          "Card Last 4": 5707.0,
+          "date": "2026-06-30",
+          "amount": 37314.33,
+          "Status": "REFUNDED",
+          "utr": "PGREF746944",
+          "bank_transaction_id": "PGREF746944"
+        },
+        {
+          "Auth Code": "791325",
+          "Card Network": "RuPay",
+          "Card Last 4": 2082.0,
+          "date": "2026-06-05",
+          "amount": 36294.69,
+          "Status": "DECLINED",
+          "utr": "PGREF596876",
+          "bank_transaction_id": "PGREF596876"
+        },
+        {
+          "Auth Code": "346190",
+          "Card Network": "RuPay",
+          "Card Last 4": 4362.0,
+          "date": "2026-06-17",
+          "amount": 11574.56,
+          "Status": "REFUNDED",
+          "utr": "PGREF781503",
+          "bank_transaction_id": "PGREF781503"
+        },
+        {
+          "Auth Code": "195431",
+          "Card Network": "VISA",
+          "Card Last 4": 1685.0,
+          "date": "2026-07-05",
+          "amount": 7536.07,
+          "Status": "CAPTURED",
+          "utr": "PGREF239558",
+          "bank_transaction_id": "PGREF239558"
+        },
+        {
+          "Auth Code": "156615",
+          "Card Network": "Amex",
+          "Card Last 4": 1368.0,
+          "date": "2026-06-21",
+          "amount": 29770.61,
+          "Status": "CAPTURED",
+          "utr": "PGREF414201",
+          "bank_transaction_id": "PGREF414201"
+        },
+        {
+          "Auth Code": "220956",
+          "Card Network": "RuPay",
+          "Card Last 4": 3371.0,
+          "date": "2026-06-10",
+          "amount": 29974.93,
+          "Status": "CAPTURED",
+          "utr": "PGREF145915",
+          "bank_transaction_id": "PGREF145915"
+        },
+        {
+          "Auth Code": "351016",
+          "Card Network": "Amex",
+          "Card Last 4": 1831.0,
+          "date": "2026-07-03",
+          "amount": 26494.76,
+          "Status": "CAPTURED",
+          "utr": "PGREF758261",
+          "bank_transaction_id": "PGREF758261"
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787600664387",
+      "name": "05 CASH BOOK",
+      "source_type": "razorpay",
+      "filename": "05_cash_book.xlsx",
+      "row_count": 16,
+      "created_at": "2026-08-25 01:14:24",
+      "updated_at": "2026-08-25 01:14:24",
+      "rows": [
+        {
+          "settlement_id": "CV1042",
+          "date": "2026-06-10",
+          "description": "Cash Sale - Ritu Chawla - ORD10042",
+          "amount": 37749.65,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0001"
+        },
+        {
+          "settlement_id": "CV1049",
+          "date": "2026-06-10",
+          "description": "Cash Sale - Vikram Rao - ORD10049",
+          "amount": 32191.97,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0002"
+        },
+        {
+          "settlement_id": "CV1041",
+          "date": "2026-07-04",
+          "description": "Cash Sale - Radhika Nambiar - ORD10041",
+          "amount": 26027.13,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0003"
+        },
+        {
+          "settlement_id": "CV2004",
+          "date": "2026-06-06",
+          "description": "Printing & Stationery",
+          "amount": 4989.54,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0004"
+        },
+        {
+          "settlement_id": "CV1050",
+          "date": "2026-07-02",
+          "description": "Cash Sale - Deepak Sinha - ORD10050",
+          "amount": 19615.73,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0005"
+        },
+        {
+          "settlement_id": "CV1048",
+          "date": "2026-06-14",
+          "description": "Cash Sale - Nisha Patel - ORD10048",
+          "amount": 21059.68,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0006"
+        },
+        {
+          "settlement_id": "CV1043",
+          "date": "2026-07-04",
+          "description": "Cash Sale - Ritu Chawla - ORD10043",
+          "amount": 16146.47,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0007"
+        },
+        {
+          "settlement_id": "CV1044",
+          "date": "2026-06-03",
+          "description": "Cash Sale - Sanjay Verma - ORD10044",
+          "amount": 9681.89,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0008"
+        },
+        {
+          "settlement_id": "CV2005",
+          "date": "2026-07-10",
+          "description": "Printing & Stationery",
+          "amount": 10446.8,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0009"
+        },
+        {
+          "settlement_id": "CV2001",
+          "date": "2026-06-28",
+          "description": "Courier Charges",
+          "amount": 9300.89,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0010"
+        },
+        {
+          "settlement_id": "CV2002",
+          "date": "2026-06-28",
+          "description": "Electricity Bill Cash Payment",
+          "amount": 9163.7,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0011"
+        },
+        {
+          "settlement_id": "CV2003",
+          "date": "2026-06-26",
+          "description": "Staff Reimbursement",
+          "amount": 6635.81,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0012"
+        },
+        {
+          "settlement_id": "CV1045",
+          "date": "2026-07-10",
+          "description": "Cash Sale - Sanjay Verma - ORD10045",
+          "amount": 21775.37,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0013"
+        },
+        {
+          "settlement_id": "CV1046",
+          "date": "2026-07-01",
+          "description": "Cash Sale - Varun Chopra - ORD10046",
+          "amount": 26097.23,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0014"
+        },
+        {
+          "settlement_id": "CV1047",
+          "date": "2026-06-09",
+          "description": "Cash Sale - Arjun Menon - ORD10047",
+          "amount": 40819.83,
+          "Type": "Receipt",
+          "Mode": "Cash",
+          "bank_transaction_id": "bank_0015"
+        },
+        {
+          "settlement_id": "CV2006",
+          "date": "2026-07-02",
+          "description": "Staff Reimbursement",
+          "amount": 1615.0,
+          "Type": "Payment",
+          "Mode": "Petty Cash",
+          "bank_transaction_id": "bank_0016"
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787600628320",
+      "name": "03 UPI PAYMENT",
+      "source_type": "razorpay",
+      "filename": "03_upi_payment.xlsx",
+      "row_count": 22,
+      "created_at": "2026-08-25 01:13:48",
+      "updated_at": "2026-08-25 01:13:48",
+      "rows": [
+        {
+          "settlement_id": "UPI2026069052794342",
+          "description": "cust862@oksbi",
+          "date": "2026-06-17",
+          "Time": "14:10:00",
+          "amount": 42285.69,
+          "Status": "FAILED",
+          "utr": "",
+          "bank_transaction_id": ""
+        },
+        {
+          "settlement_id": "UPI2026068409227733",
+          "description": "sneha14@paytm",
+          "date": "2026-06-23",
+          "Time": "10:39:00",
+          "amount": 45651.07,
+          "Status": "SUCCESS",
+          "utr": 942750785275.0,
+          "bank_transaction_id": "942750785275.0"
+        },
+        {
+          "settlement_id": "UPI2026070837798772",
+          "description": "tanvi23@okaxis",
+          "date": "2026-07-02",
+          "Time": "14:02:00",
+          "amount": 16918.02,
+          "Status": "SUCCESS",
+          "utr": 729462142330.0,
+          "bank_transaction_id": "729462142330.0"
+        },
+        {
+          "settlement_id": "UPI2026067837935886",
+          "description": "divya11@ybl",
+          "date": "2026-06-14",
+          "Time": "08:05:00",
+          "amount": 44165.7,
+          "Status": "SUCCESS",
+          "utr": 199817887524.0,
+          "bank_transaction_id": "199817887524.0"
+        },
+        {
+          "settlement_id": "UPI2026072920096425",
+          "description": "cust332@okicici",
+          "date": "2026-06-18",
+          "Time": "15:00:00",
+          "amount": 2152.48,
+          "Status": "SUCCESS",
+          "utr": 443092246455.0,
+          "bank_transaction_id": "443092246455.0"
+        },
+        {
+          "settlement_id": "UPI2026070815950167",
+          "description": "deepak51@ybl",
+          "date": "2026-06-18",
+          "Time": "22:08:00",
+          "amount": 19778.33,
+          "Status": "SUCCESS",
+          "utr": 558300484154.0,
+          "bank_transaction_id": "558300484154.0"
+        },
+        {
+          "settlement_id": "UPI2026072207169822",
+          "description": "aisha56@paytm",
+          "date": "2026-06-16",
+          "Time": "14:25:00",
+          "amount": 6707.46,
+          "Status": "SUCCESS",
+          "utr": 280734720487.0,
+          "bank_transaction_id": "280734720487.0"
+        },
+        {
+          "settlement_id": "UPI2026064317150806",
+          "description": "cust858@okicici",
+          "date": "2026-07-11",
+          "Time": "10:25:00",
+          "amount": 1183.26,
+          "Status": "SUCCESS",
+          "utr": 914435098991.0,
+          "bank_transaction_id": "914435098991.0"
+        },
+        {
+          "settlement_id": "UPI2026070011852706",
+          "description": "rohan28@okicici",
+          "date": "2026-06-25",
+          "Time": "11:09:00",
+          "amount": 33270.39,
+          "Status": "SUCCESS",
+          "utr": 822550752886.0,
+          "bank_transaction_id": "822550752886.0"
+        },
+        {
+          "settlement_id": "UPI2026067370028956",
+          "description": "cust47@oksbi",
+          "date": "2026-07-13",
+          "Time": "12:38:00",
+          "amount": 9396.08,
+          "Status": "FAILED",
+          "utr": "",
+          "bank_transaction_id": ""
+        },
+        {
+          "settlement_id": "UPI2026063805590276",
+          "description": "kavya59@okhdfcbank",
+          "date": "2026-06-04",
+          "Time": "11:02:00",
+          "amount": 28605.57,
+          "Status": "SUCCESS",
+          "utr": 560805363094.0,
+          "bank_transaction_id": "560805363094.0"
+        },
+        {
+          "settlement_id": "UPI2026061571905175",
+          "description": "neha91@paytm",
+          "date": "2026-07-08",
+          "Time": "10:16:00",
+          "amount": 1078.04,
+          "Status": "SUCCESS",
+          "utr": 685914913775.0,
+          "bank_transaction_id": "685914913775.0"
+        },
+        {
+          "settlement_id": "UPI2026063362020162",
+          "description": "rohan38@oksbi",
+          "date": "2026-06-29",
+          "Time": "12:38:00",
+          "amount": 42506.47,
+          "Status": "SUCCESS",
+          "utr": 282184450280.0,
+          "bank_transaction_id": "282184450280.0"
+        },
+        {
+          "settlement_id": "UPI2026066770359601",
+          "description": "deepak35@ybl",
+          "date": "2026-07-07",
+          "Time": "12:35:00",
+          "amount": 26452.46,
+          "Status": "SUCCESS",
+          "utr": 736097780706.0,
+          "bank_transaction_id": "736097780706.0"
+        },
+        {
+          "settlement_id": "UPI2026070029931756",
+          "description": "ishita40@ybl",
+          "date": "2026-06-12",
+          "Time": "19:49:00",
+          "amount": 14888.12,
+          "Status": "SUCCESS",
+          "utr": 676815177813.0,
+          "bank_transaction_id": "676815177813.0"
+        },
+        {
+          "settlement_id": "UPI2026063777474002",
+          "description": "nikhil9@okaxis",
+          "date": "2026-07-07",
+          "Time": "09:14:00",
+          "amount": 20876.35,
+          "Status": "SUCCESS",
+          "utr": 168494888361.0,
+          "bank_transaction_id": "168494888361.0"
+        },
+        {
+          "settlement_id": "UPI2026069503644041",
+          "description": "manish61@okicici",
+          "date": "2026-07-07",
+          "Time": "18:52:00",
+          "amount": 15360.46,
+          "Status": "SUCCESS",
+          "utr": 480828963614.0,
+          "bank_transaction_id": "480828963614.0"
+        },
+        {
+          "settlement_id": "UPI2026073062911825",
+          "description": "pooja33@okhdfcbank",
+          "date": "2026-06-21",
+          "Time": "13:44:00",
+          "amount": 42522.81,
+          "Status": "SUCCESS",
+          "utr": 978663959323.0,
+          "bank_transaction_id": "978663959323.0"
+        },
+        {
+          "settlement_id": "UPI2026064130181318",
+          "description": "priya82@okhdfcbank",
+          "date": "2026-06-10",
+          "Time": "14:41:00",
+          "amount": 16043.3,
+          "Status": "SUCCESS",
+          "utr": 741520749048.0,
+          "bank_transaction_id": "741520749048.0"
+        },
+        {
+          "settlement_id": "UPI2026060655016296",
+          "description": "varun68@paytm",
+          "date": "2026-06-24",
+          "Time": "09:35:00",
+          "amount": 31167.49,
+          "Status": "SUCCESS",
+          "utr": 778860817844.0,
+          "bank_transaction_id": "778860817844.0"
+        },
+        {
+          "settlement_id": "UPI2026060165911072",
+          "description": "varun94@ybl",
+          "date": "2026-06-06",
+          "Time": "12:30:00",
+          "amount": 3799.69,
+          "Status": "SUCCESS",
+          "utr": 903419457547.0,
+          "bank_transaction_id": "903419457547.0"
+        },
+        {
+          "settlement_id": "UPI2026065088385884",
+          "description": "siddharth7@okicici",
+          "date": "2026-07-05",
+          "Time": "14:49:00",
+          "amount": 24327.39,
+          "Status": "SUCCESS",
+          "utr": 602182356871.0,
+          "bank_transaction_id": "602182356871.0"
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787600606444",
+      "name": "02 INTERNAL ORDER BOOK",
+      "source_type": "orders",
+      "filename": "02_internal_order_book.xlsx",
+      "row_count": 50,
+      "created_at": "2026-08-25 01:13:26",
+      "updated_at": "2026-08-25 01:13:26",
+      "rows": [
+        {
+          "order_id": "ORD10038",
+          "date": "2026-06-09",
+          "description": "Karan Malhotra",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 36475.57,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11",
+          "bank_transaction_id": "bank_0001"
+        },
+        {
+          "order_id": "ORD10033",
+          "date": "2026-07-13",
+          "description": "Arjun Menon",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 4568.45,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-15",
+          "bank_transaction_id": "bank_0002"
+        },
+        {
+          "order_id": "ORD10012",
+          "date": "2026-06-06",
+          "description": "Varun Chopra",
+          "Payment Mode": "UPI",
+          "amount": 3799.69,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-08",
+          "bank_transaction_id": "bank_0003"
+        },
+        {
+          "order_id": "ORD10048",
+          "date": "2026-06-14",
+          "description": "Nisha Patel",
+          "Payment Mode": "Cash",
+          "amount": 21059.68,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-15",
+          "bank_transaction_id": "bank_0004"
+        },
+        {
+          "order_id": "ORD10017",
+          "date": "2026-06-25",
+          "description": "Rohan Gupta",
+          "Payment Mode": "UPI",
+          "amount": 33270.39,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-27",
+          "bank_transaction_id": "bank_0005"
+        },
+        {
+          "order_id": "ORD10011",
+          "date": "2026-06-21",
+          "description": "Pooja Desai",
+          "Payment Mode": "UPI",
+          "amount": 42522.81,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-23",
+          "bank_transaction_id": "bank_0006"
+        },
+        {
+          "order_id": "ORD10007",
+          "date": "2026-07-05",
+          "description": "Siddharth Jain",
+          "Payment Mode": "UPI",
+          "amount": 24327.39,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-07",
+          "bank_transaction_id": "bank_0007"
+        },
+        {
+          "order_id": "ORD10001",
+          "date": "2026-06-10",
+          "description": "Priya Sharma",
+          "Payment Mode": "UPI",
+          "amount": 16043.3,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-12",
+          "bank_transaction_id": "bank_0008"
+        },
+        {
+          "order_id": "ORD10016",
+          "date": "2026-06-18",
+          "description": "Deepak Sinha",
+          "Payment Mode": "UPI",
+          "amount": 19778.33,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-20",
+          "bank_transaction_id": "bank_0009"
+        },
+        {
+          "order_id": "ORD10046",
+          "date": "2026-07-01",
+          "description": "Varun Chopra",
+          "Payment Mode": "Cash",
+          "amount": 26097.23,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-02",
+          "bank_transaction_id": "bank_0010"
+        },
+        {
+          "order_id": "ORD10035",
+          "date": "2026-06-06",
+          "description": "Ananya Nair",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 19765.97,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-08",
+          "bank_transaction_id": "bank_0011"
+        },
+        {
+          "order_id": "ORD10028",
+          "date": "2026-07-03",
+          "description": "Ishita Bose",
+          "Payment Mode": "Card",
+          "amount": 26494.76,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05",
+          "bank_transaction_id": "bank_0012"
+        },
+        {
+          "order_id": "ORD10010",
+          "date": "2026-07-02",
+          "description": "Tanvi Saxena",
+          "Payment Mode": "UPI",
+          "amount": 16918.02,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-04",
+          "bank_transaction_id": "bank_0013"
+        },
+        {
+          "order_id": "ORD10015",
+          "date": "2026-06-16",
+          "description": "Aisha Khan",
+          "Payment Mode": "UPI",
+          "amount": 6707.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-18",
+          "bank_transaction_id": "bank_0014"
+        },
+        {
+          "order_id": "ORD10018",
+          "date": "2026-07-08",
+          "description": "Neha Reddy",
+          "Payment Mode": "UPI",
+          "amount": 1078.04,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-10",
+          "bank_transaction_id": "bank_0015"
+        },
+        {
+          "order_id": "ORD10020",
+          "date": "2026-07-14",
+          "description": "Arjun Menon",
+          "Payment Mode": "Card",
+          "amount": 22418.36,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-16",
+          "bank_transaction_id": "bank_0016"
+        },
+        {
+          "order_id": "ORD10047",
+          "date": "2026-06-09",
+          "description": "Arjun Menon",
+          "Payment Mode": "Cash",
+          "amount": 40819.83,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-10",
+          "bank_transaction_id": "bank_0017"
+        },
+        {
+          "order_id": "ORD10045",
+          "date": "2026-07-10",
+          "description": "Sanjay Verma",
+          "Payment Mode": "Cash",
+          "amount": 21775.37,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-11",
+          "bank_transaction_id": "bank_0018"
+        },
+        {
+          "order_id": "ORD10014",
+          "date": "2026-06-23",
+          "description": "Sneha Iyer",
+          "Payment Mode": "UPI",
+          "amount": 45651.07,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-25",
+          "bank_transaction_id": "bank_0019"
+        },
+        {
+          "order_id": "ORD10032",
+          "date": "2026-07-10",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 23666.84,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-12",
+          "bank_transaction_id": "bank_0020"
+        },
+        {
+          "order_id": "ORD10043",
+          "date": "2026-07-04",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Cash",
+          "amount": 16146.47,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05",
+          "bank_transaction_id": "bank_0021"
+        },
+        {
+          "order_id": "ORD10044",
+          "date": "2026-06-03",
+          "description": "Sanjay Verma",
+          "Payment Mode": "Cash",
+          "amount": 9681.89,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-04",
+          "bank_transaction_id": "bank_0022"
+        },
+        {
+          "order_id": "ORD10037",
+          "date": "2026-06-09",
+          "description": "Nisha Patel",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 26835.23,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11",
+          "bank_transaction_id": "bank_0023"
+        },
+        {
+          "order_id": "ORD10040",
+          "date": "2026-07-13",
+          "description": "Yash Trivedi",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43589.69,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-15",
+          "bank_transaction_id": "bank_0024"
+        },
+        {
+          "order_id": "ORD10009",
+          "date": "2026-06-29",
+          "description": "Rohan Gupta",
+          "Payment Mode": "UPI",
+          "amount": 42506.47,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-01",
+          "bank_transaction_id": "bank_0025"
+        },
+        {
+          "order_id": "ORD10003",
+          "date": "2026-07-07",
+          "description": "Nikhil Shetty",
+          "Payment Mode": "UPI",
+          "amount": 20876.35,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09",
+          "bank_transaction_id": "bank_0026"
+        },
+        {
+          "order_id": "ORD10031",
+          "date": "2026-06-24",
+          "description": "Sneha Iyer",
+          "Payment Mode": "Card",
+          "amount": 46339.99,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-26",
+          "bank_transaction_id": "bank_0027"
+        },
+        {
+          "order_id": "ORD10008",
+          "date": "2026-06-12",
+          "description": "Ishita Bose",
+          "Payment Mode": "UPI",
+          "amount": 14888.12,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-14",
+          "bank_transaction_id": "bank_0028"
+        },
+        {
+          "order_id": "ORD10050",
+          "date": "2026-07-02",
+          "description": "Deepak Sinha",
+          "Payment Mode": "Cash",
+          "amount": 19615.73,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-03",
+          "bank_transaction_id": "bank_0029"
+        },
+        {
+          "order_id": "ORD10039",
+          "date": "2026-07-08",
+          "description": "Kavya Pillai",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 24555.27,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-10",
+          "bank_transaction_id": "bank_0030"
+        },
+        {
+          "order_id": "ORD10004",
+          "date": "2026-06-04",
+          "description": "Kavya Pillai",
+          "Payment Mode": "UPI",
+          "amount": 28605.57,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-06",
+          "bank_transaction_id": "bank_0031"
+        },
+        {
+          "order_id": "ORD10005",
+          "date": "2026-07-07",
+          "description": "Deepak Sinha",
+          "Payment Mode": "UPI",
+          "amount": 26452.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09",
+          "bank_transaction_id": "bank_0032"
+        },
+        {
+          "order_id": "ORD10019",
+          "date": "2026-06-21",
+          "description": "Radhika Nambiar",
+          "Payment Mode": "Card",
+          "amount": 29770.61,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-23",
+          "bank_transaction_id": "bank_0033"
+        },
+        {
+          "order_id": "ORD10034",
+          "date": "2026-06-28",
+          "description": "Siddharth Jain",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43172.42,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-30",
+          "bank_transaction_id": "bank_0034"
+        },
+        {
+          "order_id": "ORD10041",
+          "date": "2026-07-04",
+          "description": "Radhika Nambiar",
+          "Payment Mode": "Cash",
+          "amount": 26027.13,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-05",
+          "bank_transaction_id": "bank_0035"
+        },
+        {
+          "order_id": "ORD10025",
+          "date": "2026-07-01",
+          "description": "Ananya Nair",
+          "Payment Mode": "Card",
+          "amount": 36036.6,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-03",
+          "bank_transaction_id": "bank_0036"
+        },
+        {
+          "order_id": "ORD10042",
+          "date": "2026-06-10",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Cash",
+          "amount": 37749.65,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11",
+          "bank_transaction_id": "bank_0037"
+        },
+        {
+          "order_id": "ORD10029",
+          "date": "2026-06-15",
+          "description": "Ritu Chawla",
+          "Payment Mode": "Card",
+          "amount": 39779.8,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-17",
+          "bank_transaction_id": "bank_0038"
+        },
+        {
+          "order_id": "ORD10030",
+          "date": "2026-06-13",
+          "description": "Pooja Desai",
+          "Payment Mode": "Card",
+          "amount": 23167.0,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-15",
+          "bank_transaction_id": "bank_0039"
+        },
+        {
+          "order_id": "ORD10036",
+          "date": "2026-07-12",
+          "description": "Deepak Sinha",
+          "Payment Mode": "Bank Transfer (NEFT)",
+          "amount": 43932.81,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-14",
+          "bank_transaction_id": "bank_0040"
+        },
+        {
+          "order_id": "ORD10049",
+          "date": "2026-06-10",
+          "description": "Vikram Rao",
+          "Payment Mode": "Cash",
+          "amount": 32191.97,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-11",
+          "bank_transaction_id": "bank_0041"
+        },
+        {
+          "order_id": "ORD10002",
+          "date": "2026-06-14",
+          "description": "Divya Krishnan",
+          "Payment Mode": "UPI",
+          "amount": 44165.7,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-16",
+          "bank_transaction_id": "bank_0042"
+        },
+        {
+          "order_id": "ORD10024",
+          "date": "2026-06-30",
+          "description": "Neha Reddy",
+          "Payment Mode": "Card",
+          "amount": 41248.82,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-02",
+          "bank_transaction_id": "bank_0043"
+        },
+        {
+          "order_id": "ORD10006",
+          "date": "2026-06-24",
+          "description": "Varun Chopra",
+          "Payment Mode": "UPI",
+          "amount": 31167.49,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-26",
+          "bank_transaction_id": "bank_0044"
+        },
+        {
+          "order_id": "ORD10021",
+          "date": "2026-06-04",
+          "description": "Karan Malhotra",
+          "Payment Mode": "Card",
+          "amount": 30945.53,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-06",
+          "bank_transaction_id": "bank_0045"
+        },
+        {
+          "order_id": "ORD10023",
+          "date": "2026-06-10",
+          "description": "Pooja Desai",
+          "Payment Mode": "Card",
+          "amount": 29974.93,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-12",
+          "bank_transaction_id": "bank_0046"
+        },
+        {
+          "order_id": "ORD10013",
+          "date": "2026-07-07",
+          "description": "Manish Agarwal",
+          "Payment Mode": "UPI",
+          "amount": 15360.46,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-09",
+          "bank_transaction_id": "bank_0047"
+        },
+        {
+          "order_id": "ORD10027",
+          "date": "2026-06-17",
+          "description": "Aisha Khan",
+          "Payment Mode": "Card",
+          "amount": 33917.14,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-19",
+          "bank_transaction_id": "bank_0048"
+        },
+        {
+          "order_id": "ORD10022",
+          "date": "2026-06-01",
+          "description": "Kavya Pillai",
+          "Payment Mode": "Card",
+          "amount": 3022.68,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-06-03",
+          "bank_transaction_id": "bank_0049"
+        },
+        {
+          "order_id": "ORD10026",
+          "date": "2026-07-05",
+          "description": "Amit Kulkarni",
+          "Payment Mode": "Card",
+          "amount": 7536.07,
+          "Order Status": "Completed",
+          "Expected Settlement Date": "2026-07-07",
+          "bank_transaction_id": "bank_0050"
+        }
+      ]
+    },
+    {
+      "id": "stmt_1787596709733",
+      "name": "01 BANK STATEMENT",
+      "source_type": "bank",
+      "filename": "01_bank_statement.xlsx",
+      "row_count": 18,
+      "created_at": "2026-08-25 00:08:29",
+      "updated_at": "2026-08-25 00:08:29",
+      "rows": [
+        {
+          "date": "2026-06-11",
+          "Value Date": "2026-06-11",
+          "utr": "UTR390013653941",
+          "description": "RAZORPAY SETTLEMENT BATCH 1",
+          "Debit (INR)": "",
+          "Credit (INR)": 110256.26,
+          "Type": "Settlement",
+          "Balance (INR)": 478733.15,
+          "amount": 110256.26,
+          "bank_transaction_id": "UTR390013653941"
+        },
+        {
+          "date": "2026-06-06",
+          "Value Date": "2026-06-06",
+          "utr": "UTR241704338575",
+          "description": "NEFT-CR-ANANYANAIR",
+          "Debit (INR)": "",
+          "Credit (INR)": 19765.97,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 180315.0,
+          "amount": 19765.97,
+          "bank_transaction_id": "UTR241704338575"
+        },
+        {
+          "date": "2026-07-08",
+          "Value Date": "2026-07-08",
+          "utr": "UTR164987466619",
+          "description": "NEFT-CR-KAVYAPILLAI",
+          "Debit (INR)": "",
+          "Credit (INR)": 24555.27,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 83575.79,
+          "amount": 24555.27,
+          "bank_transaction_id": "UTR164987466619"
+        },
+        {
+          "date": "2026-07-13",
+          "Value Date": "2026-07-13",
+          "utr": "UTR561780971572",
+          "description": "NEFT-CR-YASHTRIVEDI",
+          "Debit (INR)": "",
+          "Credit (INR)": 43589.69,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 113783.31,
+          "amount": 43589.69,
+          "bank_transaction_id": "UTR561780971572"
+        },
+        {
+          "date": "2026-06-20",
+          "Value Date": "2026-06-20",
+          "utr": "UTR445212747285",
+          "description": "BANK CHARGES - AMC",
+          "Debit (INR)": 6359.48,
+          "Credit (INR)": "",
+          "Type": "Charge",
+          "Balance (INR)": 104409.21,
+          "amount": -6359.48,
+          "bank_transaction_id": "UTR445212747285"
+        },
+        {
+          "date": "2026-07-15",
+          "Value Date": "2026-07-15",
+          "utr": "UTR849436128201",
+          "description": "RAZORPAY SETTLEMENT BATCH 6",
+          "Debit (INR)": "",
+          "Credit (INR)": 21992.41,
+          "Type": "Settlement",
+          "Balance (INR)": 252842.14,
+          "amount": 21992.41,
+          "bank_transaction_id": "UTR849436128201"
+        },
+        {
+          "date": "2026-07-09",
+          "Value Date": "2026-07-09",
+          "utr": "UTR531584687817",
+          "description": "RAZORPAY SETTLEMENT BATCH 5",
+          "Debit (INR)": "",
+          "Credit (INR)": 93813.79,
+          "Type": "Settlement",
+          "Balance (INR)": 61175.48,
+          "amount": 93813.79,
+          "bank_transaction_id": "UTR531584687817"
+        },
+        {
+          "date": "2026-06-18",
+          "Value Date": "2026-06-18",
+          "utr": "UTR761994498018",
+          "description": "RAZORPAY SETTLEMENT BATCH 2",
+          "Debit (INR)": "",
+          "Credit (INR)": 159535.34,
+          "Type": "Settlement",
+          "Balance (INR)": 419097.65,
+          "amount": 159535.34,
+          "bank_transaction_id": "UTR761994498018"
+        },
+        {
+          "date": "2026-07-13",
+          "Value Date": "2026-07-13",
+          "utr": "UTR885044013168",
+          "description": "NEFT-CR-ARJUNMENON",
+          "Debit (INR)": "",
+          "Credit (INR)": 4568.45,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 190253.6,
+          "amount": 4568.45,
+          "bank_transaction_id": "UTR885044013168"
+        },
+        {
+          "date": "2026-06-25",
+          "Value Date": "2026-06-25",
+          "utr": "UTR407127718381",
+          "description": "RAZORPAY SETTLEMENT BATCH 3",
+          "Debit (INR)": "",
+          "Credit (INR)": 211140.92,
+          "Type": "Settlement",
+          "Balance (INR)": 449087.97,
+          "amount": 211140.92,
+          "bank_transaction_id": "UTR407127718381"
+        },
+        {
+          "date": "2026-07-11",
+          "Value Date": "2026-07-11",
+          "utr": "UTR821164519235",
+          "description": "NEFT-CR-RITUCHAWLA",
+          "Debit (INR)": "",
+          "Credit (INR)": 23666.84,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 395226.39,
+          "amount": 23666.84,
+          "bank_transaction_id": "UTR821164519235"
+        },
+        {
+          "date": "2026-07-12",
+          "Value Date": "2026-07-12",
+          "utr": "UTR823591853229",
+          "description": "NEFT-CR-DEEPAKSINHA",
+          "Debit (INR)": "",
+          "Credit (INR)": 43932.81,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 418953.96,
+          "amount": 43932.81,
+          "bank_transaction_id": "UTR823591853229"
+        },
+        {
+          "date": "2026-06-22",
+          "Value Date": "2026-06-22",
+          "utr": "UTR537395650328",
+          "description": "NEFT-UNKNOWN CREDIT",
+          "Debit (INR)": "",
+          "Credit (INR)": 11310.86,
+          "Type": "Adjustment",
+          "Balance (INR)": 104018.61,
+          "amount": 11310.86,
+          "bank_transaction_id": "UTR537395650328"
+        },
+        {
+          "date": "2026-06-10",
+          "Value Date": "2026-06-10",
+          "utr": "UTR130971191036",
+          "description": "NEFT-CR-KARANMALHOTRA",
+          "Debit (INR)": "",
+          "Credit (INR)": 36475.57,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 144426.75,
+          "amount": 36475.57,
+          "bank_transaction_id": "UTR130971191036"
+        },
+        {
+          "date": "2026-06-10",
+          "Value Date": "2026-06-10",
+          "utr": "UTR898738891307",
+          "description": "NEFT-CR-NISHAPATEL",
+          "Debit (INR)": "",
+          "Credit (INR)": 26835.23,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 497285.13,
+          "amount": 26835.23,
+          "bank_transaction_id": "UTR898738891307"
+        },
+        {
+          "date": "2026-06-28",
+          "Value Date": "2026-06-28",
+          "utr": "UTR980840883459",
+          "description": "NEFT-CR-SIDDHARTHJAIN",
+          "Debit (INR)": "",
+          "Credit (INR)": 43172.42,
+          "Type": "NEFT Transfer",
+          "Balance (INR)": 471314.45,
+          "amount": 43172.42,
+          "bank_transaction_id": "UTR980840883459"
+        },
+        {
+          "date": "2026-06-13",
+          "Value Date": "2026-06-13",
+          "utr": "UTR376122730029",
+          "description": "REVERSAL-CHARGEBACK",
+          "Debit (INR)": "",
+          "Credit (INR)": 13543.19,
+          "Type": "Adjustment",
+          "Balance (INR)": 217499.9,
+          "amount": 13543.19,
+          "bank_transaction_id": "UTR376122730029"
+        },
+        {
+          "date": "2026-07-04",
+          "Value Date": "2026-07-04",
+          "utr": "UTR502452768109",
+          "description": "RAZORPAY SETTLEMENT BATCH 4",
+          "Debit (INR)": "",
+          "Credit (INR)": 192742.03,
+          "Type": "Settlement",
+          "Balance (INR)": 154122.62,
+          "amount": 192742.03,
+          "bank_transaction_id": "UTR502452768109"
+        }
+      ]
+    }
+  ]
+}

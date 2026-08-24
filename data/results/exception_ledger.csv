@@ -1,7 +1,78 @@
-exception_id,created_at,settlement_id,bank_transaction_id,stage,decision,confidence,exception_type,priority,reason,resolution_status
-EXC-0001,2026-08-22T14:45:18.698674+00:00,setl_orphan_0001,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0002,2026-08-22T14:45:18.699088+00:00,setl_orphan_0002,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0003,2026-08-22T14:45:18.699136+00:00,setl_orphan_0003,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0004,2026-08-22T14:45:18.699177+00:00,setl_orphan_0004,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0005,2026-08-22T14:45:18.699213+00:00,setl_orphan_0005,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0006,2026-08-22T14:45:18.699248+00:00,setl_orphan_0006,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+exception_id,created_at,settlement_id,bank_transaction_id,description,amount,source,stage,decision,confidence,exception_type,priority,reason,resolution_status
+EXC-0001,2026-06-17,UPI2026069052794342,,cust862@oksbi,42285.69,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0002,2026-06-23,UPI2026068409227733,,sneha14@paytm,45651.07,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0003,2026-07-02,UPI2026070837798772,,tanvi23@okaxis,16918.02,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0004,2026-06-14,UPI2026067837935886,,divya11@ybl,44165.7,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0005,2026-06-18,UPI2026072920096425,,cust332@okicici,2152.48,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0006,2026-06-18,UPI2026070815950167,,deepak51@ybl,19778.33,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0007,2026-06-16,UPI2026072207169822,,aisha56@paytm,6707.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0008,2026-07-11,UPI2026064317150806,,cust858@okicici,1183.26,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0009,2026-06-25,UPI2026070011852706,,rohan28@okicici,33270.39,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0010,2026-07-13,UPI2026067370028956,,cust47@oksbi,9396.08,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0011,2026-06-04,UPI2026063805590276,,kavya59@okhdfcbank,28605.57,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0012,2026-07-08,UPI2026061571905175,,neha91@paytm,1078.04,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0013,2026-06-29,UPI2026063362020162,,rohan38@oksbi,42506.47,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0014,2026-07-07,UPI2026066770359601,,deepak35@ybl,26452.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0015,2026-06-12,UPI2026070029931756,,ishita40@ybl,14888.12,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0016,2026-07-07,UPI2026063777474002,,nikhil9@okaxis,20876.35,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0017,2026-07-07,UPI2026069503644041,,manish61@okicici,15360.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0018,2026-06-21,UPI2026073062911825,,pooja33@okhdfcbank,42522.81,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0019,2026-06-10,UPI2026064130181318,,priya82@okhdfcbank,16043.3,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0020,2026-06-24,UPI2026060655016296,,varun68@paytm,31167.49,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0021,2026-06-06,UPI2026060165911072,,varun94@ybl,3799.69,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0022,2026-07-05,UPI2026065088385884,,siddharth7@okicici,24327.39,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0023,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0024,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0025,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0026,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0027,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0028,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0029,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0030,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0031,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0032,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0033,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0034,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0035,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0036,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0037,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0038,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0039,2026-07-03,nan,,nan,26494.76,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0040,2026-06-10,CV1042,,Cash Sale - Ritu Chawla - ORD10042,37749.65,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0041,2026-06-10,CV1049,,Cash Sale - Vikram Rao - ORD10049,32191.97,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0042,2026-07-04,CV1041,,Cash Sale - Radhika Nambiar - ORD10041,26027.13,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0043,2026-06-06,CV2004,,Printing & Stationery,4989.54,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0044,2026-07-02,CV1050,,Cash Sale - Deepak Sinha - ORD10050,19615.73,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0045,2026-06-14,CV1048,,Cash Sale - Nisha Patel - ORD10048,21059.68,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0046,2026-07-04,CV1043,,Cash Sale - Ritu Chawla - ORD10043,16146.47,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0047,2026-06-03,CV1044,,Cash Sale - Sanjay Verma - ORD10044,9681.89,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0048,2026-07-10,CV2005,,Printing & Stationery,10446.8,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0049,2026-06-28,CV2001,,Courier Charges,9300.89,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0050,2026-06-28,CV2002,,Electricity Bill Cash Payment,9163.7,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0051,2026-06-26,CV2003,,Staff Reimbursement,6635.81,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0052,2026-07-10,CV1045,,Cash Sale - Sanjay Verma - ORD10045,21775.37,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0053,2026-07-01,CV1046,,Cash Sale - Varun Chopra - ORD10046,26097.23,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0054,2026-06-09,CV1047,,Cash Sale - Arjun Menon - ORD10047,40819.83,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0055,2026-07-02,CV2006,,Staff Reimbursement,1615.0,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0056,2026-06-17,UPI2026069052794342,,cust862@oksbi,42285.69,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0057,2026-06-23,UPI2026068409227733,,sneha14@paytm,45651.07,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0058,2026-07-02,UPI2026070837798772,,tanvi23@okaxis,16918.02,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0059,2026-06-14,UPI2026067837935886,,divya11@ybl,44165.7,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0060,2026-06-18,UPI2026072920096425,,cust332@okicici,2152.48,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0061,2026-06-18,UPI2026070815950167,,deepak51@ybl,19778.33,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0062,2026-06-16,UPI2026072207169822,,aisha56@paytm,6707.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0063,2026-07-11,UPI2026064317150806,,cust858@okicici,1183.26,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0064,2026-06-25,UPI2026070011852706,,rohan28@okicici,33270.39,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0065,2026-07-13,UPI2026067370028956,,cust47@oksbi,9396.08,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0066,2026-06-04,UPI2026063805590276,,kavya59@okhdfcbank,28605.57,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0067,2026-07-08,UPI2026061571905175,,neha91@paytm,1078.04,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0068,2026-06-29,UPI2026063362020162,,rohan38@oksbi,42506.47,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0069,2026-07-07,UPI2026066770359601,,deepak35@ybl,26452.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0070,2026-06-12,UPI2026070029931756,,ishita40@ybl,14888.12,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0071,2026-07-07,UPI2026063777474002,,nikhil9@okaxis,20876.35,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0072,2026-07-07,UPI2026069503644041,,manish61@okicici,15360.46,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0073,2026-06-21,UPI2026073062911825,,pooja33@okhdfcbank,42522.81,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0074,2026-06-10,UPI2026064130181318,,priya82@okhdfcbank,16043.3,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0075,2026-06-24,UPI2026060655016296,,varun68@paytm,31167.49,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0076,2026-06-06,UPI2026060165911072,,varun94@ybl,3799.69,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
+EXC-0077,2026-07-05,UPI2026065088385884,,siddharth7@okicici,24327.39,Settlement,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
