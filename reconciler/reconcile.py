@@ -1,15 +1,31 @@
+"""
+reconcile.py — Reconciliation Pipeline Orchestrator (v2 extended) for Ledger AI v2.
+
+Orchestrates multi-stage reconciliation:
+  Stage 1: Deterministic Exact Matches
+  Stage 2: Dynamic Tolerance Matches (1:1 and 1:N split settlements)
+  Stage 3: ML Confidence Matching with Margin-Aware Decision Gate (T4.4)
+  Stage 4: LLM Review / Exception Handling
+
+Persists reconciliation_config.json on every run for reproducibility.
+"""
+
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import os
+from datetime import datetime
+import json
+from typing import Optional, List, Dict, Any
 
 import pandas as pd
 from dotenv import load_dotenv
 
-
-# ============================================================
-# PATHS
-# ============================================================
-
-ROOT = Path(__file__).resolve().parents[1]
+from config import MatchingConfig
 
 load_dotenv(ROOT / ".env")
 
@@ -17,65 +33,23 @@ GENERATED_DIR = ROOT / "data" / "generated"
 RESULTS_DIR = ROOT / "data" / "results"
 ML_DIR = ROOT / "data" / "ml"
 
+SETTLEMENTS_PATH = GENERATED_DIR / "razorpay_settlements.csv"
+EXACT_RESULTS_PATH = RESULTS_DIR / "exact_matches.csv"
+TOLERANCE_RESULTS_PATH = RESULTS_DIR / "tolerance_matches.csv"
+CONFIDENCE_RESULTS_PATH = ML_DIR / "confidence_predictions.csv"
+LLM_RESULTS_PATH = RESULTS_DIR / "llm_matches.csv"
+OUTPUT_PATH = RESULTS_DIR / "reconciliation_results.csv"
+CONFIG_OUTPUT_PATH = RESULTS_DIR / "reconciliation_config.json"
 
-SETTLEMENTS_PATH = (
-    GENERATED_DIR / "razorpay_settlements.csv"
-)
-
-EXACT_RESULTS_PATH = (
-    RESULTS_DIR / "exact_matches.csv"
-)
-
-TOLERANCE_RESULTS_PATH = (
-    RESULTS_DIR / "tolerance_matches.csv"
-)
-
-CONFIDENCE_RESULTS_PATH = (
-    ML_DIR / "confidence_predictions.csv"
-)
-
-LLM_RESULTS_PATH = (
-    RESULTS_DIR / "llm_matches.csv"
-)
-
-OUTPUT_PATH = (
-    RESULTS_DIR / "reconciliation_results.csv"
-)
-
-
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
-LLM_REVIEW_LOWER_BOUND = 0.50
-LLM_REVIEW_UPPER_BOUND = 0.95
-
-
-# ============================================================
-# HELPERS
-# ============================================================
 
 def normalize_bank_ids(value):
-    """
-    Tolerance matcher may store split settlements as:
-
-        bank_0036|bank_split_0001
-
-    Convert that into a list.
-    """
-
     if pd.isna(value):
         return []
-
-    return [
-        x.strip()
-        for x in str(value).split("|")
-        if x.strip()
-    ]
+    return [x.strip() for x in str(value).split("|") if x.strip()]
 
 
 def load_csv(path):
-    if not path.exists():
+    if not Path(path).exists():
         return pd.DataFrame()
     try:
         return pd.read_csv(path)
@@ -83,51 +57,22 @@ def load_csv(path):
         return pd.DataFrame()
 
 
-# ============================================================
-# EXACT MATCHES
-# ============================================================
-
 def load_exact_matches():
-    """
-    Loads deterministic exact matches.
-
-    Expected columns:
-        settlement_id
-        bank_transaction_id
-    """
-
-    exact = load_csv(
-        EXACT_RESULTS_PATH
-    )
-
+    exact = load_csv(EXACT_RESULTS_PATH)
     if exact.empty:
         return []
 
-    required = {
-        "settlement_id",
-        "bank_transaction_id",
-    }
-
+    required = {"settlement_id", "bank_transaction_id"}
     missing = required - set(exact.columns)
-
     if missing:
-        raise ValueError(
-            "exact_matches.csv is missing columns: "
-            f"{sorted(missing)}"
-        )
+        raise ValueError(f"exact_matches.csv is missing columns: {sorted(missing)}")
 
     results = []
-
     for _, row in exact.iterrows():
-
-        bank_ids = normalize_bank_ids(
-            row["bank_transaction_id"]
-        )
-
+        bank_ids = normalize_bank_ids(row["bank_transaction_id"])
         for bank_id in bank_ids:
-
             res_dict = {
-                "settlement_id": row["settlement_id"],
+                "settlement_id": str(row["settlement_id"]),
                 "bank_transaction_id": bank_id,
                 "stage": "exact",
                 "decision": "match",
@@ -144,119 +89,47 @@ def load_exact_matches():
     return results
 
 
-# ============================================================
-# TOLERANCE / SPLIT MATCHES
-# ============================================================
-
-def load_tolerance_matches(
-    already_matched,
-):
-    """
-    Loads tolerance-stage matches.
-
-    Exact matches are excluded so that a settlement
-    cannot be emitted twice.
-    """
-
-    tolerance = load_csv(
-        TOLERANCE_RESULTS_PATH
-    )
-
+def load_tolerance_matches(already_matched):
+    tolerance = load_csv(TOLERANCE_RESULTS_PATH)
     if tolerance.empty:
         return []
 
-    required = {
-        "settlement_id",
-        "bank_transaction_id",
-    }
-
-    missing = required - set(
-        tolerance.columns
-    )
-
+    required = {"settlement_id", "bank_transaction_id"}
+    missing = required - set(tolerance.columns)
     if missing:
-        raise ValueError(
-            "tolerance_matches.csv is missing "
-            f"columns: {sorted(missing)}"
-        )
+        raise ValueError(f"tolerance_matches.csv is missing columns: {sorted(missing)}")
 
     results = []
-
     for _, row in tolerance.iterrows():
-
-        settlement_id = row[
-            "settlement_id"
-        ]
-
+        settlement_id = str(row["settlement_id"])
         if settlement_id in already_matched:
             continue
 
-        bank_ids = normalize_bank_ids(
-            row["bank_transaction_id"]
-        )
-
+        bank_ids = normalize_bank_ids(row["bank_transaction_id"])
         for bank_id in bank_ids:
-
-            results.append(
-                {
-                    "settlement_id": settlement_id,
-                    "bank_transaction_id": bank_id,
-                    "stage": "tolerance",
-                    "decision": "match",
-                    "confidence": 1.0,
-                    "reason": (
-                        "Tolerance-stage match."
-                    ),
-                    "status": "matched",
-                }
-            )
-
-        already_matched.add(
-            settlement_id
-        )
+            results.append({
+                "settlement_id": settlement_id,
+                "bank_transaction_id": bank_id,
+                "stage": "tolerance",
+                "decision": "match",
+                "confidence": 1.0,
+                "reason": "Tolerance-stage match.",
+                "status": "matched",
+            })
+        already_matched.add(settlement_id)
 
     return results
 
 
-# ============================================================
-# ML CONFIDENCE
-# ============================================================
-
-def load_ml_candidates(
-    already_matched,
-):
-    """
-    Loads ML confidence predictions.
-
-    Only unresolved settlements are considered.
-
-    The ML model itself is not allowed to blindly
-    create a match here. Its confidence determines
-    which downstream path is taken.
-    """
-
-    predictions = load_csv(
-        CONFIDENCE_RESULTS_PATH
-    )
-
+def load_ml_candidates(already_matched):
+    predictions = load_csv(CONFIDENCE_RESULTS_PATH)
     if predictions.empty:
         return []
 
-    required = {
-        "settlement_id",
-        "bank_transaction_id",
-        "confidence",
-    }
-
-    missing = required - set(
-        predictions.columns
-    )
-
+    required = {"settlement_id", "bank_transaction_id", "confidence"}
+    missing = required - set(predictions.columns)
     if missing:
-        raise ValueError(
-            "confidence_predictions.csv is "
-            f"missing columns: {sorted(missing)}"
-        )
+        raise ValueError(f"confidence_predictions.csv is missing columns: {sorted(missing)}")
 
     active_settlements = load_csv(SETTLEMENTS_PATH)
     if not active_settlements.empty and "settlement_id" in active_settlements.columns:
@@ -264,507 +137,159 @@ def load_ml_candidates(
         predictions = predictions[predictions["settlement_id"].astype(str).isin(valid_ids)]
 
     candidates = []
-
     for _, row in predictions.iterrows():
-
-        settlement_id = row[
-            "settlement_id"
-        ]
-
+        settlement_id = str(row["settlement_id"])
         if settlement_id in already_matched:
             continue
 
-        confidence = float(
-            row["confidence"]
-        )
+        confidence = float(row["confidence"])
+        margin = float(row.get("margin", 1.0)) if pd.notna(row.get("margin")) else 1.0
 
-        candidates.append(
-            {
-                "settlement_id": settlement_id,
-                "bank_transaction_id": row[
-                    "bank_transaction_id"
-                ],
-                "confidence": confidence,
-            }
-        )
+        candidates.append({
+            "settlement_id": settlement_id,
+            "bank_transaction_id": str(row["bank_transaction_id"]),
+            "confidence": confidence,
+            "margin": margin,
+        })
 
     return candidates
 
 
-# ============================================================
-# LLM RESULTS
-# ============================================================
-
 def load_llm_results():
-    """
-    Loads results already produced by
-    llm/ambiguous_matcher.py.
-    """
-
     if not LLM_RESULTS_PATH.exists():
-        return pd.DataFrame(
-            columns=[
-                "settlement_id",
-                "bank_transaction_id",
-                "ml_confidence",
-                "llm_decision",
-                "llm_confidence",
-                "reason",
-                "fallback_triggered",
-            ]
-        )
+        return pd.DataFrame(columns=[
+            "settlement_id", "bank_transaction_id", "ml_confidence",
+            "llm_decision", "llm_confidence", "reason", "fallback_triggered"
+        ])
+    return load_csv(LLM_RESULTS_PATH)
 
-    return load_csv(
-        LLM_RESULTS_PATH
-    )
-
-
-# ============================================================
-# BUILD LLM LOOKUP
-# ============================================================
 
 def build_llm_lookup(llm_results):
-
     lookup = {}
-
     for _, row in llm_results.iterrows():
-
-        key = (
-            row["settlement_id"],
-            row["bank_transaction_id"],
-        )
-
+        key = (str(row["settlement_id"]), str(row["bank_transaction_id"]))
         lookup[key] = row
-
     return lookup
 
 
-# ============================================================
-# MAIN RECONCILIATION
-# ============================================================
+def reconcile(cfg: Optional[MatchingConfig] = None):
+    if cfg is None:
+        cfg = MatchingConfig.load_with_env_overrides()
 
-def reconcile():
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    cfg.save(CONFIG_OUTPUT_PATH)
 
-    RESULTS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    settlements = load_csv(
-        SETTLEMENTS_PATH
-    )
+    # Save timestamped config snapshot for reproducibility (T7.3)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    snapshot_path = RESULTS_DIR / f"reconciliation_config_{timestamp}.json"
+    cfg.save(snapshot_path)
 
     final_results = []
-
     matched_settlements = set()
 
-    # --------------------------------------------------------
     # STAGE 1 — EXACT
-    # --------------------------------------------------------
-
     exact_results = load_exact_matches()
-
-    final_results.extend(
-        exact_results
-    )
-
+    final_results.extend(exact_results)
     for result in exact_results:
-        matched_settlements.add(
-            result["settlement_id"]
-        )
+        matched_settlements.add(result["settlement_id"])
 
-    # --------------------------------------------------------
     # STAGE 2 — TOLERANCE
-    # --------------------------------------------------------
+    tolerance_results = load_tolerance_matches(matched_settlements)
+    final_results.extend(tolerance_results)
 
-    tolerance_results = (
-        load_tolerance_matches(
-            matched_settlements
-        )
-    )
-
-    final_results.extend(
-        tolerance_results
-    )
-
-    # --------------------------------------------------------
-    # STAGE 3 — ML
-    # --------------------------------------------------------
-
-    ml_candidates = load_ml_candidates(
-        matched_settlements
-    )
-
+    # STAGE 3 — ML & MARGIN GATE (T4.4)
+    ml_candidates = load_ml_candidates(matched_settlements)
     llm_results = load_llm_results()
-
-    llm_lookup = build_llm_lookup(
-        llm_results
-    )
+    llm_lookup = build_llm_lookup(llm_results)
 
     for candidate in ml_candidates:
+        settlement_id = candidate["settlement_id"]
+        bank_id = candidate["bank_transaction_id"]
+        ml_confidence = candidate["confidence"]
+        margin = candidate["margin"]
 
-        settlement_id = candidate[
-            "settlement_id"
-        ]
-
-        bank_id = candidate[
-            "bank_transaction_id"
-        ]
-
-        ml_confidence = candidate[
-            "confidence"
-        ]
-
-        # A settlement already resolved by an earlier
-        # candidate must never be emitted again.
         if settlement_id in matched_settlements:
             continue
 
-        # ----------------------------------------------------
-        # HIGH CONFIDENCE
-        # ----------------------------------------------------
+        # Margin-Aware Decision Gate (T4.4)
+        has_high_confidence = (ml_confidence >= cfg.ml_match_threshold)
+        has_sufficient_margin = (margin >= cfg.minimum_score_margin)
 
-        if ml_confidence >= (
-            LLM_REVIEW_UPPER_BOUND
-        ):
-
-            final_results.append(
-                {
-                    "settlement_id": settlement_id,
-                    "bank_transaction_id": bank_id,
-                    "stage": "ml",
-                    "decision": "match",
-                    "confidence": ml_confidence,
-                    "reason": (
-                        "High-confidence ML match."
-                    ),
-                    "status": "matched",
-                }
-            )
-
-            matched_settlements.add(
-                settlement_id
-            )
-
-            continue
-
-        # ----------------------------------------------------
-        # LLM REVIEW BAND
-        # ----------------------------------------------------
-
-        if (
-            ml_confidence
-            >= LLM_REVIEW_LOWER_BOUND
-            and ml_confidence
-            < LLM_REVIEW_UPPER_BOUND
-        ):
-
-            key = (
-                settlement_id,
-                bank_id,
-            )
-
-            llm = llm_lookup.get(
-                key
-            )
-
-            # The LLM result should normally already exist
-            # because ambiguous_matcher.py was run first.
-            if llm is None:
-
-                final_results.append(
-                    {
-                        "settlement_id": settlement_id,
-                        "bank_transaction_id": bank_id,
-                        "stage": "llm",
-                        "decision": "review",
-                        "confidence": ml_confidence,
-                        "reason": (
-                            "Candidate falls inside "
-                            "the LLM review band, but "
-                            "no LLM result is available."
-                        ),
-                        "status": "manual_review",
-                    }
-                )
-
-                continue
-
-            llm_decision = str(
-                llm["llm_decision"]
-            )
-
-            llm_confidence = float(
-                llm["llm_confidence"]
-            )
-
-            reason = str(
-                llm["reason"]
-            )
-
-            fallback = bool(
-                llm.get(
-                    "fallback_triggered",
-                    False,
-                )
-            )
-
-            if llm_decision == "match":
-
-                final_results.append(
-                    {
-                        "settlement_id": settlement_id,
-                        "bank_transaction_id": bank_id,
-                        "stage": "llm",
-                        "decision": "match",
-                        "confidence": llm_confidence,
-                        "reason": reason,
-                        "status": "matched",
-                    }
-                )
-
-                matched_settlements.add(
-                    settlement_id
-                )
-
-            elif llm_decision == "non_match":
-
-                final_results.append(
-                    {
-                        "settlement_id": settlement_id,
-                        "bank_transaction_id": bank_id,
-                        "stage": "llm",
-                        "decision": "non_match",
-                        "confidence": llm_confidence,
-                        "reason": reason,
-                        "status": "unmatched",
-                    }
-                )
-
-            else:
-
-                final_results.append(
-                    {
-                        "settlement_id": settlement_id,
-                        "bank_transaction_id": bank_id,
-                        "stage": "llm",
-                        "decision": "review",
-                        "confidence": (
-                            0.0
-                            if fallback
-                            else llm_confidence
-                        ),
-                        "reason": reason,
-                        "status": "manual_review",
-                    }
-                )
-
-            continue
-
-        # ----------------------------------------------------
-        # LOW CONFIDENCE
-        # ----------------------------------------------------
-
-        final_results.append(
-            {
+        if has_high_confidence and has_sufficient_margin:
+            final_results.append({
                 "settlement_id": settlement_id,
                 "bank_transaction_id": bank_id,
                 "stage": "ml",
-                "decision": "non_match",
+                "decision": "match",
                 "confidence": ml_confidence,
-                "reason": (
-                    "ML confidence is below "
-                    "the LLM review threshold."
-                ),
-                "status": "unmatched",
-            }
-        )
-
-    # --------------------------------------------------------
-    # UNRESOLVED SETTLEMENTS
-    # --------------------------------------------------------
-
-    processed = {
-        result["settlement_id"]
-        for result in final_results
-    }
-
-    for settlement_id in settlements[
-        "settlement_id"
-    ]:
-
-        if settlement_id in processed:
+                "reason": "High-confidence ML match with sufficient score margin.",
+                "status": "matched",
+            })
+            matched_settlements.add(settlement_id)
             continue
 
-        final_results.append(
-            {
-                "settlement_id": settlement_id,
-                "bank_transaction_id": "",
-                "stage": "reconciler",
-                "decision": "review",
-                "confidence": 0.0,
-                "reason": (
-                    "No deterministic or ML "
-                    "candidate resolved this settlement."
-                ),
-                "status": "manual_review",
-            }
-        )
+        # Low-margin or lower confidence -> Route to LLM review
+        if ml_confidence >= cfg.ml_review_threshold:
+            key = (settlement_id, bank_id)
+            llm = llm_lookup.get(key)
 
-    return pd.DataFrame(
-        final_results
-    )
-
-
-# ============================================================
-# SUMMARY
-# ============================================================
-
-def print_summary(results):
-
-    print("=" * 60)
-    print("LEDGER - RECONCILIATION")
-    print("=" * 60)
-
-    settlement_count = (
-        results["settlement_id"]
-        .nunique()
-    )
-
-    print(
-        f"Settlements processed : "
-        f"{settlement_count}"
-    )
-
-    # --------------------------------------------------------
-    # Settlement-level outcome
-    # --------------------------------------------------------
-    #
-    # A split settlement can have multiple relationship rows.
-    # Therefore, settlement outcomes must be calculated
-    # after grouping by settlement_id.
-    #
-
-    settlement_status = (
-        results
-        .groupby("settlement_id")["status"]
-        .agg(
-            lambda values: (
-                "matched"
-                if "matched" in set(values)
-                else (
-                    "manual_review"
-                    if "manual_review" in set(values)
-                    else "unmatched"
-                )
+            reason_str = (
+                f"Candidate cleared score threshold ({ml_confidence:.2f} >= {cfg.ml_match_threshold}) but failed margin check ({margin:.4f} < {cfg.minimum_score_margin})."
+                if has_high_confidence and not has_sufficient_margin
+                else "Candidate falls inside LLM review band."
             )
-        )
-    )
 
-    print()
-    print("Settlement outcomes:")
+            if llm is None:
+                final_results.append({
+                    "settlement_id": settlement_id,
+                    "bank_transaction_id": bank_id,
+                    "stage": "llm",
+                    "decision": "review",
+                    "confidence": ml_confidence,
+                    "reason": reason_str,
+                    "status": "manual_review",
+                })
+                continue
 
-    print(
-        settlement_status
-        .value_counts()
-        .to_string()
-    )
+            llm_decision = str(llm.get("llm_decision", "review"))
+            llm_confidence = float(llm.get("llm_confidence", 0.50))
+            llm_reason = str(llm.get("reason", "LLM evaluation."))
 
-    matched = (
-        settlement_status
-        == "matched"
-    ).sum()
+            if llm_decision == "match" and llm_confidence >= cfg.llm_match_threshold:
+                final_results.append({
+                    "settlement_id": settlement_id,
+                    "bank_transaction_id": bank_id,
+                    "stage": "llm",
+                    "decision": "match",
+                    "confidence": llm_confidence,
+                    "reason": f"LLM confirmed match: {llm_reason}",
+                    "status": "matched",
+                })
+                matched_settlements.add(settlement_id)
+            else:
+                final_results.append({
+                    "settlement_id": settlement_id,
+                    "bank_transaction_id": bank_id,
+                    "stage": "llm",
+                    "decision": "review",
+                    "confidence": llm_confidence,
+                    "reason": f"LLM review required: {llm_reason}",
+                    "status": "manual_review",
+                })
 
-    manual_review = (
-        settlement_status
-        == "manual_review"
-    ).sum()
-
-    unmatched = (
-        settlement_status
-        == "unmatched"
-    ).sum()
-
-    print()
-    print(
-        f"Matched settlements     : {matched}"
-    )
-
-    print(
-        f"Manual review           : {manual_review}"
-    )
-
-    print(
-        f"Unmatched settlements   : {unmatched}"
-    )
-
-    print()
-
-    # --------------------------------------------------------
-    # Relationship-level information
-    # --------------------------------------------------------
-
-    print("Relationship records:")
-
-    print(
-        results["stage"]
-        .value_counts()
-        .to_string()
-    )
-
-    print()
-
-    print(
-        f"Relationship records    : "
-        f"{len(results)}"
-    )
-
-    print()
-
-    print("Decisions:")
-
-    print(
-        results["decision"]
-        .value_counts()
-        .to_string()
-    )
-
-    print()
-
-    print("Statuses:")
-
-    print(
-        results["status"]
-        .value_counts()
-        .to_string()
-    )
-
-# ============================================================
-# MAIN
-# ============================================================
-
-def main():
-
-    results = reconcile()
-
-    results.to_csv(
-        OUTPUT_PATH,
-        index=False,
-    )
-
-    print_summary(
-        results
-    )
-
-    print()
-    print(
-        f"Saved: {OUTPUT_PATH}"
-    )
+    res_df = pd.DataFrame(final_results) if final_results else pd.DataFrame(columns=[
+        "settlement_id", "bank_transaction_id", "stage", "decision", "confidence", "reason", "status"
+    ])
+    res_df.to_csv(OUTPUT_PATH, index=False)
 
     print("=" * 60)
-    print("RECONCILIATION COMPLETE")
+    print("LEDGER - RECONCILIATION COMPLETE (v2 Extended)")
     print("=" * 60)
+    print(f"Total results: {len(res_df)}")
+    print(f"Config saved : {CONFIG_OUTPUT_PATH}")
+    print(f"Results saved: {OUTPUT_PATH}")
+    return res_df
 
 
 if __name__ == "__main__":
-    main()
+    reconcile()

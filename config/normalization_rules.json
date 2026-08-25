@@ -1,0 +1,20 @@
+{
+  "default_currency": "INR",
+  "identifier_patterns": {
+    "order_id": [
+      "\\b(ord_[a-zA-Z0-9_]+)\\b",
+      "\\b(order_[a-zA-Z0-9_]+)\\b",
+      "\\bORDER[_-]?([0-9]{4,10})\\b"
+    ],
+    "utr": [
+      "\\b(?:NEFT|UTR|RRN)?([A-Z0-9]{12,18})\\b",
+      "\\b([A-Z0-9]{12})\\b",
+      "\\b(NEFT[A-Z0-9]+)\\b",
+      "\\b(RRN[0-9]{10,12})\\b"
+    ],
+    "settlement_id": [
+      "\\b(setl_[a-zA-Z0-9_]+)\\b",
+      "\\b(setl[0-9]+)\\b"
+    ]
+  }
+}

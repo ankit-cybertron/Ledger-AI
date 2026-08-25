@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
@@ -19,7 +20,12 @@ from sklearn.preprocessing import StandardScaler
 # PATHS
 # ============================================================
 
+import sys
+from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 ML_DIR = ROOT / "data" / "ml"
 MODEL_DIR = ROOT / "models"
@@ -46,19 +52,43 @@ RANDOM_STATE = 42
 
 TEST_SIZE = 0.20
 
-FEATURE_COLUMNS = [
+BASE_FEATURE_COLUMNS = [
     "settlement_amount",
     "bank_amount",
     "amount_difference",
     "amount_difference_pct",
+    "relative_amount_difference",
     "date_difference_days",
     "utr_match",
     "utr_missing",
+    "utr_similarity",
+    "rrn_exact",
+    "rrn_similarity",
+    "order_id_exact",
+    "settlement_id_exact",
+    "gateway_ref_exact",
+    "auth_code_exact",
+    "customer_name_similarity",
+    "vpa_similarity",
     "narration_similarity",
     "currency_match",
+    "same_direction",
+    "status_compatible",
+    "candidate_count",
+    "split_candidate",
+    "fee_adjusted_difference",
+    "expected_settlement_date_gap",
+    "duplicate_risk",
+    "is_digit_transposition",
 ]
 
 TARGET_COLUMN = "label"
+
+
+def get_feature_columns(data: pd.DataFrame) -> list:
+    ignore_cols = {"settlement_id", "bank_transaction_id", TARGET_COLUMN}
+    cols = [col for col in data.columns if col not in ignore_cols]
+    return cols
 
 
 # ============================================================
@@ -75,10 +105,8 @@ def load_training_data():
         TRAINING_DATA
     )
 
-    required_columns = (
-        FEATURE_COLUMNS
-        + [TARGET_COLUMN]
-    )
+    feature_cols = get_feature_columns(data)
+    required_columns = feature_cols + [TARGET_COLUMN]
 
     missing_columns = [
         column
@@ -92,17 +120,17 @@ def load_training_data():
             + ", ".join(missing_columns)
         )
 
-    return data
+    return data, feature_cols
 
 
 # ============================================================
 # PREPARE DATA
 # ============================================================
 
-def prepare_data(data):
+def prepare_data(data, feature_cols):
 
     X = data[
-        FEATURE_COLUMNS
+        feature_cols
     ].copy()
 
     y = data[
@@ -121,13 +149,16 @@ def prepare_data(data):
     return X, y
 
 
+from sklearn.calibration import CalibratedClassifierCV
+
+
 # ============================================================
 # TRAIN MODEL
 # ============================================================
 
 def train_model(X_train, y_train):
 
-    model = RandomForestClassifier(
+    base_model = RandomForestClassifier(
         n_estimators=300,
         max_depth=8,
         min_samples_leaf=2,
@@ -135,6 +166,21 @@ def train_model(X_train, y_train):
         random_state=RANDOM_STATE,
         n_jobs=-1,
     )
+
+    # Wrap model with isotonic CalibratedClassifierCV (T4.5)
+    # Using cv=3 or cv="prefit" depending on class counts
+    n_positives = (y_train == 1).sum()
+    cv_folds = min(3, n_positives) if n_positives >= 2 else None
+
+    if cv_folds and cv_folds >= 2:
+        model = CalibratedClassifierCV(
+            estimator=base_model,
+            method="isotonic",
+            cv=cv_folds,
+        )
+    else:
+        # Fallback if extremely small dataset
+        model = base_model
 
     model.fit(
         X_train,
@@ -333,12 +379,23 @@ def print_misclassified_cases(
 # FEATURE IMPORTANCE
 # ============================================================
 
-def show_feature_importance(model):
+def show_feature_importance(model, feature_cols):
+
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+    elif hasattr(model, "calibrated_classifiers_") and model.calibrated_classifiers_:
+        importances = np.mean([
+            clf.estimator.feature_importances_ for clf in model.calibrated_classifiers_
+            if hasattr(clf.estimator, "feature_importances_")
+        ], axis=0)
+    else:
+        print("\nFeature Importance: Not available for current classifier wrapper.")
+        return
 
     importance = pd.DataFrame(
         {
-            "feature": FEATURE_COLUMNS,
-            "importance": model.feature_importances_,
+            "feature": feature_cols,
+            "importance": importances,
         }
     ).sort_values(
         "importance",
@@ -352,7 +409,7 @@ def show_feature_importance(model):
     for _, row in importance.iterrows():
 
         print(
-            f"  {row['feature']:<25} "
+            f"  {row['feature']:<30} "
             f"{row['importance']:.4f}"
         )
 
@@ -397,10 +454,10 @@ def save_model(
 
 def main():
 
-    data = load_training_data()
+    data, feature_cols = load_training_data()
 
     print("=" * 60)
-    print("LEDGER - TRAINING CONFIDENCE MODEL")
+    print("LEDGER - TRAINING CONFIDENCE MODEL (v2 Extended)")
     print("=" * 60)
 
     print(
@@ -409,6 +466,10 @@ def main():
 
     print(
         f"Examples: {len(data)}"
+    )
+
+    print(
+        f"Features count: {len(feature_cols)}"
     )
 
     print()
@@ -422,7 +483,8 @@ def main():
     )
 
     X, y = prepare_data(
-        data
+        data,
+        feature_cols,
     )
 
     # Stratified split keeps the positive/negative
@@ -504,7 +566,8 @@ def main():
     # --------------------------------------------------------
 
     show_feature_importance(
-        model
+        model,
+        feature_cols,
     )
 
     # --------------------------------------------------------

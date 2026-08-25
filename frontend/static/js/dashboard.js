@@ -55,6 +55,9 @@
     const navAuto = document.getElementById("navAutoMatchRun");
     if (navAuto) navAuto.addEventListener("click", () => activateSub("sub-reconcile"));
 
+    const navManual = document.getElementById("navManualReview");
+    if (navManual) navManual.addEventListener("click", () => activateSub("sub-manual-review"));
+
     const navClose = document.getElementById("navClosePeriod");
     if (navClose) navClose.addEventListener("click", () => activateSub("sub-close"));
 
@@ -402,6 +405,7 @@
       if (!pendingFile) return;
       importBtn.disabled = true;
       setStatus(source, "Importing statement into database…", "loading");
+      startPipelineMonitoring();
 
       const name = nameInput ? nameInput.value.trim() : "";
       const { sourceType, label } = getSelectedTypeInfo();
@@ -419,11 +423,16 @@
         if (nameInput) nameInput.value = "";
         if (rulesEl) rulesEl.value = "";
 
+        // Final status pull to ensure 100% progress and terminal log completion
+        await pollPipelineStatus();
+        stopPipelineMonitoring();
+
         await loadSidebarSources();
         if (stmt.id) {
           openStatementView(stmt.id);
         }
       } catch (err) {
+        stopPipelineMonitoring();
         const message = err instanceof window.ApiError ? err.message : "Upload failed. Please try again.";
         setStatus(source, message, "error");
         importBtn.disabled = false;
@@ -431,10 +440,100 @@
     });
   }
 
+  // ------------------------------------------------------------------
+  // Live Pipeline Progress Bar & Terminal Log Polling Engine
+  // ------------------------------------------------------------------
+
+  let pipelinePollInterval = null;
+  let seenLogsCount = 0;
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  async function pollPipelineStatus() {
+    const stageEl = document.getElementById("importStageText");
+    const percentEl = document.getElementById("importProgressPercent");
+    const fillEl = document.getElementById("importProgressFill");
+    const terminalBody = document.getElementById("importTerminalBody");
+
+    try {
+      const res = await window.LedgerApi.getPipelineStatus();
+      if (!res || !res.ok) return;
+
+      if (stageEl && res.stage) stageEl.textContent = res.stage;
+      if (percentEl && res.progress !== undefined) percentEl.textContent = `${res.progress}%`;
+      if (fillEl && res.progress !== undefined) fillEl.style.width = `${res.progress}%`;
+
+      if (terminalBody && res.logs && res.logs.length > seenLogsCount) {
+        const newLogs = res.logs.slice(seenLogsCount);
+        seenLogsCount = res.logs.length;
+
+        newLogs.forEach((log) => {
+          const line = document.createElement("div");
+          line.className = `term-line lvl-${log.level || "INFO"}`;
+          line.innerHTML = `<span class="time">[${log.timestamp || ""}]</span> <span class="tag">[${log.level || "INFO"}]</span> ${escapeHtml(log.message || "")}`;
+          terminalBody.appendChild(line);
+        });
+        terminalBody.scrollTop = terminalBody.scrollHeight;
+      }
+
+      if (!res.is_running && res.progress >= 100) {
+        stopPipelineMonitoring();
+      }
+    } catch (err) {
+      console.warn("Pipeline status poll warning:", err);
+    }
+  }
+
+  function startPipelineMonitoring() {
+    const container = document.getElementById("importProgressContainer");
+    const stageEl = document.getElementById("importStageText");
+    const percentEl = document.getElementById("importProgressPercent");
+    const fillEl = document.getElementById("importProgressFill");
+    const terminalBody = document.getElementById("importTerminalBody");
+
+    if (container) container.style.display = "block";
+    if (stageEl) stageEl.textContent = "Initializing Pipeline Engine...";
+    if (percentEl) percentEl.textContent = "5%";
+    if (fillEl) fillEl.style.width = "5%";
+    
+    seenLogsCount = 0;
+    if (terminalBody) {
+      terminalBody.innerHTML = `<div class="term-line term-dim">[SYSTEM] Pipeline tracker activated. Starting live output...</div>`;
+    }
+
+    stopPipelineMonitoring();
+    pollPipelineStatus();
+    pipelinePollInterval = setInterval(pollPipelineStatus, 300);
+  }
+
+  function stopPipelineMonitoring() {
+    if (pipelinePollInterval) {
+      clearInterval(pipelinePollInterval);
+      pipelinePollInterval = null;
+    }
+  }
+
   function initUploads() {
     initTypeSelector();
     initColorPicker();
     document.querySelectorAll(".dropzone").forEach(initDropzone);
+
+    const btnClearTerm = document.getElementById("btnClearTerminal");
+    if (btnClearTerm) {
+      btnClearTerm.addEventListener("click", () => {
+        const body = document.getElementById("importTerminalBody");
+        if (body) body.innerHTML = `<div class="term-line term-dim">[SYSTEM] Console logs cleared.</div>`;
+        seenLogsCount = 0;
+      });
+    }
   }
 
   // ------------------------------------------------------------------
@@ -923,7 +1022,151 @@
     });
   }
 
+  function renderManualReviewQueue(exceptions) {
+    const container = document.getElementById("manualReviewGrid");
+    const emptyEl = document.getElementById("manualReviewEmpty");
+    const badgeEl = document.getElementById("manualReviewBadgeCount");
+    const navBadgeEl = document.getElementById("navManualBadge");
+
+    if (!container) return;
+    container.innerHTML = "";
+
+    const openItems = (exceptions || []).filter(
+      (ex) => (ex.resolution_status || "open").toLowerCase() === "open"
+    );
+
+    const pendingCount = openItems.length;
+    if (badgeEl) badgeEl.textContent = `${pendingCount} item${pendingCount === 1 ? "" : "s"} pending`;
+    if (navBadgeEl) {
+      navBadgeEl.textContent = pendingCount;
+      navBadgeEl.style.display = pendingCount > 0 ? "inline-block" : "none";
+    }
+
+    if (!exceptions || exceptions.length === 0) {
+      if (emptyEl) emptyEl.style.display = "block";
+      return;
+    }
+
+    if (emptyEl) emptyEl.style.display = "none";
+
+    exceptions.forEach((ex) => {
+      const card = document.createElement("div");
+      card.className = "manual-review-card";
+      const isResolved = (ex.resolution_status || "").toLowerCase() !== "open";
+      const outcome = (ex.resolved_outcome || "").toLowerCase();
+
+      const excId = ex.exception_id || ex.settlement_id || "EXC-100";
+      const descText = ex.description || ex.settlement_id || "Unresolved Transaction";
+      const amtText = formatMoney(ex.amount);
+
+      let actionHtml = "";
+      if (isResolved) {
+        const isMatch = outcome === "confirmed_match" || outcome === "match";
+        const badgeClass = isMatch ? "badge-resolved-match" : "badge-resolved-non-match";
+        const label = isMatch ? "Resolved: Confirmed Match ✓" : "Resolved: Confirmed Non-Match ✕";
+        actionHtml = `<span class="resolved-status-badge ${badgeClass}">${label}</span>`;
+      } else {
+        actionHtml = `
+          <div class="review-action-row">
+            <button type="button" class="btn-confirm-non-match" data-exc-id="${excId}">
+              ✕ Confirm Non-Match
+            </button>
+            <button type="button" class="btn-confirm-match" data-exc-id="${excId}">
+              ✓ Confirm Match
+            </button>
+          </div>
+        `;
+      }
+
+      card.innerHTML = `
+        <div class="review-card-topbar">
+          <div class="review-status-tag">
+            <span class="pulse-dot"></span>
+            <span>AMBIGUOUS MATCH REVIEW</span>
+          </div>
+          <div class="review-exc-id font-mono">ID: ${excId}</div>
+        </div>
+
+        <div class="review-comparison-grid">
+          <div class="comparison-side flagged-side">
+            <div class="side-label">FLAGGED TRANSACTION</div>
+            <div class="primary-text">${descText}</div>
+            <div class="secondary-info">Date: ${ex.date || "—"} &bull; Source: ${ex.source || "Settlement"}</div>
+            <div class="amount-tag font-mono">${amtText}</div>
+          </div>
+
+          <div class="comparison-divider">
+            <div class="divider-icon" title="Candidate Comparison">↔</div>
+          </div>
+
+          <div class="comparison-side target-side">
+            <div class="side-label">CANDIDATE BANK TARGET</div>
+            <div class="primary-text font-mono">${ex.bank_transaction_id || "Unlinked / Candidate"}</div>
+            <div class="secondary-info">Status: Requires Resolution</div>
+            <div class="confidence-tag font-mono">ML Confidence: Ambiguous</div>
+          </div>
+        </div>
+
+        <div class="review-ai-box">
+          <div class="ai-box-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>LLM AUDIT TRAIL & REASONING</span>
+          </div>
+          <div class="ai-box-content">${ex.reason || "Ambiguous candidate requiring human decision."}</div>
+        </div>
+
+        <div class="review-card-footer" id="action-container-${excId}">
+          ${actionHtml}
+        </div>
+      `;
+
+      const matchBtn = card.querySelector(".btn-confirm-match");
+      const nonMatchBtn = card.querySelector(".btn-confirm-non-match");
+
+      if (matchBtn) {
+        matchBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await handleExceptionResolution(excId, "confirmed_match", card);
+        });
+      }
+
+      if (nonMatchBtn) {
+        nonMatchBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await handleExceptionResolution(excId, "confirmed_non_match", card);
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  async function handleExceptionResolution(excId, outcome, cardElement) {
+    try {
+      const footer = cardElement.querySelector(".review-card-footer");
+      if (footer) {
+        footer.innerHTML = '<span class="spinner"></span> Updating Exception Ledger & ML Feedback Loop...';
+      }
+
+      const res = await window.LedgerApi.resolveException(excId, outcome);
+
+      if (res && res.ok) {
+        if (currentRunId) {
+          await loadRun(currentRunId);
+        } else {
+          const runRes = await window.LedgerApi.getLatestReconciliation();
+          if (runRes && runRes.run) {
+            await loadRun(runRes.run.run_id);
+          }
+        }
+      }
+    } catch (err) {
+      alert(`Resolution failed: ${err.message || err}`);
+    }
+  }
+
   async function loadRun(runId) {
+    currentRunId = runId;
     const [reconRes, exceptionsRes] = await Promise.all([
       window.LedgerApi.getReconciliation(runId),
       window.LedgerApi.getExceptions(runId),
@@ -938,6 +1181,7 @@
     renderSummary(reconRes.run);
     applyTransactionFiltersAndRender();
     applyExceptionFiltersAndRender();
+    renderManualReviewQueue(currentExceptions);
   }
 
   function initReconcile() {

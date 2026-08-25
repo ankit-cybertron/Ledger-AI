@@ -1,0 +1,19 @@
+{
+  "schema_version": "2.0.0",
+  "date_tolerance_days": 3,
+  "absolute_amount_tolerance": 1.0,
+  "percentage_tolerance": null,
+  "max_tolerance_cap": null,
+  "narration_similarity_threshold": 0.5,
+  "ml_match_threshold": 0.82,
+  "ml_review_threshold": 0.5,
+  "llm_match_threshold": 0.7,
+  "minimum_score_margin": 0.05,
+  "allow_split_settlements": true,
+  "allow_aggregated_settlements": true,
+  "fee_aware_matching": true,
+  "business_day_aware": false,
+  "source_confidence_auto_accept": 0.85,
+  "source_confidence_needs_confirmation": 0.6,
+  "column_mapping_confidence_floor": 0.6
+}

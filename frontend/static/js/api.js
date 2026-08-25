@@ -113,7 +113,10 @@ const LedgerApi = {
     return postFile("/upload/orders", file);
   },
 
-  // --- Reconciliation ------------------------------------------------------
+  // --- Reconciliation & Pipeline -------------------------------------------
+  getPipelineStatus() {
+    return getJson("/pipeline/status");
+  },
   runReconciliation(options = {}) {
     return postJson("/reconcile", options);
   },
@@ -133,6 +136,12 @@ const LedgerApi = {
   },
   getExceptions(runId) {
     return getJson(`/exceptions/${encodeURIComponent(runId)}`);
+  },
+  resolveException(exceptionId, outcome = "confirmed_match", resolvedBy = "admin") {
+    return postJson(`/exceptions/${encodeURIComponent(exceptionId)}/resolve`, {
+      outcome,
+      resolved_by: resolvedBy,
+    });
   },
 
   // --- Dashboard summary -----------------------------------------------

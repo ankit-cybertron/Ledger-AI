@@ -1,0 +1,9 @@
+{
+  "default_excluded_statuses": [
+    "FAILED",
+    "DECLINED",
+    "CANCELLED",
+    "PENDING",
+    "REJECTED"
+  ]
+}

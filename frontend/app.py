@@ -2,7 +2,10 @@ import os
 import sys
 from functools import wraps
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+FRONTEND_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.abspath(os.path.join(FRONTEND_DIR, ".."))
+if FRONTEND_DIR not in sys.path:
+    sys.path.insert(0, FRONTEND_DIR)
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
@@ -103,6 +106,25 @@ def talk_to_ledger():
 def reports():
     context = reports_page.get_context()
     return render_template("reports.html", username=_username(), **context)
+
+
+@app.route("/matching-config")
+@app.route("/config")
+@login_required
+def matching_config_page():
+    import json
+    config_path = os.path.join(ROOT_DIR, "data", "results", "reconciliation_config.json")
+    cfg_data = {}
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg_data = json.load(f)
+        except Exception:
+            pass
+    if not cfg_data:
+        from config import MatchingConfig
+        cfg_data = MatchingConfig().to_dict()
+    return render_template("config.html", config=cfg_data, username=_username())
 
 
 if __name__ == "__main__":

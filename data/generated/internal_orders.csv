@@ -1,101 +1,43 @@
-order_id,date,description,Payment Mode,amount,Order Status,Expected Settlement Date,bank_transaction_id
-ORD10038,2026-06-09,Karan Malhotra,Bank Transfer (NEFT),36475.57,Completed,2026-06-11,
-ORD10033,2026-07-13,Arjun Menon,Bank Transfer (NEFT),4568.45,Completed,2026-07-15,
-ORD10012,2026-06-06,Varun Chopra,UPI,3799.69,Completed,2026-06-08,
-ORD10048,2026-06-14,Nisha Patel,Cash,21059.68,Completed,2026-06-15,
-ORD10017,2026-06-25,Rohan Gupta,UPI,33270.39,Completed,2026-06-27,
-ORD10011,2026-06-21,Pooja Desai,UPI,42522.81,Completed,2026-06-23,
-ORD10007,2026-07-05,Siddharth Jain,UPI,24327.39,Completed,2026-07-07,
-ORD10001,2026-06-10,Priya Sharma,UPI,16043.3,Completed,2026-06-12,
-ORD10016,2026-06-18,Deepak Sinha,UPI,19778.33,Completed,2026-06-20,
-ORD10046,2026-07-01,Varun Chopra,Cash,26097.23,Completed,2026-07-02,
-ORD10035,2026-06-06,Ananya Nair,Bank Transfer (NEFT),19765.97,Completed,2026-06-08,
-ORD10028,2026-07-03,Ishita Bose,Card,26494.76,Completed,2026-07-05,
-ORD10010,2026-07-02,Tanvi Saxena,UPI,16918.02,Completed,2026-07-04,
-ORD10015,2026-06-16,Aisha Khan,UPI,6707.46,Completed,2026-06-18,
-ORD10018,2026-07-08,Neha Reddy,UPI,1078.04,Completed,2026-07-10,
-ORD10020,2026-07-14,Arjun Menon,Card,22418.36,Completed,2026-07-16,
-ORD10047,2026-06-09,Arjun Menon,Cash,40819.83,Completed,2026-06-10,
-ORD10045,2026-07-10,Sanjay Verma,Cash,21775.37,Completed,2026-07-11,
-ORD10014,2026-06-23,Sneha Iyer,UPI,45651.07,Completed,2026-06-25,
-ORD10032,2026-07-10,Ritu Chawla,Bank Transfer (NEFT),23666.84,Completed,2026-07-12,
-ORD10043,2026-07-04,Ritu Chawla,Cash,16146.47,Completed,2026-07-05,
-ORD10044,2026-06-03,Sanjay Verma,Cash,9681.89,Completed,2026-06-04,
-ORD10037,2026-06-09,Nisha Patel,Bank Transfer (NEFT),26835.23,Completed,2026-06-11,
-ORD10040,2026-07-13,Yash Trivedi,Bank Transfer (NEFT),43589.69,Completed,2026-07-15,
-ORD10009,2026-06-29,Rohan Gupta,UPI,42506.47,Completed,2026-07-01,
-ORD10003,2026-07-07,Nikhil Shetty,UPI,20876.35,Completed,2026-07-09,
-ORD10031,2026-06-24,Sneha Iyer,Card,46339.99,Completed,2026-06-26,
-ORD10008,2026-06-12,Ishita Bose,UPI,14888.12,Completed,2026-06-14,
-ORD10050,2026-07-02,Deepak Sinha,Cash,19615.73,Completed,2026-07-03,
-ORD10039,2026-07-08,Kavya Pillai,Bank Transfer (NEFT),24555.27,Completed,2026-07-10,
-ORD10004,2026-06-04,Kavya Pillai,UPI,28605.57,Completed,2026-06-06,
-ORD10005,2026-07-07,Deepak Sinha,UPI,26452.46,Completed,2026-07-09,
-ORD10019,2026-06-21,Radhika Nambiar,Card,29770.61,Completed,2026-06-23,
-ORD10034,2026-06-28,Siddharth Jain,Bank Transfer (NEFT),43172.42,Completed,2026-06-30,
-ORD10041,2026-07-04,Radhika Nambiar,Cash,26027.13,Completed,2026-07-05,
-ORD10025,2026-07-01,Ananya Nair,Card,36036.6,Completed,2026-07-03,
-ORD10042,2026-06-10,Ritu Chawla,Cash,37749.65,Completed,2026-06-11,
-ORD10029,2026-06-15,Ritu Chawla,Card,39779.8,Completed,2026-06-17,
-ORD10030,2026-06-13,Pooja Desai,Card,23167.0,Completed,2026-06-15,
-ORD10036,2026-07-12,Deepak Sinha,Bank Transfer (NEFT),43932.81,Completed,2026-07-14,
-ORD10049,2026-06-10,Vikram Rao,Cash,32191.97,Completed,2026-06-11,
-ORD10002,2026-06-14,Divya Krishnan,UPI,44165.7,Completed,2026-06-16,
-ORD10024,2026-06-30,Neha Reddy,Card,41248.82,Completed,2026-07-02,
-ORD10006,2026-06-24,Varun Chopra,UPI,31167.49,Completed,2026-06-26,
-ORD10021,2026-06-04,Karan Malhotra,Card,30945.53,Completed,2026-06-06,
-ORD10023,2026-06-10,Pooja Desai,Card,29974.93,Completed,2026-06-12,
-ORD10013,2026-07-07,Manish Agarwal,UPI,15360.46,Completed,2026-07-09,
-ORD10027,2026-06-17,Aisha Khan,Card,33917.14,Completed,2026-06-19,
-ORD10022,2026-06-01,Kavya Pillai,Card,3022.68,Completed,2026-06-03,
-ORD10026,2026-07-05,Amit Kulkarni,Card,7536.07,Completed,2026-07-07,
-ORD10038,2026-06-09,Karan Malhotra,Bank Transfer (NEFT),36475.57,Completed,2026-06-11,bank_0001
-ORD10033,2026-07-13,Arjun Menon,Bank Transfer (NEFT),4568.45,Completed,2026-07-15,bank_0002
-ORD10012,2026-06-06,Varun Chopra,UPI,3799.69,Completed,2026-06-08,bank_0003
-ORD10048,2026-06-14,Nisha Patel,Cash,21059.68,Completed,2026-06-15,bank_0004
-ORD10017,2026-06-25,Rohan Gupta,UPI,33270.39,Completed,2026-06-27,bank_0005
-ORD10011,2026-06-21,Pooja Desai,UPI,42522.81,Completed,2026-06-23,bank_0006
-ORD10007,2026-07-05,Siddharth Jain,UPI,24327.39,Completed,2026-07-07,bank_0007
-ORD10001,2026-06-10,Priya Sharma,UPI,16043.3,Completed,2026-06-12,bank_0008
-ORD10016,2026-06-18,Deepak Sinha,UPI,19778.33,Completed,2026-06-20,bank_0009
-ORD10046,2026-07-01,Varun Chopra,Cash,26097.23,Completed,2026-07-02,bank_0010
-ORD10035,2026-06-06,Ananya Nair,Bank Transfer (NEFT),19765.97,Completed,2026-06-08,bank_0011
-ORD10028,2026-07-03,Ishita Bose,Card,26494.76,Completed,2026-07-05,bank_0012
-ORD10010,2026-07-02,Tanvi Saxena,UPI,16918.02,Completed,2026-07-04,bank_0013
-ORD10015,2026-06-16,Aisha Khan,UPI,6707.46,Completed,2026-06-18,bank_0014
-ORD10018,2026-07-08,Neha Reddy,UPI,1078.04,Completed,2026-07-10,bank_0015
-ORD10020,2026-07-14,Arjun Menon,Card,22418.36,Completed,2026-07-16,bank_0016
-ORD10047,2026-06-09,Arjun Menon,Cash,40819.83,Completed,2026-06-10,bank_0017
-ORD10045,2026-07-10,Sanjay Verma,Cash,21775.37,Completed,2026-07-11,bank_0018
-ORD10014,2026-06-23,Sneha Iyer,UPI,45651.07,Completed,2026-06-25,bank_0019
-ORD10032,2026-07-10,Ritu Chawla,Bank Transfer (NEFT),23666.84,Completed,2026-07-12,bank_0020
-ORD10043,2026-07-04,Ritu Chawla,Cash,16146.47,Completed,2026-07-05,bank_0021
-ORD10044,2026-06-03,Sanjay Verma,Cash,9681.89,Completed,2026-06-04,bank_0022
-ORD10037,2026-06-09,Nisha Patel,Bank Transfer (NEFT),26835.23,Completed,2026-06-11,bank_0023
-ORD10040,2026-07-13,Yash Trivedi,Bank Transfer (NEFT),43589.69,Completed,2026-07-15,bank_0024
-ORD10009,2026-06-29,Rohan Gupta,UPI,42506.47,Completed,2026-07-01,bank_0025
-ORD10003,2026-07-07,Nikhil Shetty,UPI,20876.35,Completed,2026-07-09,bank_0026
-ORD10031,2026-06-24,Sneha Iyer,Card,46339.99,Completed,2026-06-26,bank_0027
-ORD10008,2026-06-12,Ishita Bose,UPI,14888.12,Completed,2026-06-14,bank_0028
-ORD10050,2026-07-02,Deepak Sinha,Cash,19615.73,Completed,2026-07-03,bank_0029
-ORD10039,2026-07-08,Kavya Pillai,Bank Transfer (NEFT),24555.27,Completed,2026-07-10,bank_0030
-ORD10004,2026-06-04,Kavya Pillai,UPI,28605.57,Completed,2026-06-06,bank_0031
-ORD10005,2026-07-07,Deepak Sinha,UPI,26452.46,Completed,2026-07-09,bank_0032
-ORD10019,2026-06-21,Radhika Nambiar,Card,29770.61,Completed,2026-06-23,bank_0033
-ORD10034,2026-06-28,Siddharth Jain,Bank Transfer (NEFT),43172.42,Completed,2026-06-30,bank_0034
-ORD10041,2026-07-04,Radhika Nambiar,Cash,26027.13,Completed,2026-07-05,bank_0035
-ORD10025,2026-07-01,Ananya Nair,Card,36036.6,Completed,2026-07-03,bank_0036
-ORD10042,2026-06-10,Ritu Chawla,Cash,37749.65,Completed,2026-06-11,bank_0037
-ORD10029,2026-06-15,Ritu Chawla,Card,39779.8,Completed,2026-06-17,bank_0038
-ORD10030,2026-06-13,Pooja Desai,Card,23167.0,Completed,2026-06-15,bank_0039
-ORD10036,2026-07-12,Deepak Sinha,Bank Transfer (NEFT),43932.81,Completed,2026-07-14,bank_0040
-ORD10049,2026-06-10,Vikram Rao,Cash,32191.97,Completed,2026-06-11,bank_0041
-ORD10002,2026-06-14,Divya Krishnan,UPI,44165.7,Completed,2026-06-16,bank_0042
-ORD10024,2026-06-30,Neha Reddy,Card,41248.82,Completed,2026-07-02,bank_0043
-ORD10006,2026-06-24,Varun Chopra,UPI,31167.49,Completed,2026-06-26,bank_0044
-ORD10021,2026-06-04,Karan Malhotra,Card,30945.53,Completed,2026-06-06,bank_0045
-ORD10023,2026-06-10,Pooja Desai,Card,29974.93,Completed,2026-06-12,bank_0046
-ORD10013,2026-07-07,Manish Agarwal,UPI,15360.46,Completed,2026-07-09,bank_0047
-ORD10027,2026-06-17,Aisha Khan,Card,33917.14,Completed,2026-06-19,bank_0048
-ORD10022,2026-06-01,Kavya Pillai,Card,3022.68,Completed,2026-06-03,bank_0049
-ORD10026,2026-07-05,Amit Kulkarni,Card,7536.07,Completed,2026-07-07,bank_0050
+order_id,date,description,Payment Mode,amount,Order Status,Expected Settlement Date
+ORD-5034,2026-07-05,Tara D'Souza,Cash,6016.68,Completed,2026-07-06
+ORD-5021,2026-07-03,Owais Ahmed,Card,29848.33,Completed,2026-07-05
+ORD-5015,2026-07-30,Sanya Kapoor,Card,43741.5,Completed,2026-08-01
+ORD-5008,2026-07-09,Tara D'Souza,UPI,46038.79,Completed,2026-07-11
+ORD-5042,2026-07-03,Preeti Rawat,Bank Transfer (NEFT),12285.9,Cancelled Post-Order,2026-07-05
+ORD-5016,2026-07-04,Ira Sharma,Card,45294.38,Pending - Payment Not Completed,2026-07-06
+ORD-5011,2026-07-01,Farhan Ali,UPI,44606.5,Completed,2026-07-03
+ORD-5004,2026-08-11,Dhruv Kashyap,UPI,16100.66,Completed,2026-08-13
+ORD-5038,2026-08-06,Faizan Sheikh,Split Payment (UPI + Card),35331.59,Completed,2026-08-08
+ORD-5018,2026-08-04,Dhruv Kashyap,Card,38250.13,Completed,2026-08-06
+ORD-5028,2026-07-15,Devansh Oberoi,Bank Transfer (NEFT),6873.25,Completed,2026-07-17
+ORD-5039,2026-07-10,Zoya Siddiqui,Split Payment (NEFT + Cash),50473.6,Completed,2026-07-12
+ORD-5019,2026-07-13,Aryan Dutta,Card,2350.3,Completed,2026-07-15
+ORD-5033,2026-07-24,Chitra Ramachandran,Cash,7411.94,Completed,2026-07-25
+ORD-5025,2026-07-25,Sanya Kapoor,Bank Transfer (NEFT),30980.83,Completed,2026-07-27
+ORD-5010,2026-07-30,Zara Hussain,UPI,6188.25,Completed,2026-08-01
+ORD-5040,2026-07-28,Ashwin Nagarajan,Card,3472.48,Payment Failed - No Record,2026-07-30
+ORD-5031,2026-07-27,Naina Talwar,Bank Transfer (NEFT),27519.04,Completed,2026-07-29
+ORD-5003,2026-08-09,Owais Ahmed,UPI,16100.66,Completed,2026-08-11
+ORD-5022,2026-07-04,Chitra Ramachandran,Card,35723.32,Completed,2026-07-06
+ORD-5012,2026-07-18,Kabir Anand,UPI,10501.08,Completed,2026-07-20
+ORD-5035,2026-07-07,Roshni Pillai,Cash,8446.11,Completed,2026-07-08
+ORD-5023,2026-07-11,Kabir Anand,Card,20441.83,Completed,2026-07-13
+ORD-5002,2026-07-17,Lakshmi Narayan,UPI,4984.45,Completed,2026-07-19
+ORD-5013,2026-07-26,Imran Qureshi,UPI,3202.59,Completed,2026-07-28
+ORD-5024,2026-07-22,Ira Sharma,Card,12790.83,Completed,2026-07-24
+ORD-5030,2026-08-08,Harsh Vardhan,Bank Transfer (NEFT),20902.0,Completed,2026-08-10
+ORD-5017,2026-07-22,Tara D'Souza,Card,4143.16,Refunded,2026-07-24
+ORD-5005,2026-07-07,Anushka Verma,UPI,1527.32,Partially Refunded,2026-07-09
+ORD-5041,2026-08-06,Lakshmi Narayan,UPI,34902.13,Disputed - Under Investigation,2026-08-08
+ORD-5036,2026-07-18,Nakul Grover,Cash,7938.62,Completed,2026-07-19
+ORD-5020,2026-07-01,Faizan Sheikh,Card,48442.49,Completed,2026-07-03
+ORD-5001,2026-07-13,Aryan Dutta,UPI,48077.11,Completed,2026-07-15
+ORD-5026,2026-07-24,Manav Chugh,Bank Transfer (NEFT),46893.24,Completed,2026-07-26
+ORD-5027,2026-07-06,Yusuf Merchant,Bank Transfer (NEFT),1484.92,Completed,2026-07-08
+ORD-5006,2026-07-31,Kritika Malhotra,UPI,43942.76,Completed - Duplicate Charge Flagged,2026-08-02
+ORD-5007,2026-08-08,Manav Chugh,UPI,41279.08,Completed,2026-08-10
+ORD-5009,2026-07-30,Leela Krishnamurthy,UPI,14778.68,Completed,2026-08-01
+ORD-5014,2026-07-10,Owais Ahmed,UPI,19487.93,Completed,2026-07-12
+ORD-5037,2026-07-05,Simran Kaur,Cash,2449.93,Completed,2026-07-06
+ORD-5032,2026-08-01,Farhan Ali,Cash,6005.3,Completed,2026-08-02
+ORD-5029,2026-07-27,Rajeev Bakshi,Bank Transfer (NEFT),41432.97,Completed,2026-07-29

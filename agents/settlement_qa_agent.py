@@ -26,11 +26,11 @@ except (ImportError, ValueError):
 # CONFIGURATION
 # ============================================================
 
-load_dotenv()
+load_dotenv(override=True)
 
 MODEL = os.getenv(
     "GROQ_MODEL",
-    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
 )
 
 

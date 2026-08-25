@@ -1,0 +1,50 @@
+{
+  "gross_amount": [
+    "gross_amount", "gross", "total_amount", "order_amount", "tx_amount", "txn_amount"
+  ],
+  "net_amount": [
+    "amount", "net_amount", "settlement_amount", "payout_amount", "amount_inr", "net_inr", "amount (inr)"
+  ],
+  "credit_amount": [
+    "credit", "credit_amount", "deposit", "credit (inr)", "cr_amount"
+  ],
+  "debit_amount": [
+    "debit", "debit_amount", "withdrawal", "debit (inr)", "dr_amount"
+  ],
+  "fee_amount": [
+    "fee", "fee_amount", "gateway_fee", "charges", "commission", "service_tax"
+  ],
+  "tax_amount": [
+    "tax", "tax_amount", "gst", "cgst", "sgst", "igst", "vat"
+  ],
+  "transaction_date": [
+    "date", "txn_date", "transaction_date", "created_at", "post_date", "tx_date", "time"
+  ],
+  "value_date": [
+    "value_date", "val_date", "settlement_date"
+  ],
+  "utr": [
+    "utr", "utr_number", "bank_ref", "bank_ref_no", "rrn", "ref_no", "reference_no", "gateway_ref", "neft_ref"
+  ],
+  "order_id": [
+    "order_id", "ord_id", "order_no", "invoice_no", "merchant_order_id"
+  ],
+  "settlement_id": [
+    "settlement_id", "setl_id", "payout_id", "batch_id", "voucher_no", "upi_txn_id"
+  ],
+  "description": [
+    "description", "particulars", "narration", "remarks", "memo", "details"
+  ],
+  "customer_name": [
+    "customer_name", "customer", "payer_name", "vpa", "remitter_name"
+  ],
+  "status": [
+    "status", "payment_status", "txn_status", "state"
+  ],
+  "auth_code": [
+    "auth_code", "approval_code"
+  ],
+  "card_network": [
+    "card_network", "card_type", "scheme"
+  ]
+}

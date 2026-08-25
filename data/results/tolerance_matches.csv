@@ -1,1 +1,1 @@
-settlement_id,bank_transaction_id,match_type,amount_difference,date_difference_days,narration_similarity,is_match
+settlement_id,bank_transaction_id,match_type,amount_difference,date_difference_days,narration_similarity,is_match,confidence

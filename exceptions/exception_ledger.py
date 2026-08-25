@@ -1,6 +1,16 @@
+"""
+exception_ledger.py — Manual Review Exception Engine for Ledger AI v2.
+
+Enhancements:
+  - T7.1: Extended Exception Ledger schema with additive types:
+          ambiguous_tie, insufficient_data, failed_status_excluded, duplicate_detected
+          while preserving llm_review, llm_unavailable, unresolved, manual_review, non_match.
+  - T7.2: Added resolved_outcome (confirmed_match | confirmed_non_match | null) and
+          resolved_by (human identifier) for human-in-the-loop adaptation (T4.6).
+"""
+
 from pathlib import Path
 from datetime import datetime, timezone
-
 import pandas as pd
 
 
@@ -9,37 +19,42 @@ import pandas as pd
 # ============================================================
 
 ROOT = Path(__file__).resolve().parents[1]
-
 RESULTS_DIR = ROOT / "data" / "results"
-
-RECONCILIATION_PATH = (
-    RESULTS_DIR / "reconciliation_results.csv"
-)
-
-EXCEPTION_OUTPUT_PATH = (
-    RESULTS_DIR / "exception_ledger.csv"
-)
+RECONCILIATION_PATH = RESULTS_DIR / "reconciliation_results.csv"
+EXCEPTION_OUTPUT_PATH = RESULTS_DIR / "exception_ledger.csv"
 
 
 # ============================================================
-# EXCEPTION CLASSIFICATION
+# EXCEPTION CLASSIFICATION (T7.1)
 # ============================================================
 
 def classify_exception(row):
-    stage = str(row["stage"])
-    decision = str(row["decision"])
-    reason = str(row["reason"]).lower()
+    stage = str(row.get("stage", ""))
+    decision = str(row.get("decision", ""))
+    reason = str(row.get("reason", "")).lower()
+    exc_type = str(row.get("exception_type", ""))
 
+    # T7.1 Explicit / Direct Enum Classification
+    if exc_type == "ambiguous_tie" or "ambiguous tie" in reason or "ambiguous_tie" in reason:
+        return "ambiguous_tie"
+
+    if exc_type == "insufficient_data" or decision == "insufficient_data" or "insufficient data" in reason or "insufficient_data" in reason:
+        return "insufficient_data"
+
+    if exc_type == "failed_status_excluded" or "status excluded" in reason or "status_excluded" in reason:
+        return "failed_status_excluded"
+
+    if exc_type == "duplicate_detected" or "duplicate" in reason or "duplicate_detected" in reason:
+        return "duplicate_detected"
+
+    # Additive legacy handling (T7.1)
     if decision == "review":
         if stage == "llm":
             return "llm_review"
-
         if "no llm result" in reason:
             return "llm_unavailable"
-
-        if stage == "reconciler":
+        if stage in ("reconciler", "tolerance_matcher"):
             return "unresolved"
-
         return "manual_review"
 
     if decision == "non_match":
@@ -49,11 +64,17 @@ def classify_exception(row):
 
 
 def determine_priority(exception_type, confidence):
-    confidence = float(confidence)
+    try:
+        confidence = float(confidence)
+    except (ValueError, TypeError):
+        confidence = 0.0
 
     if exception_type in {
         "llm_unavailable",
         "unresolved",
+        "ambiguous_tie",
+        "insufficient_data",
+        "duplicate_detected",
     }:
         return "high"
 
@@ -67,15 +88,25 @@ def determine_priority(exception_type, confidence):
 
 
 # ============================================================
-# BUILD EXCEPTION LEDGER
+# BUILD EXCEPTION LEDGER (T7.2)
 # ============================================================
 
 def build_exception_ledger(reconciliation):
-
     exceptions = reconciliation[
-        reconciliation["status"]
-        == "manual_review"
+        reconciliation["status"] == "manual_review"
     ].copy()
+
+    # Load existing exception ledger if present to preserve human resolution fields (T7.2)
+    existing_lookup = {}
+    if EXCEPTION_OUTPUT_PATH.exists():
+        try:
+            edf = pd.read_csv(EXCEPTION_OUTPUT_PATH)
+            if not edf.empty and "exception_id" in edf.columns:
+                for _, erow in edf.iterrows():
+                    key = (str(erow.get("settlement_id")), str(erow.get("bank_transaction_id")))
+                    existing_lookup[key] = erow
+        except Exception:
+            pass
 
     if exceptions.empty:
         return pd.DataFrame(
@@ -86,6 +117,7 @@ def build_exception_ledger(reconciliation):
                 "bank_transaction_id",
                 "description",
                 "amount",
+                "source",
                 "stage",
                 "decision",
                 "confidence",
@@ -93,6 +125,8 @@ def build_exception_ledger(reconciliation):
                 "priority",
                 "reason",
                 "resolution_status",
+                "resolved_outcome",  # T7.2
+                "resolved_by",       # T7.2
             ]
         )
 
@@ -114,7 +148,12 @@ def build_exception_ledger(reconciliation):
                             desc_val = srow.get("customer") or srow.get("order_id") or sid
                         dt = srow.get("date") or srow.get("created_at") or srow.get("settlement_date") or ""
                         stype = "Orders" if "order_id" in fname or "order_id" in str(srow) else "Settlement"
-                        sources[sid] = {"amount": float(pd.to_numeric(amt, errors="coerce") or 0.0), "description": str(desc_val), "date": str(dt), "source": stype}
+                        sources[sid] = {
+                            "amount": float(pd.to_numeric(amt, errors="coerce") or 0.0),
+                            "description": str(desc_val),
+                            "date": str(dt),
+                            "source": stype
+                        }
             except Exception:
                 pass
 
@@ -124,11 +163,11 @@ def build_exception_ledger(reconciliation):
         exceptions.iterrows(),
         start=1,
     ):
-
         exception_type = classify_exception(row)
         priority = determine_priority(exception_type, row["confidence"])
 
         sid = str(row.get("settlement_id", ""))
+        bid = str(row.get("bank_transaction_id", ""))
         sinfo = sources.get(sid, {})
 
         amt = sinfo.get("amount", float(pd.to_numeric(row.get("amount"), errors="coerce") or 0.0))
@@ -136,12 +175,18 @@ def build_exception_ledger(reconciliation):
         dt = sinfo.get("date") or row.get("created_at") or ""
         stype = sinfo.get("source") or row.get("stage") or "reconciler"
 
+        # Check if existing resolution status/outcome exists (T7.2)
+        prev = existing_lookup.get((sid, bid), {})
+        res_status = str(prev.get("resolution_status") or "open")
+        res_outcome = prev.get("resolved_outcome") if pd.notna(prev.get("resolved_outcome")) else None
+        res_by = prev.get("resolved_by") if pd.notna(prev.get("resolved_by")) else None
+
         rows.append(
             {
                 "exception_id": f"EXC-{number:04d}",
                 "created_at": dt or datetime.now(timezone.utc).isoformat(),
                 "settlement_id": sid,
-                "bank_transaction_id": row["bank_transaction_id"],
+                "bank_transaction_id": bid,
                 "description": desc,
                 "amount": amt,
                 "source": stype,
@@ -151,7 +196,9 @@ def build_exception_ledger(reconciliation):
                 "exception_type": exception_type,
                 "priority": priority,
                 "reason": row["reason"],
-                "resolution_status": "open",
+                "resolution_status": res_status,
+                "resolved_outcome": res_outcome,  # T7.2 (confirmed_match | confirmed_non_match | null)
+                "resolved_by": res_by,            # T7.2 (human identifier)
             }
         )
 
@@ -162,76 +209,31 @@ def build_exception_ledger(reconciliation):
 # SUMMARY
 # ============================================================
 
-def print_summary(
-    reconciliation,
-    exceptions,
-):
-
-    total_settlements = (
-        reconciliation[
-            "settlement_id"
-        ].nunique()
-    )
-
-    total_exceptions = len(
-        exceptions
-    )
+def print_summary(reconciliation, exceptions):
+    total_settlements = reconciliation["settlement_id"].nunique()
+    total_exceptions = len(exceptions)
 
     print("=" * 60)
-    print("LEDGER - EXCEPTION LEDGER")
+    print("LEDGER - EXCEPTION LEDGER (v2 Extended)")
     print("=" * 60)
-
-    print(
-        f"Settlements processed : "
-        f"{total_settlements}"
-    )
-
-    print(
-        f"Exceptions created    : "
-        f"{total_exceptions}"
-    )
-
+    print(f"Settlements processed : {total_settlements}")
+    print(f"Exceptions created    : {total_exceptions}")
     print()
 
     if exceptions.empty:
-        print(
-            "No manual-review exceptions."
-        )
+        print("No manual-review exceptions.")
         return
 
     print("Exception types:")
-
-    print(
-        exceptions[
-            "exception_type"
-        ]
-        .value_counts()
-        .to_string()
-    )
-
+    print(exceptions["exception_type"].value_counts().to_string())
     print()
 
     print("Priorities:")
-
-    print(
-        exceptions[
-            "priority"
-        ]
-        .value_counts()
-        .to_string()
-    )
-
+    print(exceptions["priority"].value_counts().to_string())
     print()
 
     print("Resolution status:")
-
-    print(
-        exceptions[
-            "resolution_status"
-        ]
-        .value_counts()
-        .to_string()
-    )
+    print(exceptions["resolution_status"].value_counts().to_string())
 
 
 # ============================================================
@@ -239,7 +241,6 @@ def print_summary(
 # ============================================================
 
 def main():
-
     if not RECONCILIATION_PATH.exists():
         raise FileNotFoundError(
             "Reconciliation results not found:\n"
@@ -248,9 +249,7 @@ def main():
             "python reconciler/reconcile.py"
         )
 
-    reconciliation = pd.read_csv(
-        RECONCILIATION_PATH
-    )
+    reconciliation = pd.read_csv(RECONCILIATION_PATH)
 
     required_columns = {
         "settlement_id",
@@ -262,42 +261,19 @@ def main():
         "status",
     }
 
-    missing = (
-        required_columns
-        - set(reconciliation.columns)
-    )
-
+    missing = required_columns - set(reconciliation.columns)
     if missing:
         raise ValueError(
-            "reconciliation_results.csv "
-            "is missing columns: "
-            f"{sorted(missing)}"
+            f"reconciliation_results.csv is missing columns: {sorted(missing)}"
         )
 
-    exceptions = build_exception_ledger(
-        reconciliation
-    )
+    exceptions = build_exception_ledger(reconciliation)
 
-    RESULTS_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    exceptions.to_csv(EXCEPTION_OUTPUT_PATH, index=False)
 
-    exceptions.to_csv(
-        EXCEPTION_OUTPUT_PATH,
-        index=False,
-    )
-
-    print_summary(
-        reconciliation,
-        exceptions,
-    )
-
-    print()
-    print(
-        f"Saved: {EXCEPTION_OUTPUT_PATH}"
-    )
-
+    print_summary(reconciliation, exceptions)
+    print(f"\nSaved: {EXCEPTION_OUTPUT_PATH}")
     print("=" * 60)
     print("EXCEPTION LEDGER COMPLETE")
     print("=" * 60)
