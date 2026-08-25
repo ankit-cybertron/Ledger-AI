@@ -337,6 +337,43 @@ def delete_statement(statement_id):
         return True
     return False
 
+def clear_all_statements():
+    """Wipe all statements, uploaded raw files, generated CSVs, ML predictions, and reconciliation results."""
+    _save_db({"statements": []})
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    uploads_dir = os.path.join(base_dir, "data", "uploads")
+    results_dir = os.path.join(base_dir, "data", "results")
+    ml_dir = os.path.join(base_dir, "data", "ml")
+    raw_dir = os.path.join(base_dir, "data", "raw")
+    generated_dir = os.path.join(base_dir, "data", "generated")
+
+    for folder in [uploads_dir, results_dir, ml_dir, raw_dir]:
+        if os.path.exists(folder):
+            for fname in os.listdir(folder):
+                fpath = os.path.join(folder, fname)
+                try:
+                    if os.path.isfile(fpath) or os.path.islink(fpath):
+                        os.unlink(fpath)
+                    elif os.path.isdir(fpath):
+                        shutil.rmtree(fpath)
+                except Exception:
+                    pass
+
+    # Reset generated CSVs to empty DataFrames with headers
+    os.makedirs(generated_dir, exist_ok=True)
+    target_csv_map = {
+        "bank": os.path.join(generated_dir, "bank_statement.csv"),
+        "razorpay": os.path.join(generated_dir, "razorpay_settlements.csv"),
+        "orders": os.path.join(generated_dir, "internal_orders.csv"),
+    }
+    for stype, target_path in target_csv_map.items():
+        headers = DEFAULT_HEADERS.get(stype, [])
+        df = pd.DataFrame(columns=headers)
+        df.to_csv(target_path, index=False)
+
+    return True
+
 def append_statement_data(statement_id, new_df):
     """
     Incremental update: checks last row of current statement,

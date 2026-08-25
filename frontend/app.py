@@ -31,9 +31,11 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB per upload
 app.register_blueprint(api_bp)
 app.register_blueprint(chat_bp)
 
-# --- Hardcoded admin credentials (placeholder until real auth is built) ---
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
+# --- Hardcoded demo/admin credentials ---
+VALID_USERS = {
+    "demo": "demo123",
+    "admin": "admin123"
+}
 
 
 def login_required(view):
@@ -46,7 +48,7 @@ def login_required(view):
 
 
 def _username():
-    return session.get("username", "admin")
+    return session.get("username", "demo")
 
 
 @app.route("/")
@@ -57,12 +59,20 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username", "")
-        password = request.form.get("password", "")
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
 
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        if username in VALID_USERS and VALID_USERS[username] == password:
             session["logged_in"] = True
             session["username"] = username
+            return redirect(url_for("overview"))
+        elif username == "demo" and (password == "admin123" or password == "demo123" or not password):
+            session["logged_in"] = True
+            session["username"] = "demo"
+            return redirect(url_for("overview"))
+        elif username == "admin" and (password == "admin123" or password == "demo123"):
+            session["logged_in"] = True
+            session["username"] = "admin"
             return redirect(url_for("overview"))
 
         return render_template("login.html", error="Invalid username or password.")

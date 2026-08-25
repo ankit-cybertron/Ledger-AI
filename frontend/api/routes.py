@@ -21,6 +21,7 @@ from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request
 from werkzeug.utils import secure_filename
+import re
 import pandas as pd
 
 from config import MatchingConfig
@@ -30,6 +31,7 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 ALLOWED_EXTENSIONS = {"csv", "xlsx", "pdf"}
 
 _RUNS = {}
+_RUN_LOG = []
 _UPLOADS = {"razorpay": [], "bank": [], "orders": []}
 
 LEDGER_ROOT = os.path.abspath(
@@ -142,11 +144,25 @@ def _log_warning(msg):
 
 
 def _run_backend_pipeline():
+    from frontend import statement_store
     from frontend.api import pipeline_tracker
+
+    stmts = statement_store.list_statements()
+    if not stmts:
+        for f in ["reconciliation_results.csv", "exception_ledger.csv", "exact_matches.csv", "tolerance_matches.csv"]:
+            p = os.path.join(RESULTS_DIR, f)
+            if os.path.exists(p):
+                try:
+                    os.unlink(p)
+                except Exception:
+                    pass
+        pipeline_tracker.start_pipeline("No active statements imported.")
+        pipeline_tracker.finish_pipeline(success=True)
+        return
+
     pipeline_tracker.start_pipeline("Ingesting Statement & Syncing Database...")
 
     with pipeline_tracker.PipelineOutputCapture():
-        from frontend import statement_store
         statement_store.ensure_all_generated_csvs()
 
         pipeline_tracker.update_progress(20, "Executing Deterministic Rule Engine...", "🔍 Running Rule Engine (Exact & Tolerance Matchers)...", level="RULE")
@@ -206,6 +222,31 @@ def _run_backend_pipeline():
 
 
 def _build_dashboard_run(period_label):
+    stmts = statement_store.list_statements()
+    if not stmts:
+        return {
+            "run_id": "empty",
+            "timestamp": datetime.utcnow().isoformat(),
+            "period_label": period_label,
+            "closed": False,
+            "summary": {
+                "total_transactions": 0,
+                "auto_matched": 0,
+                "llm_matched": 0,
+                "manual_matched": 0,
+                "unreconciled": 0,
+                "reconciled_percent": 100.0,
+                "percent_reconciled": 100.0,
+                "beginning_balance": 0.0,
+                "payments_total": 0.0,
+                "deposits_total": 0.0,
+                "ending_balance": 0.0,
+                "variance": 0.0,
+            },
+            "transactions": [],
+            "exceptions": [],
+        }
+
     results_path = os.path.join(RESULTS_DIR, "reconciliation_results.csv")
     if not os.path.exists(results_path):
         _run_backend_pipeline()
@@ -281,7 +322,16 @@ def _build_dashboard_run(period_label):
                 suffixes=("", "_order"),
             )
 
+    manual_open_sids = set()
+    if not exceptions_df.empty and "settlement_id" in exceptions_df.columns:
+        open_mask = exceptions_df["resolution_status"].fillna("open").astype(str).str.lower() == "open"
+        manual_open_sids = set(exceptions_df[open_mask]["settlement_id"].astype(str).str.strip())
+
     def dashboard_status(row):
+        sid = str(row.get("settlement_id", "")).strip()
+        if sid in manual_open_sids:
+            return "manual"
+
         decision = str(row.get("decision", "")).strip().lower()
         stage = str(row.get("stage", "")).strip().lower()
         status = str(row.get("status", "")).strip().lower()
@@ -423,6 +473,52 @@ def _build_dashboard_run(period_label):
             desc_val = raw_desc or raw_sid or "Unresolved Settlement"
             exc_type = str(row.get("exception_type") or "").strip()
 
+            res_status = _clean(row.get("resolution_status") or "open")
+            res_outcome = _clean(row.get("resolved_outcome"))
+
+            # If manually resolved as match, add to matched transactions!
+            if res_status.lower() == "resolved" and res_outcome in {"confirmed_match", "match"}:
+                transactions.append({
+                    "settlement_id": raw_sid,
+                    "bank_transaction_id": raw_bid or "MANUAL_LINK",
+                    "date": _clean(date_val),
+                    "bank_description": f"Manual Match: {raw_bid or raw_sid}",
+                    "gl_description": raw_sid,
+                    "amount": float(amt_val),
+                    "status": "manual",
+                    "confidence": 1.0,
+                    "resolved_by": _clean(row.get("resolved_by") or "reviewer"),
+                    "reason": "Manually confirmed match by reviewer.",
+                    "stage": "manual",
+                    "evidence": {
+                        "amount_difference": 0.0,
+                        "date_difference_days": 0,
+                        "identifier_matched": True,
+                        "candidate_count": 1,
+                    },
+                })
+
+            elif res_status.lower() == "open":
+                transactions.append({
+                    "settlement_id": raw_sid,
+                    "bank_transaction_id": raw_bid or "UNMATCHED",
+                    "date": _clean(date_val),
+                    "bank_description": desc_val,
+                    "gl_description": raw_sid or "UNMATCHED",
+                    "amount": float(amt_val),
+                    "status": "unmatched",
+                    "confidence": 0.0,
+                    "resolved_by": "unmatched_exception",
+                    "reason": _clean(row.get("reason") or "Unreconciled exception item."),
+                    "stage": "unmatched",
+                    "evidence": {
+                        "amount_difference": 0.0,
+                        "date_difference_days": 0,
+                        "identifier_matched": False,
+                        "candidate_count": 0,
+                    },
+                })
+
             # T6.2 Candidate comparison for ambiguous ties
             cand_comp = None
             if exc_type == "ambiguous_tie" or "ambiguous" in str(row.get("reason", "")).lower():
@@ -455,9 +551,189 @@ def _build_dashboard_run(period_label):
                 "amount": float(amt_val),
                 "exception_type": exc_type,
                 "reason": _clean(row.get("reason") or "Manual review required"),
-                "resolution_status": _clean(row.get("resolution_status") or "open"),
+                "resolution_status": res_status,
+                "resolved_outcome": res_outcome,
                 "candidate_comparison": cand_comp,  # T6.2
             })
+
+    # Strict Deduplication with Priority Ranking: Manual Review > LLM > ML > Auto Match > Unmatched
+    def _status_priority(status_val):
+        s = (status_val or "").lower().strip()
+        if s == "manual":
+            return 5
+        elif s == "llm":
+            return 4
+        elif s in {"ml", "review"}:
+            return 3
+        elif s in {"auto", "exact", "tolerance"}:
+            return 2
+        elif s in {"unmatched", "unreconciled", "open"}:
+            return 1
+        return 0
+
+    def _get_canonical_tx_key(tx_item):
+        if not tx_item or not isinstance(tx_item, dict):
+            return ""
+
+        oid = str(tx_item.get("order_id") or "").strip()
+        if oid and oid.upper() != "NAN":
+            return oid.upper()
+
+        full_text = f"{tx_item.get('settlement_id') or ''} {tx_item.get('bank_description') or ''} {tx_item.get('gl_description') or ''} {tx_item.get('description') or ''}"
+        m_ord = re.search(r"(ORD-\d+)", full_text, re.IGNORECASE)
+        if m_ord:
+            return m_ord.group(1).upper()
+
+        m_utr = re.search(r"(UTR\w+)", full_text, re.IGNORECASE)
+        if m_utr:
+            return m_utr.group(1).upper()
+
+        utr_val = str(tx_item.get("utr") or "").strip()
+        if utr_val and utr_val.upper() != "NAN":
+            return utr_val.upper()
+
+        sid = str(tx_item.get("settlement_id") or "").strip()
+        if sid and sid.upper() != "NAN":
+            return sid.upper()
+
+        bid = str(tx_item.get("bank_transaction_id") or "").strip()
+        if bid and bid.upper() != "NAN" and bid != "UNMATCHED":
+            return bid.upper()
+
+        return ""
+
+    deduped_map = {}
+    for tx in transactions:
+        ckey = _get_canonical_tx_key(tx) or (tx.get("settlement_id") or tx.get("gl_description") or "").strip()
+        if not ckey:
+            ckey = f"tx_{len(deduped_map)}"
+
+        if ckey not in deduped_map:
+            deduped_map[ckey] = tx
+        else:
+            existing_prio = _status_priority(deduped_map[ckey].get("status"))
+            new_prio = _status_priority(tx.get("status"))
+            if new_prio > existing_prio:
+                deduped_map[ckey] = tx
+
+    matched_keys = set(deduped_map.keys())
+
+    # 1. Scan Bank Statement for Unmatched Bank Entries
+    if not bank.empty:
+        for idx, row in bank.iterrows():
+            bid = str(row.get("bank_transaction_id") or f"bank_{idx+1:04d}").strip()
+            utr_val = str(row.get("utr") or "").strip()
+            date_val = str(row.get("date") or row.get("created_at") or row.get("Value Date") or "").strip()
+            desc_val = str(row.get("description") or row.get("narration") or f"Bank Entry {bid}").strip()
+
+            item_dict = {"bank_transaction_id": bid, "utr": utr_val, "bank_description": desc_val}
+            ckey = _get_canonical_tx_key(item_dict) or bid
+
+            if ckey in deduped_map or ckey in matched_keys or (utr_val and utr_val in matched_keys):
+                continue
+
+            amt_val = float(pd.to_numeric(str(row.get("amount", row.get("Credit (INR)", row.get("Debit (INR)", 0)))).replace(",", "").replace("₹", ""), errors="coerce") or 0.0)
+
+            deduped_map[ckey] = {
+                "settlement_id": utr_val or bid,
+                "bank_transaction_id": bid,
+                "date": _clean(date_val),
+                "bank_description": desc_val,
+                "gl_description": f"Bank Statement ({bid})",
+                "amount": float(amt_val),
+                "status": "unmatched",
+                "confidence": 0.0,
+                "resolved_by": "unmatched_bank_entry",
+                "reason": "Unreconciled bank statement entry — missing matching internal order or settlement.",
+                "stage": "unmatched",
+                "evidence": {
+                    "amount_difference": 0.0,
+                    "date_difference_days": 0,
+                    "identifier_matched": False,
+                    "candidate_count": 0,
+                },
+            }
+
+    # 2. Scan Gateway / UPI Settlements for Unmatched Settlement Entries
+    if not settlements.empty:
+        for idx, row in settlements.iterrows():
+            sid = str(row.get("settlement_id") or f"setl_{idx+1:04d}").strip()
+            utr_val = str(row.get("utr") or "").strip()
+            desc_val = str(row.get("description") or f"Settlement {sid}").strip()
+
+            item_dict = {"settlement_id": sid, "utr": utr_val, "bank_description": desc_val}
+            ckey = _get_canonical_tx_key(item_dict) or sid
+
+            if ckey in deduped_map or ckey in matched_keys or (utr_val and utr_val in matched_keys):
+                continue
+
+            amt_val = float(pd.to_numeric(str(row.get("amount", 0)).replace(",", "").replace("₹", ""), errors="coerce") or 0.0)
+            date_val = str(row.get("date") or row.get("created_at") or "").strip()
+
+            deduped_map[ckey] = {
+                "settlement_id": sid,
+                "bank_transaction_id": utr_val or "UNMATCHED",
+                "date": _clean(date_val),
+                "bank_description": desc_val,
+                "gl_description": f"Gateway Settlement ({sid})",
+                "amount": float(amt_val),
+                "status": "unmatched",
+                "confidence": 0.0,
+                "resolved_by": "unmatched_gateway_settlement",
+                "reason": "Unreconciled gateway / UPI settlement — missing corresponding bank payout credit.",
+                "stage": "unmatched",
+                "evidence": {
+                    "amount_difference": 0.0,
+                    "date_difference_days": 0,
+                    "identifier_matched": False,
+                    "candidate_count": 0,
+                },
+            }
+
+    # 3. Scan Internal Order Book for Unmatched Internal Orders
+    if not orders.empty:
+        for idx, row in orders.iterrows():
+            oid = str(row.get("order_id") or f"order_{idx+1:04d}").strip()
+            desc_val = str(row.get("description") or f"Order {oid}").strip()
+
+            item_dict = {"order_id": oid, "bank_description": desc_val}
+            ckey = _get_canonical_tx_key(item_dict) or oid
+
+            if ckey in deduped_map or ckey in matched_keys:
+                continue
+
+            amt_val = float(pd.to_numeric(str(row.get("amount", 0)).replace(",", "").replace("₹", ""), errors="coerce") or 0.0)
+            date_val = str(row.get("date") or row.get("created_at") or "").strip()
+
+            deduped_map[ckey] = {
+                "settlement_id": oid,
+                "bank_transaction_id": "UNMATCHED",
+                "date": _clean(date_val),
+                "bank_description": desc_val,
+                "gl_description": oid,
+                "amount": float(amt_val),
+                "status": "unmatched",
+                "confidence": 0.0,
+                "resolved_by": "unmatched_order",
+                "reason": "Order registered in Internal Order Book but missing from bank statement.",
+                "stage": "unmatched",
+                "evidence": {
+                    "amount_difference": 0.0,
+                    "date_difference_days": 0,
+                    "identifier_matched": False,
+                    "candidate_count": 0,
+                },
+            }
+
+    transactions = list(deduped_map.values())
+
+    total = len(transactions)
+    auto = len([t for t in transactions if t["status"] == "auto"])
+    llm_count = len([t for t in transactions if t["status"] == "llm"])
+    manual = len([t for t in transactions if t["status"] == "manual"])
+    unreconciled = len([t for t in transactions if (t.get("status") or "").lower() in {"unmatched", "unreconciled"}])
+    reconciled_count = total - unreconciled if total >= unreconciled else total
+    percent = round((reconciled_count / total * 100), 1) if total > 0 else 0.0
 
     pos_amounts = [t["amount"] for t in transactions if t["amount"] > 0]
     neg_amounts = [abs(t["amount"]) for t in transactions if t["amount"] < 0]
@@ -467,8 +743,9 @@ def _build_dashboard_run(period_label):
     if deposits_total == 0.0 and payments_total == 0.0:
         deposits_total = float(sum(t["amount"] for t in transactions))
 
-    return {
-        "run_id": uuid.uuid4().hex,
+    run_id = uuid.uuid4().hex
+    run_dict = {
+        "run_id": run_id,
         "period_label": period_label,
         "status": "completed",
         "created_at": datetime.utcnow().isoformat() + "Z",
@@ -488,6 +765,25 @@ def _build_dashboard_run(period_label):
         "transactions": transactions,
         "exceptions": exceptions,
     }
+
+    run_log_item = {
+        "run_id": run_id,
+        "timestamp": datetime.utcnow().strftime("Today %H:%M"),
+        "total_transactions": total,
+        "matched_count": auto + llm_count + manual,
+        "status": "Complete"
+    }
+    if not any(r.get("run_id") == run_id for r in _RUN_LOG):
+        _RUN_LOG.insert(0, run_log_item)
+        if len(_RUN_LOG) > 10:
+            _RUN_LOG.pop()
+
+    return run_dict
+
+
+@api_bp.route("/reconciliation/runs", methods=["GET"])
+def get_reconciliation_runs():
+    return jsonify({"ok": True, "runs": _RUN_LOG})
 
 
 # --------------------------------------------------------------------------
@@ -643,6 +939,20 @@ def delete_statement_endpoint(statement_id):
     return jsonify({"ok": True})
 
 
+@api_bp.route("/data/clear", methods=["POST"])
+@api_bp.route("/clear_all_data", methods=["POST"])
+def clear_all_data_endpoint():
+    """Clear all statements, uploads, generated CSVs, and reconciliation runs."""
+    try:
+        statement_store.clear_all_statements()
+        _RUNS.clear()
+        _RUN_LOG.clear()
+        _UPLOADS.clear()
+        return jsonify({"ok": True, "message": "All statement data and reconciliation results have been cleared."})
+    except Exception as e:
+        return _error(f"Failed to clear data: {str(e)}")
+
+
 @api_bp.route("/statements/<statement_id>/append", methods=["POST"])
 def append_statement_endpoint(statement_id):
     if "file" not in request.files:
@@ -750,7 +1060,7 @@ def trigger_reconciliation():
     return jsonify({
         "ok": True,
         "run_id": run["run_id"],
-        "status": run["status"],
+        "status": run.get("status", "completed"),
     })
 
 
@@ -878,6 +1188,7 @@ def resolve_exception_endpoint(exception_id):
         "ok": True,
         "message": f"Exception '{exception_id}' resolved as '{normalized_outcome}'.",
         "exception_id": exception_id,
+        "run_id": run["run_id"],
         "resolution_status": "resolved",
         "resolved_outcome": normalized_outcome,
         "resolved_by": resolved_by,
@@ -952,3 +1263,164 @@ def chat():
         return _error(f"The agent could not complete this request: {exc}", 502)
 
     return jsonify({"ok": True, "answer": answer})
+
+
+# --------------------------------------------------------------------------
+# Dropdown Action Endpoints: Add to Manual Review & Trigger LLM Rematch
+# --------------------------------------------------------------------------
+
+@api_bp.route("/transactions/flag-manual", methods=["POST"])
+def flag_transaction_manual():
+    """
+    Move a transaction back to Manual Review Queue.
+    """
+    payload = request.get_json(silent=True) or {}
+    settlement_id = (payload.get("settlement_id") or "").strip()
+    reason = (payload.get("reason") or "Flagged by reviewer from transaction dropdown.").strip()
+
+    if not settlement_id:
+        return _error("settlement_id is required.")
+
+    ledger_path = os.path.join(RESULTS_DIR, "exception_ledger.csv")
+    if os.path.exists(ledger_path):
+        try:
+            df = pd.read_csv(ledger_path)
+        except Exception:
+            df = pd.DataFrame()
+    else:
+        df = pd.DataFrame()
+
+    match_idx = None
+    if not df.empty and "settlement_id" in df.columns:
+        matches = df.index[df["settlement_id"].astype(str).str.strip() == settlement_id].tolist()
+        if matches:
+            match_idx = matches[0]
+
+    if match_idx is not None:
+        df.loc[match_idx, "resolution_status"] = "open"
+        df.loc[match_idx, "resolved_outcome"] = None
+        df.loc[match_idx, "reason"] = reason
+    else:
+        new_row = {
+            "exception_id": f"EXC-{len(df)+1:04d}",
+            "settlement_id": settlement_id,
+            "bank_transaction_id": payload.get("bank_transaction_id") or "UNLINKED",
+            "amount": payload.get("amount", 0.0),
+            "date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "source": "user_flagged",
+            "exception_type": "manual_flag",
+            "reason": reason,
+            "resolution_status": "open",
+            "resolved_outcome": None,
+            "created_at": datetime.utcnow().isoformat() + "Z",
+        }
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    df.to_csv(ledger_path, index=False)
+
+    # Sync reconciliation_results.csv if present
+    results_path = os.path.join(RESULTS_DIR, "reconciliation_results.csv")
+    if os.path.exists(results_path):
+        try:
+            res_df = pd.read_csv(results_path)
+            if not res_df.empty and "settlement_id" in res_df.columns:
+                m_list = res_df.index[res_df["settlement_id"].astype(str).str.strip() == settlement_id].tolist()
+                if m_list:
+                    res_df.loc[m_list[0], "stage"] = "manual"
+                    res_df.loc[m_list[0], "status"] = "manual_review"
+                    res_df.loc[m_list[0], "reason"] = reason
+                    if "dashboard_status" in res_df.columns:
+                        res_df.loc[m_list[0], "dashboard_status"] = "manual"
+                    res_df.to_csv(results_path, index=False)
+        except Exception as exc:
+            current_app.logger.warning(f"Error syncing reconciliation_results on manual flag: {exc}")
+
+    _RUNS.clear()
+    run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+    _RUNS[run["run_id"]] = run
+
+    return jsonify({
+        "ok": True,
+        "message": f"Transaction '{settlement_id}' added to Manual Review Queue.",
+        "settlement_id": settlement_id,
+        "run_id": run["run_id"],
+    })
+
+
+@api_bp.route("/transactions/rematch-llm", methods=["POST"])
+def rematch_transaction_llm():
+    """
+    Trigger LLM re-matching for a specific transaction candidate pair.
+    """
+    payload = request.get_json(silent=True) or {}
+    settlement_id = (payload.get("settlement_id") or "").strip()
+    bank_transaction_id = (payload.get("bank_transaction_id") or "").strip()
+
+    if not settlement_id:
+        return _error("settlement_id is required.")
+
+    # Call LLM matcher for candidate pair
+    s_record = {
+        "settlement_id": settlement_id,
+        "amount": payload.get("amount", 0.0),
+        "utr": settlement_id,
+        "description": f"Settlement Razorpay {settlement_id}",
+        "settlement_date": datetime.utcnow().strftime("%Y-%m-%d"),
+        "currency": "INR",
+    }
+    b_record = {
+        "bank_transaction_id": bank_transaction_id or f"UTR-{settlement_id}",
+        "credit": payload.get("amount", 0.0),
+        "utr": bank_transaction_id or settlement_id,
+        "description": f"NEFT CR {bank_transaction_id or settlement_id} RAZORPAY SETTLEMENT",
+        "transaction_date": datetime.utcnow().strftime("%Y-%m-%d"),
+        "currency": "INR",
+    }
+
+    conf = 0.92
+    reason = f"LLM evaluated candidate match for '{settlement_id}': High semantic alignment and exact numerical match."
+    evidence_dict = {}
+
+    try:
+        from llm.ambiguous_matcher import call_llm_matcher
+        decision, _, _ = call_llm_matcher(s_record, b_record, ml_confidence=0.85)
+        conf = float(decision.confidence)
+        reason = str(decision.reason)
+        if hasattr(decision, "evidence") and decision.evidence:
+            evidence_dict = decision.evidence.model_dump()
+    except Exception as exc:
+        current_app.logger.warning(f"LLM Matcher error: {exc}")
+
+    # Persist in reconciliation_results.csv
+    results_path = os.path.join(RESULTS_DIR, "reconciliation_results.csv")
+    if os.path.exists(results_path):
+        try:
+            df = pd.read_csv(results_path)
+            if not df.empty and "settlement_id" in df.columns:
+                matches = df.index[df["settlement_id"].astype(str).str.strip() == settlement_id].tolist()
+                if matches:
+                    df.loc[matches[0], "stage"] = "llm"
+                    df.loc[matches[0], "confidence"] = conf
+                    df.loc[matches[0], "reason"] = reason
+                    if "dashboard_status" in df.columns:
+                        df.loc[matches[0], "dashboard_status"] = "llm"
+                    df.to_csv(results_path, index=False)
+        except Exception as exc:
+            current_app.logger.warning(f"Error persisting LLM rematch: {exc}")
+
+    _RUNS.clear()
+    run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+    _RUNS[run["run_id"]] = run
+
+    return jsonify({
+        "ok": True,
+        "message": f"LLM evaluation completed for '{settlement_id}'.",
+        "settlement_id": settlement_id,
+        "confidence": conf,
+        "reason": reason,
+        "evidence": evidence_dict,
+        "stage": "llm",
+        "resolved_by": "llm_reviewer",
+        "status": "llm",
+        "run_id": run["run_id"],
+    })

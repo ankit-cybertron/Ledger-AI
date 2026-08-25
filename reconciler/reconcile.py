@@ -179,11 +179,6 @@ def reconcile(cfg: Optional[MatchingConfig] = None):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     cfg.save(CONFIG_OUTPUT_PATH)
 
-    # Save timestamped config snapshot for reproducibility (T7.3)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    snapshot_path = RESULTS_DIR / f"reconciliation_config_{timestamp}.json"
-    cfg.save(snapshot_path)
-
     final_results = []
     matched_settlements = set()
 
@@ -276,6 +271,28 @@ def reconcile(cfg: Optional[MatchingConfig] = None):
                     "reason": f"LLM review required: {llm_reason}",
                     "status": "manual_review",
                 })
+
+    # STAGE 4 — UNMATCHED ORDERS SCAN (Track 100% of primary order book)
+    orders_path = GENERATED_DIR / "internal_orders.csv"
+    if orders_path.exists():
+        try:
+            orders_df = pd.read_csv(orders_path)
+            if "order_id" in orders_df.columns:
+                for _, orow in orders_df.iterrows():
+                    oid = str(orow["order_id"]).strip()
+                    if oid and oid not in matched_settlements:
+                        final_results.append({
+                            "settlement_id": oid,
+                            "bank_transaction_id": "UNMATCHED",
+                            "stage": "unmatched",
+                            "decision": "unmatched",
+                            "confidence": 0.0,
+                            "reason": "Unreconciled order — missing from bank statement.",
+                            "status": "unmatched",
+                        })
+                        matched_settlements.add(oid)
+        except Exception:
+            pass
 
     res_df = pd.DataFrame(final_results) if final_results else pd.DataFrame(columns=[
         "settlement_id", "bank_transaction_id", "stage", "decision", "confidence", "reason", "status"

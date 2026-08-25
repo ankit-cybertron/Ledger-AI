@@ -44,13 +44,9 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="subnav-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span class="label-text">Current Period</span>
           </li>
-          <li id="navAutoMatchRun" title="Auto-Match Runs">
+          <li id="navReconciliation" title="Reconciliation">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="subnav-icon"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-            <span class="label-text">Auto-Match Runs</span>
-          </li>
-          <li id="sidebarRunMatchBtn" class="nav-highlight-item" title="Run Auto-Match">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="subnav-icon"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span class="label-text">Run Auto-Match</span>
+            <span class="label-text">Reconciliation</span>
           </li>
           <li id="navManualReview" title="Manual Review Queue">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="subnav-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
@@ -62,6 +58,13 @@
             <span class="label-text">Close Period</span>
           </li>
         </ul>
+
+        <div class="sidebar-footer">
+          <button type="button" class="sidebar-clear-btn" id="btnClearAllData" title="Clear all imported statements and reconciliation data">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="subnav-icon"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <span class="label-text">Clear All Data</span>
+          </button>
+        </div>
       </aside>
 
       <!-- Sidebar Drag Resizer Handle -->
@@ -76,93 +79,101 @@
       <main class="main-content">
 
         <!-- ------------------------------------------------------------ -->
+        <!-- ------------------------------------------------------------ -->
         <!-- Import Statements -->
         <!-- ------------------------------------------------------------ -->
         <section class="panel active" id="sub-upload-bank">
-          <div class="upload-panel-header">
-            <h2>Import Statements</h2>
-            <p>Upload bank statements, card ledgers, UPI exports, or order data to get started</p>
-          </div>
-
-          <div class="import-config-container">
-            <div class="import-form-grid">
-              
-              <!-- Row 1: Statement Name & Source Color -->
-              <div class="import-row">
-                <div class="form-group">
-                  <label for="name-bank" class="form-label">Statement Name <span class="muted-text">(Optional)</span></label>
-                  <input type="text" id="name-bank" class="form-input" placeholder="e.g. HDFC Bank August 2026">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Source Color</label>
-                  <div class="color-picker-row" id="colorPickerRow">
-                    <button type="button" class="color-swatch active" data-color="#6f89ff" style="background-color: #6f89ff;" title="Blue"></button>
-                    <button type="button" class="color-swatch" data-color="#f04f4f" style="background-color: #f04f4f;" title="Red"></button>
-                    <button type="button" class="color-swatch" data-color="#e0b054" style="background-color: #e0b054;" title="Amber"></button>
-                    <button type="button" class="color-swatch" data-color="#6fe0a1" style="background-color: #6fe0a1;" title="Green"></button>
-                    <button type="button" class="color-swatch" data-color="#a855f7" style="background-color: #a855f7;" title="Purple"></button>
-                    <button type="button" class="color-swatch" data-color="#ec4899" style="background-color: #ec4899;" title="Pink"></button>
-                    <button type="button" class="color-swatch" data-color="#06b6d4" style="background-color: #06b6d4;" title="Cyan"></button>
-                    <label class="custom-color-picker-btn" title="Pick Custom Color">
-                      <input type="color" id="customColorInput" value="#6f89ff">
-                      <span class="plus-icon">+</span>
-                    </label>
-                  </div>
-                </div>
+          <div class="cp-header-card">
+            <div class="cp-header-main">
+              <div class="cp-title-group">
+                <h2>Import Statements</h2>
+                <p class="cp-subtitle">Upload bank statements, card ledgers, UPI exports, or order data to get started</p>
               </div>
-
-              <!-- Row 2: Statement Type & Rules To Be Followed -->
-              <div class="import-row">
-                <div class="form-group">
-                  <label class="form-label">Statement Type</label>
-                  <div class="type-selector-buttons" id="typeSelectorButtons">
-                    <button type="button" class="type-chip active" data-type="bank">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11"/></svg>
-                      Bank
-                    </button>
-                    <button type="button" class="type-chip" data-type="card">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                      Card
-                    </button>
-                    <button type="button" class="type-chip" data-type="upi">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                      UPI
-                    </button>
-                    <button type="button" class="type-chip" data-type="others">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-                      Others
-                    </button>
-                  </div>
-                  <div class="custom-type-wrapper" id="customTypeWrapper" style="display: none; margin-top: 10px;">
-                    <input type="text" id="custom-type-input" class="form-input" placeholder="Enter custom statement type (e.g. Wallet, Cash, Razorpay)">
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label for="rules-input" class="form-label">Rules To Be Followed <span class="muted-text">(Optional)</span></label>
-                  <textarea id="rules-input" class="form-input form-textarea" rows="2" placeholder="e.g. Ignore fee rows, match description to order ID..."></textarea>
-                </div>
-              </div>
-
             </div>
           </div>
 
-          <div class="dropzone" data-source="bank" data-input="input-bank">
-            <div class="icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9M5 20H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="cp-section-card">
+            <div class="cp-card-title">Statement Configuration</div>
+            <div class="import-config-container">
+              <div class="import-form-grid">
+                
+                <!-- Row 1: Statement Name & Source Color -->
+                <div class="import-row">
+                  <div class="form-group">
+                    <label for="name-bank" class="form-label">Statement Name <span class="muted-text">(Optional)</span></label>
+                    <input type="text" id="name-bank" class="form-input" placeholder="e.g. HDFC Bank August 2026">
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Source Color</label>
+                    <div class="color-picker-row" id="colorPickerRow">
+                      <button type="button" class="color-swatch active" data-color="#6f89ff" style="background-color: #6f89ff;" title="Blue"></button>
+                      <button type="button" class="color-swatch" data-color="#f04f4f" style="background-color: #f04f4f;" title="Red"></button>
+                      <button type="button" class="color-swatch" data-color="#e0b054" style="background-color: #e0b054;" title="Amber"></button>
+                      <button type="button" class="color-swatch" data-color="#6fe0a1" style="background-color: #6fe0a1;" title="Green"></button>
+                      <button type="button" class="color-swatch" data-color="#a855f7" style="background-color: #a855f7;" title="Purple"></button>
+                      <button type="button" class="color-swatch" data-color="#ec4899" style="background-color: #ec4899;" title="Pink"></button>
+                      <button type="button" class="color-swatch" data-color="#06b6d4" style="background-color: #06b6d4;" title="Cyan"></button>
+                      <label class="custom-color-picker-btn" title="Pick Custom Color">
+                        <input type="color" id="customColorInput" value="#6f89ff">
+                        <span class="plus-icon">+</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 2: Statement Type & Rules To Be Followed -->
+                <div class="import-row">
+                  <div class="form-group">
+                    <label class="form-label">Statement Type</label>
+                    <div class="type-selector-buttons" id="typeSelectorButtons">
+                      <button type="button" class="type-chip active" data-type="bank">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11"/></svg>
+                        Bank
+                      </button>
+                      <button type="button" class="type-chip" data-type="card">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        Card
+                      </button>
+                      <button type="button" class="type-chip" data-type="upi">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        UPI
+                      </button>
+                      <button type="button" class="type-chip" data-type="others">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        Others
+                      </button>
+                    </div>
+                    <div class="custom-type-wrapper" id="customTypeWrapper" style="display: none; margin-top: 10px;">
+                      <input type="text" id="custom-type-input" class="form-input" placeholder="Enter custom statement type (e.g. Wallet, Cash, Razorpay)">
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="rules-input" class="form-label">Rules To Be Followed <span class="muted-text">(Optional)</span></label>
+                    <textarea id="rules-input" class="form-input form-textarea" rows="2" placeholder="e.g. Ignore fee rows, match description to order ID..."></textarea>
+                  </div>
+                </div>
+
+              </div>
             </div>
-            <h3>Drop your file here</h3>
-            <p class="hint">.csv, .xlsx or .pdf supported</p>
-            <input type="file" id="input-bank" accept=".csv,.xlsx,.pdf">
-          </div>
-          <div class="upload-status" data-status="bank"></div>
-          <div class="upload-actions">
-            <button class="btn btn-primary btn-import" data-import="bank" disabled>Import Statement</button>
+
+            <div class="dropzone" data-source="bank" data-input="input-bank">
+              <div class="icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4L17 9M5 20H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <h3>Drop your statement file here</h3>
+              <p class="hint">.csv, .xlsx or .pdf supported</p>
+              <input type="file" id="input-bank" accept=".csv,.xlsx,.pdf">
+            </div>
+            <div class="upload-status" data-status="bank"></div>
+            <div class="upload-actions">
+              <button class="btn btn-primary btn-import" data-import="bank" disabled>Import Statement</button>
+            </div>
           </div>
 
           <!-- Live Pipeline Progress Bar & Backstage Terminal Console -->
-          <div class="pipeline-progress-container" id="importProgressContainer" style="display: none;">
+          <div class="cp-section-card pipeline-progress-container" id="importProgressContainer" style="display: none;">
             <div class="pipeline-progress-header">
               <div class="progress-stage-info">
                 <span class="pulse-dot"></span>
@@ -200,40 +211,164 @@
         <!-- Statement Table View -->
         <!-- ------------------------------------------------------------ -->
         <section class="panel" id="sub-statement-view">
-          <div class="stmt-view-header">
-            <div class="stmt-title-group">
-              <button type="button" class="btn-back-link" id="closeStmtViewBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                Back
-              </button>
-              <h2 id="stmtViewTitle">Statement Name</h2>
-              <span class="period-badge" id="stmtViewTypeBadge">Bank</span>
-              <span class="row-count-badge" id="stmtViewCountBadge">0 rows</span>
-            </div>
+          <div class="cp-header-card">
+            <div class="cp-header-main" style="align-items: center; margin-bottom: 0;">
+              <div class="stmt-title-group" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn-att-action" id="closeStmtViewBtn">
+                  &larr; Back
+                </button>
+                <h2 id="stmtViewTitle" style="margin: 0;">Statement Name</h2>
+                <span class="period-badge" id="stmtViewTypeBadge">Bank</span>
+                <span class="badge-count" id="stmtViewCountBadge">0 rows</span>
+              </div>
 
-            <div class="stmt-header-actions">
-              <!-- Top Left / Action: Option to update/append new statements without deleting old -->
-              <button type="button" class="btn btn-login btn-append" id="btnAppendData">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                Update Statement
-              </button>
+              <div class="stmt-header-actions">
+                <button type="button" class="btn btn-login btn-append" id="btnAppendData">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                  Update Statement
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="stmt-filter-bar">
-            <input type="text" id="stmtSearchInput" class="form-input search-input" placeholder="Search entries by description, UTR, or amount…">
-          </div>
+          <div class="cp-section-card">
+            <div class="table-filter-bar" style="margin-bottom: 16px;">
+              <div class="filter-group flex-1">
+                <input type="text" id="stmtSearchInput" class="form-input search-input" placeholder="Search entries by description, UTR, or amount…">
+              </div>
+            </div>
 
-          <div class="stmt-table-wrapper">
-            <table class="recon-table" id="stmtDataTable">
-              <thead id="stmtTableHead"></thead>
-              <tbody id="stmtTableBody"></tbody>
-            </table>
+            <div class="stmt-table-wrapper">
+              <table class="recon-table" id="stmtDataTable">
+                <thead id="stmtTableHead"></thead>
+                <tbody id="stmtTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
         <!-- ------------------------------------------------------------ -->
-        <!-- Auto-Match Runs / Reconciliation Results -->
+        <!-- Current Period Executive Overview -->
+        <!-- ------------------------------------------------------------ -->
+        <section class="panel active" id="sub-current-period">
+          <div class="cp-header-card">
+            <div class="cp-header-main">
+              <div class="cp-title-group">
+                <h2>Current Period</h2>
+                <p class="cp-subtitle" id="cpSubtitle">Bank reconciliation overview</p>
+              </div>
+              <span class="period-badge cp-period-badge" id="cpPeriodBadge">&mdash;</span>
+            </div>
+
+            <div class="cp-metrics-grid">
+              <div class="cp-metric-card">
+                <div class="cp-metric-lbl">Transactions</div>
+                <div class="cp-metric-val font-mono" id="cpStatTotal">0</div>
+                <div class="cp-metric-sub">Total Processed</div>
+              </div>
+              <div class="cp-metric-card">
+                <div class="cp-metric-lbl">Matched</div>
+                <div class="cp-metric-val font-mono green" id="cpStatMatched">0</div>
+                <div class="cp-metric-sub font-mono green" id="cpStatMatchedPct">0.0%</div>
+              </div>
+              <div class="cp-metric-card">
+                <div class="cp-metric-lbl">Unmatched</div>
+                <div class="cp-metric-val font-mono yellow" id="cpStatUnmatched">0</div>
+                <div class="cp-metric-sub font-mono yellow" id="cpStatUnmatchedPct">0.0%</div>
+              </div>
+              <div class="cp-metric-card">
+                <div class="cp-metric-lbl">Exceptions</div>
+                <div class="cp-metric-val font-mono amber" id="cpStatExceptions">0</div>
+                <div class="cp-metric-sub amber">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span>Needs Review</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cp-section-card">
+            <div class="cp-card-title">Reconciliation Progress</div>
+            <div class="cp-progress-large">
+              <div class="cp-progress-bar-wrap">
+                <div class="cp-progress-fill" id="cpProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="cp-progress-pct font-mono" id="cpProgressPct">0.0%</div>
+            </div>
+            <div class="cp-progress-caption" id="cpProgressCaption">
+              0 matched &bull; 0 unmatched &bull; 0 need review
+            </div>
+          </div>
+
+          <div class="cp-two-col">
+            <div class="cp-section-card cp-col-card">
+              <div class="cp-card-title">Sources</div>
+              <div class="cp-sources-list" id="cpSourcesList">
+                <div class="term-dim" style="font-size: 0.88rem;">Loading imported sources…</div>
+              </div>
+              <div class="cp-sources-footer" id="cpSourcesFooter">0 sources &bull; 0 transactions</div>
+            </div>
+
+            <div class="cp-section-card cp-col-card">
+              <div class="cp-card-title">Period Status</div>
+              <div class="cp-status-body">
+                <div class="cp-status-badge-row">
+                  <span class="pulse-dot"></span>
+                  <span class="cp-status-text" id="cpPeriodStatusText">Reconciliation in progress</span>
+                </div>
+                <div class="cp-last-run-info" id="cpLastRunInfo">Last run: Ready</div>
+                <div class="cp-status-action">
+                  <button type="button" class="btn btn-primary cp-btn-automatch" id="cpRunAutoMatchBtn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span>Run Auto-Match</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cp-section-card">
+            <div class="cp-card-title">Needs Attention</div>
+            <div class="cp-attention-list">
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon warning" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span class="cp-att-text" id="cpAttUnmatched">0 unmatched transactions</span>
+                </div>
+                <button type="button" class="btn-att-action" id="cpBtnViewUnmatched">View &rarr;</button>
+              </div>
+
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon amber" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span class="cp-att-text" id="cpAttAmbiguous">0 ambiguous matches</span>
+                </div>
+                <button type="button" class="btn-att-action" id="cpBtnReviewAmbiguous">Review &rarr;</button>
+              </div>
+
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon red" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span class="cp-att-text" id="cpAttDiscrepancy">&amp;yen;0.00 discrepancy</span>
+                </div>
+                <button type="button" class="btn-att-action" id="cpBtnInvestigateDiscrepancy">Investigate &rarr;</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cp-section-card">
+            <div class="cp-card-title">Recent Auto-Match Runs</div>
+            <div class="cp-runs-list" id="cpRunsList">
+              <div class="term-dim" style="font-size: 0.88rem;">Loading run history…</div>
+            </div>
+            <div class="cp-footer-actions">
+              <button type="button" class="btn btn-login btn-close-period" id="cpClosePeriodBtn">Close Period</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------ -->
+        <!-- Reconciliation Panel -->
         <!-- ------------------------------------------------------------ -->
         <section class="panel" id="sub-reconcile">
           <div id="reconcileEmptyState" class="run-panel-inner">
@@ -251,7 +386,14 @@
                 <h2>Reconciliation</h2>
                 <span class="period-badge" id="periodBadge">&mdash;</span>
               </div>
-              <button class="btn btn-login btn-close-period" id="closePeriodBtn">Close Period</button>
+              <div class="recon-header-actions">
+                <button type="button" class="btn btn-secondary btn-manual-review-hdr" id="btnHeaderManualReview">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+                  <span>Manual Review Queue</span>
+                  <span class="subnav-badge hdr-manual-badge" id="hdrManualBadge" style="display:none;">0</span>
+                </button>
+                <button class="btn btn-login btn-close-period" id="closePeriodBtn">Close Period</button>
+              </div>
             </div>
 
             <div class="progress-row">
@@ -290,11 +432,11 @@
               </div>
             </div>
 
-            <!-- Matched Transactions Section (Collapsible with Filters and Sortable Table) -->
+            <!-- Unified Transactions Section (Collapsible with Filters and Sortable Table) -->
             <div class="collapsible-card" id="cardTransactions">
               <div class="card-header-toggle" data-collapse="wrapperTransactions">
                 <div class="title-with-badge">
-                  <h3>Matched Transactions</h3>
+                  <h3>Transactions</h3>
                   <span class="badge-count" id="txBadgeCount">0 items</span>
                 </div>
                 <button type="button" class="btn-toggle-collapse" aria-label="Toggle section">
@@ -303,18 +445,14 @@
               </div>
 
               <div class="collapsible-content show" id="wrapperTransactions">
-                <div class="table-filter-bar">
-                  <div class="filter-group flex-1">
-                    <input type="text" id="txSearchInput" class="form-input search-input" placeholder="Filter transactions by description, GL, or amount…">
+                <div class="table-filter-bar flex-wrap align-center justify-between">
+                  <div class="filter-search-wrap">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="txSearchInput" class="form-input search-input-compact" placeholder="Search transactions, GL, or amount...">
                   </div>
-                  <div class="filter-group">
-                    <select id="txStatusFilter" class="form-select filter-select">
-                      <option value="all">All Statuses</option>
-                      <option value="auto">Auto Matched</option>
-                      <option value="llm">LLM Matched</option>
-                      <option value="manual">Manual Review</option>
-                      <option value="unreconciled">Unreconciled</option>
-                    </select>
+
+                  <div class="tag-filter-bar" id="txTagFilterBar">
+                    <!-- Dynamic tag filter buttons rendered via JavaScript -->
                   </div>
                 </div>
 
@@ -326,6 +464,7 @@
                         <th data-sort-key="bank_description" class="sort-header">BANK DESC. <span class="sort-arrow">↕</span></th>
                         <th data-sort-key="gl_description" class="sort-header">GL / REF <span class="sort-arrow">↕</span></th>
                         <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
+                        <th class="sort-header">FEATURE FLAGS</th>
                         <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
                       </tr>
                     </thead>
@@ -339,47 +478,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Exception Ledger Section (Collapsible with Search and Sortable Table) -->
-            <div class="collapsible-card exceptions-section" id="cardExceptions">
-              <div class="card-header-toggle" data-collapse="wrapperExceptions">
-                <div class="title-with-badge">
-                  <h3>Exception Ledger</h3>
-                  <span class="badge-count count-danger" id="excBadgeCount">0 items</span>
-                </div>
-                <button type="button" class="btn-toggle-collapse" aria-label="Toggle section">
-                  <svg class="chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
-              </div>
-
-              <div class="collapsible-content show" id="wrapperExceptions">
-                <div class="table-filter-bar">
-                  <div class="filter-group flex-1">
-                    <input type="text" id="excSearchInput" class="form-input search-input" placeholder="Search exceptions by description, source, or reason…">
-                  </div>
-                </div>
-
-                <div class="stmt-table-wrapper">
-                  <table class="recon-table sortable-table" id="excTable">
-                    <thead>
-                      <tr>
-                        <th data-sort-key="date" class="sort-header">DATE <span class="sort-arrow">↕</span></th>
-                        <th data-sort-key="description" class="sort-header">DESCRIPTION / CUSTOMER <span class="sort-arrow">↕</span></th>
-                        <th data-sort-key="source" class="sort-header">SOURCE <span class="sort-arrow">↕</span></th>
-                        <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
-                        <th data-sort-key="reason" class="sort-header">REASON / DECISION <span class="sort-arrow">↕</span></th>
-                      </tr>
-                    </thead>
-                    <tbody id="exceptionsBody"></tbody>
-                  </table>
-                </div>
-
-                <div id="exceptionsEmpty" class="empty-state" style="display:none;">
-                  <h3>No exceptions</h3>
-                  <p>Everything matched cleanly for this run.</p>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -387,36 +485,77 @@
         <!-- Manual Review Queue Section -->
         <!-- ------------------------------------------------------------ -->
         <section class="panel" id="sub-manual-review">
-          <div class="manual-review-header">
-            <div class="title-with-badge">
-              <h2>Manual Review Queue</h2>
-              <span class="period-badge badge-warning" id="manualReviewBadgeCount">0 items pending</span>
+          <div class="cp-header-card">
+            <div class="cp-header-main">
+              <div class="cp-title-group">
+                <div class="title-with-badge" style="display: flex; align-items: center; gap: 12px;">
+                  <h2>Manual Review Queue</h2>
+                  <span class="period-badge badge-warning" id="manualReviewBadgeCount">0 items pending</span>
+                </div>
+                <p class="cp-subtitle">Review ambiguous transactions flagged by the LLM and rule engine. Confirm matches or non-matches to feed directly into the continuous ML training loop.</p>
+              </div>
             </div>
-            <p class="subtitle">Review ambiguous transactions flagged by the LLM and rule engine. Confirm matches or non-matches to feed directly into the continuous ML training loop.</p>
           </div>
 
           <div class="manual-review-grid" id="manualReviewGrid">
             <!-- Dynamically loaded manual review cards -->
           </div>
 
-          <div id="manualReviewEmpty" class="empty-state" style="display:none;">
-            <div class="empty-icon-wrap">✓</div>
-            <h3>No Pending Manual Reviews</h3>
-            <p>All ambiguous cases have been resolved and logged to the ML feedback loop.</p>
+          <div id="manualReviewEmpty" class="cp-section-card empty-state" style="display:none; text-align: center; padding: 40px 20px;">
+            <div class="empty-icon-wrap" style="font-size: 2rem; color: #4ade80; margin-bottom: 12px;">✓</div>
+            <h3 style="color: #f8fafc; font-weight: 700; margin-bottom: 6px;">No Pending Manual Reviews</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem;">All ambiguous cases have been resolved and logged to the ML feedback loop.</p>
           </div>
         </section>
 
         <!-- ------------------------------------------------------------ -->
-        <!-- Close Period -->
+        <!-- Close Period Panel -->
         <!-- ------------------------------------------------------------ -->
         <section class="panel" id="sub-close">
-          <div class="run-panel-inner">
-            <h2>Close Period</h2>
-            <p>Locking a period is permanent and auditable. Run reconciliation first, then close from the Auto-Match Runs tab once you're satisfied with the results.</p>
-            <button class="btn btn-primary" id="goToReconcileBtn">
-              Go to Auto-Match Runs
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+          <div class="cp-header-card">
+            <div class="cp-header-main">
+              <div class="cp-title-group">
+                <h2>Close Period Audit</h2>
+                <p class="cp-subtitle">Finalize financial records and lock current reconciliation run snapshot.</p>
+              </div>
+              <span class="period-badge cp-period-badge">&mdash;</span>
+            </div>
+          </div>
+
+          <div class="cp-section-card">
+            <div class="cp-card-title">Pre-Closing Audit Verification</div>
+            <div class="cp-attention-list" style="margin-bottom: 20px;">
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="cp-att-text">Auto-Match Engine execution validated</span>
+                </div>
+                <span class="font-mono green" style="font-size: 0.85rem; font-weight: 600;">PASSED</span>
+              </div>
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon green" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span class="cp-att-text">Manual review exceptions queue checked</span>
+                </div>
+                <span class="font-mono green" style="font-size: 0.85rem; font-weight: 600;">READY</span>
+              </div>
+              <div class="cp-attention-item">
+                <div class="cp-att-left">
+                  <svg class="att-icon warning" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span class="cp-att-text">Audit lock is permanent and immutable for current cycle</span>
+                </div>
+                <span class="font-mono amber" style="font-size: 0.85rem; font-weight: 600;">AUDIT LOCK</span>
+              </div>
+            </div>
+
+            <div class="cp-footer-actions" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 18px; display: flex; gap: 12px; justify-content: flex-end;">
+              <button type="button" class="btn btn-login" id="goToReconcileBtn">
+                Review Reconciliation
+              </button>
+              <button type="button" class="btn btn-primary btn-close-period" id="confirmClosePeriodBtn">
+                Confirm &amp; Lock Period
+              </button>
+            </div>
           </div>
         </section>
 

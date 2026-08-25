@@ -123,6 +123,9 @@ const LedgerApi = {
   getLatestReconciliation() {
     return getJson("/reconciliation");
   },
+  getReconciliationRuns() {
+    return getJson("/reconciliation/runs");
+  },
   getReconciliation(runId) {
     return getJson(`/reconciliation/${encodeURIComponent(runId)}`);
   },
@@ -141,6 +144,23 @@ const LedgerApi = {
     return postJson(`/exceptions/${encodeURIComponent(exceptionId)}/resolve`, {
       outcome,
       resolved_by: resolvedBy,
+    });
+  },
+
+  flagManual(settlementId, reason, bankTransactionId, amount) {
+    return postJson("/transactions/flag-manual", {
+      settlement_id: settlementId,
+      reason,
+      bank_transaction_id: bankTransactionId,
+      amount,
+    });
+  },
+
+  rematchLlm(settlementId, bankTransactionId, amount) {
+    return postJson("/transactions/rematch-llm", {
+      settlement_id: settlementId,
+      bank_transaction_id: bankTransactionId,
+      amount,
     });
   },
 

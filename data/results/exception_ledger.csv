@@ -1,2 +1,0 @@
-exception_id,created_at,settlement_id,bank_transaction_id,description,amount,source,stage,decision,confidence,exception_type,priority,reason,resolution_status,resolved_outcome,resolved_by
-EXC-0001,2026-07-13,PGREF721458,UTR112790183691,PGREF721458,2350.3,Settlement,llm,review,0.68,llm_review,high,"LLM review required: Amounts and dates are closely aligned, suggesting a possible match, but the lack of UTR or other identifier matches and low narration similarity create ambiguity, warranting further review.",open,,
