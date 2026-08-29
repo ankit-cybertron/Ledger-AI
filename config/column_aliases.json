@@ -4,7 +4,18 @@
     "txn_id",
     "tx_id",
     "bank_transaction_id",
-    "bank_txn_id"
+    "bank_txn_id",
+    "bill_no",
+    "bill no",
+    "bill_number",
+    "bill number",
+    "invoice_no",
+    "invoice no",
+    "invoice_number",
+    "invoice number",
+    "Bill No",
+    "Bill Number",
+    "Invoice No"
   ],
   "gross_amount": [
     "gross_amount",
@@ -14,7 +25,8 @@
     "tx_amount",
     "txn_amount",
     "gross amount (usd)",
-    "Gross Amount"
+    "Gross Amount",
+    "Gross Sale Value"
   ],
   "net_amount": [
     "amount",
@@ -47,7 +59,12 @@
     "credit_inr",
     "deposit (cr)",
     "refund amount",
-    "refund_amount"
+    "refund_amount",
+    "Amount (INR)",
+    "Debit (INR)",
+    "Balance (INR)",
+    "Incomplete/failed transaction",
+    "Card DECLINED with no retry \u2014 bill has no valid completed payment"
   ],
   "debit_amount": [
     "debit",
@@ -65,7 +82,8 @@
     "charges",
     "commission",
     "service_tax",
-    "fee (usd)"
+    "fee (usd)",
+    "Fee Charged"
   ],
   "tax_amount": [
     "tax",
@@ -91,7 +109,8 @@
     "payment date",
     "payment_date",
     "transaction_time",
-    "Order Date"
+    "Order Date",
+    "Txn Date"
   ],
   "value_date": [
     "value_date",
@@ -99,7 +118,8 @@
     "settlement_date",
     "expected_settlement_date",
     "Value Post Date",
-    "Settlement Date"
+    "Settlement Date",
+    "Value Date"
   ],
   "utr": [
     "utr",
@@ -124,7 +144,12 @@
     "Reference No",
     "Auth Code / Ref",
     "Refund ID",
-    "Refund Amount"
+    "Refund Amount",
+    "Gateway Ref",
+    "Bank RRN",
+    "UTR / Reference No",
+    "Answer Key (Reference Only)",
+    "Bill Reference No"
   ],
   "order_id": [
     "order_id",
@@ -148,7 +173,8 @@
     "upi_txn_id",
     "Settlement ID",
     "Net Settled to Bank",
-    "Voucher No"
+    "Voucher No",
+    "Net Payout"
   ],
   "description": [
     "description",
@@ -162,7 +188,8 @@
     "reason",
     "adjustment type",
     "adjustment_type",
-    "particulars / notes"
+    "particulars / notes",
+    "Card Last 4"
   ],
   "customer_name": [
     "customer_name",
@@ -177,7 +204,8 @@
     "employee name",
     "employee_name",
     "Client Full Name",
-    "Customer Name"
+    "Customer Name",
+    "Buyer Name"
   ],
   "channel": [
     "payment_mode",
@@ -190,7 +218,8 @@
     "payment_method",
     "transaction_type",
     "Adjustment Type",
-    "Payment Mode"
+    "Payment Mode",
+    "Transaction Type"
   ],
   "status": [
     "status",

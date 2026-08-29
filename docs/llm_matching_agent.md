@@ -1,19 +1,34 @@
 # Ledger AI — LLM Matching Agent Specification
 
-> **Subsystem**: `llm/ambiguous_matcher.py`  
-> **LLM Provider**: Google Gemini API (`gemini-2.5-flash` / `gemini-1.5-pro`)
+> **Subsystem**: `llm/query_llm.py`, `llm/ambiguous_matcher.py`, & `agents/settlement_qa_agent.py`  
+> **LLM Provider**: Groq API (`openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.6-27b`) with Key Rotation
 
 ---
 
 ## 1. Overview & Architecture
 
-The **LLM Matching Agent** handles complex, ambiguous financial discrepancies where traditional rule-based matchers and ML feature models produce moderate confidence scores ($0.60 \le \text{Score} < 0.85$), or when a user clicks **"Run LLM Match"** in the Comparison Modal.
+The **LLM Infrastructure** handles:
+1. **Column Mapping & Smart Ingestion** (`frontend/statement_store.py`): Analyzes raw column headers and sample data rows to infer canonical schema field mappings.
+2. **Ambiguous Discrepancy Matching** (`llm/ambiguous_matcher.py`): Evaluates candidate pairs when traditional rule-based matchers produce ambiguous results or when user clicks **"Run LLM Match"**.
+3. **Settlement Q&A Agent ("Talk to Ledger")** (`agents/settlement_qa_agent.py`): Natural language chat assistant with function-calling tools against ledger databases.
 
-Using structured prompts, the agent analyzes raw transaction descriptions, customer names, partial reference numbers, gateway fee deductions, and date offsets to produce a natural-language audit reasoning and structured match recommendation.
+All LLM calls funnel through `llm/query_llm.py`, which provides automatic API key rotation (`GROQ_API_KEY`, `GROQ_API_KEY1`, `GROQ_API_KEY2`) and fallback model selection.
 
 ---
 
-## 2. High-Level Agent Workflow
+## 2. Centralized Key Rotation (`llm/query_llm.py`)
+
+```python
+def query_llm(prompt: str, system_prompt: str = None) -> str:
+    """
+    Executes an LLM prompt against Groq API with multi-key failover & model fallback.
+    Rotates through all valid GSK keys in environment variables.
+    """
+```
+
+---
+
+## 3. High-Level Agent Workflow
 
 ```
   ┌──────────────────────────────────────────────────────────┐
@@ -28,8 +43,8 @@ Using structured prompts, the agent analyzes raw transaction descriptions, custo
                                │
                                ▼
   ┌──────────────────────────────────────────────────────────┐
-  │                 Google Gemini API Call                   │
-  │     Evaluates structured financial prompt schema          │
+  │            Groq API Call (`llm/query_llm.py`)            │
+  │  Rotates GROQ_API_KEY -> GROQ_API_KEY1 -> GROQ_API_KEY2  │
   └────────────────────────────┬─────────────────────────────┘
                                │
                                ▼
@@ -39,37 +54,19 @@ Using structured prompts, the agent analyzes raw transaction descriptions, custo
   │  - confidence_score: 0.00 - 1.00                         │
   │  - reasoning: Detailed audit trail explanation          │
   └────────────────────────────┬─────────────────────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            │ Recommendation == CONFIRMED         │ Recommendation != CONFIRMED
-            ▼                                     ▼
-  ┌───────────────────────────┐         ┌───────────────────────────┐
-  │ Update Status to MATCHED  │         │ Retain UNMATCHED Status   │
-  │ Display LLM Audit Trail   │         │ Display AI Audit Reasoning│
-  └───────────────────────────┘         └───────────────────────────┘
 ```
 
 ---
 
-## 3. Input JSON Context Payload Schema
+## 4. Key Files & Code Reference
 
-When an LLM match request is triggered, `llm/ambiguous_matcher.py` constructs a structured JSON context payload:
-
-```json
-{
-  "primary_transaction": {
-    "transaction_id": "BNK-TXN-0004",
-    "source": "Rw 01 Bank Statement",
-    "amount": 4999.00,
-    "date": "2024-08-15",
-    "description": "CARD-SETL Meera Iyer",
-    "utr": null
-  },
-  "candidate_records": [
-    {
-      "transaction_id": "PGREF202421",
-      "source": "Rw 04 Card Payment",
-      "amount": 5000.00,
+| File Path | Responsible Function / Class | Role |
+|---|---|---|
+| `llm/query_llm.py` | `query_llm()`, `get_all_groq_keys()` | Central Groq query engine with key failover & model rotation. |
+| `llm/ambiguous_matcher.py` | `run_llm_match()` | Ambiguous pair evaluation using Groq LLM. |
+| `agents/settlement_qa_agent.py` | `answer_question()` | Settlement Q&A chat agent with tool execution. |
+| `frontend/statement_store.py` | `_llm_analyze_columns()` | Smart AI column mapping during import. |
+nt": 5000.00,
       "date": "2024-08-14",
       "description": "Payment for order ORD8034 Meera Iyer",
       "fee": 1.00

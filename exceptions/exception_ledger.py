@@ -29,12 +29,16 @@ EXCEPTION_OUTPUT_PATH = RESULTS_DIR / "exception_ledger.csv"
 # ============================================================
 
 def classify_exception(row):
+    """Classifies exception category based on decision stage, reason keywords, and exception metadata."""
     stage = str(row.get("stage", ""))
     decision = str(row.get("decision", ""))
     reason = str(row.get("reason", "")).lower()
     exc_type = str(row.get("exception_type", ""))
 
     # T7.1 Explicit / Direct Enum Classification
+    if exc_type == "open_refund" or "refund" in reason or "chargeback" in reason:
+        return "open_refund"
+
     if exc_type == "ambiguous_tie" or "ambiguous tie" in reason or "ambiguous_tie" in reason:
         return "ambiguous_tie"
 
@@ -64,6 +68,7 @@ def classify_exception(row):
 
 
 def determine_priority(exception_type, confidence):
+    """Determines exception review priority (high, medium, low) based on exception type and model confidence."""
     try:
         confidence = float(confidence)
     except (ValueError, TypeError):
@@ -92,6 +97,7 @@ def determine_priority(exception_type, confidence):
 # ============================================================
 
 def build_exception_ledger(reconciliation):
+    """Builds structured Exception Ledger DataFrame from reconciliation results, preserving prior human audit resolutions."""
     exceptions = reconciliation[
         reconciliation["status"].isin(["SIMILAR", "similar", "manual_review", "review"])
     ].copy()
@@ -217,6 +223,7 @@ def build_exception_ledger(reconciliation):
 # ============================================================
 
 def print_summary(reconciliation, exceptions):
+    """Prints a formatted console summary of exception ledger breakdown."""
     total_settlements = reconciliation["settlement_id"].nunique()
     total_exceptions = len(exceptions)
 
@@ -248,6 +255,7 @@ def print_summary(reconciliation, exceptions):
 # ============================================================
 
 def main():
+    """CLI execution entrypoint for building exception ledger standalone."""
     if not RECONCILIATION_PATH.exists():
         raise FileNotFoundError(
             "Reconciliation results not found:\n"

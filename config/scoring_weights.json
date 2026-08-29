@@ -1,0 +1,7 @@
+{
+  "scoring_weight_identifier": 0.4,
+  "scoring_weight_amount": 0.3,
+  "scoring_weight_date": 0.15,
+  "scoring_weight_narration": 0.15,
+  "incompatibility_penalty": 0.5
+}

@@ -27,6 +27,7 @@ RESULTS_DIR = ROOT / "data" / "results"
 
 
 def get_effective_tolerance(reference_amount: float, cfg: MatchingConfig) -> float:
+    """Computes effective monetary tolerance threshold applying percentage scaling and max cap."""
     abs_tol = cfg.absolute_amount_tolerance if cfg.absolute_amount_tolerance is not None else 1.00
     pct_tol = (cfg.percentage_tolerance * abs(reference_amount)) if cfg.percentage_tolerance is not None else 0.0
     effective = max(abs_tol, pct_tol)
@@ -36,6 +37,7 @@ def get_effective_tolerance(reference_amount: float, cfg: MatchingConfig) -> flo
 
 
 def get_date_diff(d1: Optional[str], d2: Optional[str], cfg: MatchingConfig) -> int:
+    """Computes calendar or business day difference between two ISO date strings."""
     sentinel = getattr(cfg, "date_diff_error_sentinel", 999)
     if cfg.business_day_aware:
         return business_days_between(d1, d2, error_sentinel=sentinel)

@@ -9,7 +9,21 @@ import sys
 import io
 import time
 import threading
+import json
 from datetime import datetime
+from pathlib import Path
+
+def _load_ui_config() -> dict:
+    cfg_path = Path(__file__).resolve().parent.parent.parent / "config" / "ui_config.json"
+    if cfg_path.exists():
+        try:
+            with open(cfg_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+LOG_BUFFER_SIZE = _load_ui_config().get("log_buffer_size", 200)
 
 _lock = threading.Lock()
 
@@ -22,6 +36,7 @@ _STATE = {
 }
 
 def reset_tracker():
+    """Resets the execution tracker state back to idle."""
     with _lock:
         _STATE["is_running"] = False
         _STATE["progress"] = 0
@@ -31,6 +46,7 @@ def reset_tracker():
     add_log("Pipeline tracker initialized. Ready for execution.", level="SYSTEM")
 
 def start_pipeline(stage_name="Starting Import & Reconciliation Pipeline..."):
+    """Starts pipeline execution tracking and logs initial system event."""
     with _lock:
         _STATE["is_running"] = True
         _STATE["progress"] = 5
@@ -41,6 +57,7 @@ def start_pipeline(stage_name="Starting Import & Reconciliation Pipeline..."):
     add_log("📥 Receiving and storing uploaded statement file...", level="INFO")
 
 def update_progress(percent, stage_name, log_msg=None, level="INFO"):
+    """Updates progress percentage, stage name, and optionally appends a log entry."""
     with _lock:
         _STATE["progress"] = max(0, min(100, percent))
         _STATE["stage"] = stage_name
@@ -49,6 +66,7 @@ def update_progress(percent, stage_name, log_msg=None, level="INFO"):
         add_log(log_msg, level=level)
 
 def add_log(msg, level="INFO"):
+    """Appends a timestamped log entry to the in-memory terminal log ring buffer."""
     if not msg or not msg.strip():
         return
     
@@ -79,12 +97,13 @@ def add_log(msg, level="INFO"):
 
     with _lock:
         _STATE["logs"].append(log_entry)
-        # Keep last 200 logs max
-        if len(_STATE["logs"]) > 200:
-            _STATE["logs"] = _STATE["logs"][-200:]
+        # Keep last LOG_BUFFER_SIZE logs max
+        if len(_STATE["logs"]) > LOG_BUFFER_SIZE:
+            _STATE["logs"] = _STATE["logs"][-LOG_BUFFER_SIZE:]
         _STATE["last_updated"] = time.time()
 
 def finish_pipeline(success=True, error_msg=None):
+    """Marks pipeline execution as completed or failed and records completion status."""
     with _lock:
         _STATE["is_running"] = False
         _STATE["progress"] = 100
@@ -100,6 +119,7 @@ def finish_pipeline(success=True, error_msg=None):
         add_log(f"❌ Pipeline failed: {error_msg or 'Unknown error'}", level="ERROR")
 
 def get_status():
+    """Retrieves current snapshot of pipeline execution status and log entries."""
     with _lock:
         return {
             "is_running": _STATE["is_running"],
@@ -116,6 +136,7 @@ class TerminalOutputRedirector(io.TextIOBase):
         self.buffer = ""
 
     def write(self, buf):
+        """Writes buffer to original stdout and feeds lines to pipeline log."""
         self.original_stdout.write(buf)
         self.original_stdout.flush()
         self.buffer += buf
@@ -126,6 +147,7 @@ class TerminalOutputRedirector(io.TextIOBase):
         return len(buf)
 
     def flush(self):
+        """Flushes remaining buffered text to pipeline log."""
         self.original_stdout.flush()
         if self.buffer.strip():
             add_log(self.buffer)

@@ -30,6 +30,7 @@ class DedupeReport:
     probable_duplicates: List[CanonicalTransaction]
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert DedupeReport into a serializable dictionary summary."""
         return {
             "total_processed": self.total_processed,
             "unique_count": self.unique_count,

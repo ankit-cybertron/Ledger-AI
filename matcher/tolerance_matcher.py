@@ -39,6 +39,7 @@ def _safe_read_csv(path: Path) -> pd.DataFrame:
 
 
 def load_data():
+    """Loads primary, counterpart, and exact match DataFrames from storage."""
     primary = _safe_read_csv(GENERATED_DIR / "primary_records.csv")
     if primary.empty:
         primary = _safe_read_csv(GENERATED_DIR / "bank_statement.csv")
@@ -54,6 +55,7 @@ def load_data():
 
 
 def get_effective_tolerance(reference_amount: float, cfg: MatchingConfig) -> float:
+    """Computes dynamic amount tolerance taking into account percentage scaling and maximum cap."""
     abs_tol = cfg.absolute_amount_tolerance if cfg.absolute_amount_tolerance is not None else 1.00
     pct_tol = (cfg.percentage_tolerance * abs(reference_amount)) if cfg.percentage_tolerance is not None else 0.0
     effective = max(abs_tol, pct_tol)
@@ -63,6 +65,7 @@ def get_effective_tolerance(reference_amount: float, cfg: MatchingConfig) -> flo
 
 
 def get_date_diff(d1: Optional[str], d2: Optional[str], cfg: MatchingConfig) -> int:
+    """Computes calendar or business day difference between two ISO date strings."""
     sentinel = getattr(cfg, "date_diff_error_sentinel", 999)
     if cfg.business_day_aware:
         return business_days_between(d1, d2, error_sentinel=sentinel)
@@ -78,12 +81,14 @@ def get_date_diff(d1: Optional[str], d2: Optional[str], cfg: MatchingConfig) -> 
 
 
 def normalize_text(value: Any) -> str:
+    """Normalizes text by stripping whitespace and converting to uppercase."""
     if pd.isna(value) or value is None:
         return ""
     return str(value).upper().strip().replace(" ", "")
 
 
 def narration_similarity(left: Any, right: Any) -> float:
+    """Computes similarity score combining sequence ratio and Jaccard token overlap."""
     s_left = str(left or "").strip()
     s_right = str(right or "").strip()
 
@@ -183,7 +188,7 @@ def tolerance_match(
             if not candidates_compatible(tx_p, tx_c):
                 continue
 
-            c_amt = float(tx_c.net_amount or 0.0)
+            c_amt = expected_net(tx_c)
             amt_diff = abs(p_amt - c_amt)
             if amt_diff > eff_tol:
                 continue
@@ -261,6 +266,7 @@ def tolerance_match(
 
 
 def main():
+    """CLI execution entrypoint for running tolerance matching standalone."""
     primary, counterpart, exact_matches = load_data()
     split_matches = split_aggregate_match(primary, counterpart, exact_matches)
     matches, ties = tolerance_match(primary, counterpart, exact_matches, split_matches)

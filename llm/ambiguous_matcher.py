@@ -153,38 +153,43 @@ def evaluate_similar_cluster(
     decision_obj = None
     last_err = None
 
-    if not _LLM_DISABLED and os.environ.get("GROQ_API_KEY"):
-        try:
-            from groq import Groq
-            client = Groq(timeout=10.0)
-            user_msg = _build_cluster_prompt(target_tx, candidate_cluster)
+    from llm.query_llm import get_all_groq_keys, get_groq_model
+    groq_keys = get_all_groq_keys()
 
-            response = client.chat.completions.create(
-                model=cfg.llm_model,
-                max_tokens=1000,
-                tools=[MATCH_CLUSTER_TOOL],
-                tool_choice=MATCH_CLUSTER_TOOL_CHOICE,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are an expert payment reconciliation reviewer. "
-                            "Given a target transaction and a list of SIMILAR candidates, select the single best matching candidate. "
-                            "If multiple or no candidates qualify, return decision 'review' or 'non_match'."
-                        )
-                    },
-                    {"role": "user", "content": user_msg}
-                ]
-            )
+    if not _LLM_DISABLED and groq_keys:
+        model_name = get_groq_model()
+        user_msg = _build_cluster_prompt(target_tx, candidate_cluster)
+        from groq import Groq
 
-            tool_calls = response.choices[0].message.tool_calls
-            if tool_calls:
-                arguments = json.loads(tool_calls[0].function.arguments)
-                decision_obj = ClusterMatchDecision.model_validate(arguments)
-        except Exception as exc:
-            last_err = str(exc)
-            if "429" in last_err or "Rate limit" in last_err or "401" in last_err:
-                _LLM_DISABLED = True
+        for key in groq_keys:
+            try:
+                client = Groq(api_key=key, timeout=10.0)
+                response = client.chat.completions.create(
+                    model=model_name,
+                    max_tokens=1000,
+                    tools=[MATCH_CLUSTER_TOOL],
+                    tool_choice=MATCH_CLUSTER_TOOL_CHOICE,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are an expert payment reconciliation reviewer. "
+                                "Given a target transaction and a list of SIMILAR candidates, select the single best matching candidate. "
+                                "If multiple or no candidates qualify, return decision 'review' or 'non_match'."
+                            )
+                        },
+                        {"role": "user", "content": user_msg}
+                    ]
+                )
+
+                tool_calls = response.choices[0].message.tool_calls
+                if tool_calls:
+                    arguments = json.loads(tool_calls[0].function.arguments)
+                    decision_obj = ClusterMatchDecision.model_validate(arguments)
+                    break
+            except Exception as exc:
+                last_err = str(exc)
+                continue
 
     # Rule-based fallback if LLM is unavailable or didn't return a decision
     if decision_obj is None:

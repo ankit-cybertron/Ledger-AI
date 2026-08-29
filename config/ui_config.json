@@ -1,0 +1,19 @@
+{
+  "log_buffer_size": 200,
+  "title_truncation_length": 48,
+  "currency_symbol": "Rs.",
+  "currency_symbol_display": "₹",
+  "status_colors": {
+    "SETTLED": "#10b981",
+    "MATCHED": "#3b82f6",
+    "SIMILAR": "#f59e0b",
+    "UNMATCHED": "#ef4444"
+  },
+  "confidence_histogram_buckets": [
+    "0.0-0.5",
+    "0.5-0.7",
+    "0.7-0.85",
+    "0.85-0.95",
+    "0.95-1.0"
+  ]
+}

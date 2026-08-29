@@ -53,6 +53,7 @@ CONFIG_OUTPUT_PATH = RESULTS_DIR / "reconciliation_config.json"
 
 
 def load_csv(path: Path) -> pd.DataFrame:
+    """Loads CSV into DataFrame with error handling."""
     if not path.exists():
         return pd.DataFrame()
     try:
@@ -122,6 +123,7 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
     final_results = []
 
     def to_df(tx_list):
+        """Converts list of CanonicalTransactions to DataFrame."""
         if not tx_list:
             return pd.DataFrame()
         return pd.DataFrame([t.to_dict() for t in tx_list])
@@ -175,8 +177,10 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
                         "bank_transaction_id": c_id,
                         "stage": "tolerance",
                         "decision": "match",
-                        "confidence": float(r.get("confidence", 0.85)),
+                        "confidence": float(r.get("confidence", cfg.one_to_one_tolerance_confidence)),
                         "reason": "Tolerance-stage match with primary statement.",
+                        "status": "SETTLED"
+                    })
     # Pass 1B: Primary vs Primary matching (Inter-bank transfers between multiple primary statements)
     if len(pri_stmts) > 1:
         for i in range(len(pri_stmts)):
@@ -228,7 +232,7 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
                                 "bank_transaction_id": c_id,
                                 "stage": "tolerance",
                                 "decision": "match",
-                                "confidence": float(r.get("confidence", 0.85)),
+                                "confidence": float(r.get("confidence", cfg.one_to_one_tolerance_confidence)),
                                 "reason": f"Tolerance match between primary sources ({p1['name']} vs {p2['name']}).",
                                 "status": "SETTLED"
                             })
@@ -285,7 +289,7 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
                             "bank_transaction_id": c_id,
                             "stage": "tolerance",
                             "decision": "match",
-                            "confidence": float(r.get("confidence", 0.85)),
+                            "confidence": float(r.get("confidence", cfg.one_to_one_tolerance_confidence)),
                             "reason": f"Tolerance match between non-primary sources ({s1['name']} vs {s2['name']}).",
                             "status": "MATCHED"
                         })

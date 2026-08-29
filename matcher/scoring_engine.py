@@ -76,6 +76,7 @@ def compute_confidence(evidence: MatchEvidence, cfg: Optional[MatchingConfig] = 
 
     # Incompatibility penalty
     if not evidence.currency_match or not evidence.direction_match:
-        total_score *= 0.50
+        penalty = float(getattr(cfg, "incompatibility_penalty", 0.50))
+        total_score *= penalty
 
     return round(min(1.00, max(0.00, total_score)), 4)

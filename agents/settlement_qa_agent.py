@@ -504,78 +504,87 @@ def answer_question(
     Ask the Settlement Q&A Agent a question.
     Calls Groq LLM with tools if GROQ_API_KEY is valid, otherwise uses direct backend queries.
     """
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        return fallback_direct_query(question)
-
     try:
-        client = Groq(api_key=api_key)
+        from llm import get_all_groq_keys, get_groq_model
+        keys = get_all_groq_keys()
+        if not keys:
+            return fallback_direct_query(question)
 
-        messages = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT,
-            }
-        ]
+        last_err = None
+        for api_key in keys:
+            try:
+                client = Groq(api_key=api_key)
+                model_name = get_groq_model()
 
-        if conversation_history:
-            messages.extend(conversation_history)
+                messages = [
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT,
+                    }
+                ]
 
-        messages.append(
-            {
-                "role": "user",
-                "content": question,
-            }
-        )
+                if conversation_history:
+                    messages.extend(conversation_history)
 
-        while True:
-            response = client.chat.completions.create(
-                model=MODEL,
-                temperature=0,
-                tools=TOOLS,
-                tool_choice="auto",
-                messages=messages,
-            )
-
-            message = response.choices[0].message
-
-            if not message.tool_calls:
-                return (
-                    message.content.strip()
-                    if message.content
-                    else "I could not produce a grounded answer."
-                )
-
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": message.content,
-                    "tool_calls": [
-                        {
-                            "id": tool_call.id,
-                            "type": "function",
-                            "function": {
-                                "name": tool_call.function.name,
-                                "arguments": tool_call.function.arguments,
-                            },
-                        }
-                        for tool_call in message.tool_calls
-                    ],
-                }
-            )
-
-            for tool_call in message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                result = execute_tool(function_name, arguments)
                 messages.append(
                     {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(result, default=str),
+                        "role": "user",
+                        "content": question,
                     }
                 )
 
+                while True:
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        temperature=0,
+                        tools=TOOLS,
+                        tool_choice="auto",
+                        messages=messages,
+                    )
+
+                    message = response.choices[0].message
+
+                    if not message.tool_calls:
+                        return (
+                            message.content.strip()
+                            if message.content
+                            else "I could not produce a grounded answer."
+                        )
+
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": message.content or "",
+                            "tool_calls": [
+                                {
+                                    "id": tool_call.id,
+                                    "type": "function",
+                                    "function": {
+                                        "name": tool_call.function.name,
+                                        "arguments": tool_call.function.arguments,
+                                    },
+                                }
+                                for tool_call in message.tool_calls
+                            ],
+                        }
+                    )
+
+                    for tool_call in message.tool_calls:
+                        function_name = tool_call.function.name
+                        arguments = json.loads(tool_call.function.arguments)
+                        result = execute_tool(function_name, arguments)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "content": json.dumps(result, default=str),
+                            }
+                        )
+            except Exception as exc:
+                last_err = exc
+                continue
+
+        return fallback_direct_query(question)
     except Exception as exc:
         print(f"[Settlement Q&A Agent Note] LLM call note: {exc}")
         return fallback_direct_query(question)

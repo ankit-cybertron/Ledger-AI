@@ -35,6 +35,7 @@ class ColumnMapping:
     confidence: float
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert ColumnMapping instance into a serializable dictionary."""
         return asdict(self)
 
 

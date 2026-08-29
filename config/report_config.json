@@ -1,0 +1,33 @@
+{
+  "watermark_text": "CONFIDENTIAL — LEDGER AI AUDIT",
+  "watermark_opacity": 0.06,
+  "watermark_font_size": 8,
+  "watermark_step_y": 160,
+  "watermark_angle": 35,
+  "page_margins": {
+    "top": 36,
+    "bottom": 36,
+    "left": 36,
+    "right": 36
+  },
+  "font_families": {
+    "regular": ["reports/fonts/Inter-Regular.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Arial.ttf"],
+    "bold": ["reports/fonts/Inter-Bold.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/Library/Fonts/Arial Bold.ttf"],
+    "fallback_name": "Helvetica",
+    "fallback_bold": "Helvetica-Bold",
+    "fallback_mono": "Courier"
+  },
+  "status_colors": {
+    "SETTLED": "#10b981",
+    "MATCHED": "#3b82f6",
+    "SIMILAR": "#f59e0b",
+    "UNMATCHED": "#ef4444"
+  },
+  "chart_colors": {
+    "SETTLED": "#10b981",
+    "MATCHED": "#3b82f6",
+    "SIMILAR": "#f59e0b",
+    "UNMATCHED": "#ef4444"
+  },
+  "currency_symbol": "Rs."
+}

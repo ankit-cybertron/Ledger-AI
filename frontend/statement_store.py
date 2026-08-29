@@ -411,10 +411,15 @@ def save_imported_statement(name, filename, df, is_primary=False, color=None, ru
 
     stmt_id = f"stmt_{int(time.time() * 1000)}"
 
-    records = norm_df.fillna("").to_dict(orient="records") if not norm_df.empty else []
-    stmt_name = name or f"Statement {len(db['statements']) + 1}"
+    clean_filename_name = (
+        filename.rsplit(".", 1)[0].replace("_", " ").replace("-", " ").title()
+        if filename else None
+    )
+    stmt_name = name or clean_filename_name or f"Statement {len(db['statements']) + 1}"
     palette_color = STATEMENT_COLOR_PALETTE[len(db['statements']) % len(STATEMENT_COLOR_PALETTE)]
     stmt_color = color or palette_color
+
+    records = norm_df.fillna("").to_dict(orient="records") if not norm_df.empty else []
 
     for idx, r in enumerate(records):
         r["serial_no"] = f"{serial_code}-{idx + 1}"

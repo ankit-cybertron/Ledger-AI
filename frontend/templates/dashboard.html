@@ -394,8 +394,8 @@
               </div>
             </div>
 
-            <div class="manual-review-grid" id="manualReviewGrid" style="margin-top: 24px;">
-              <!-- Dynamically loaded manual review cards -->
+            <div class="manual-review-grid" id="manualReviewGrid" style="display: none;">
+              <!-- Legacy manual review container hidden in favor of unified excTable -->
             </div>
           </section>
 
@@ -872,6 +872,7 @@
   </style>
 
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/config.js') }}"></script>
   <script src="{{ url_for('static', filename='js/api.js') }}"></script>
   <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
   <script src="{{ url_for('static', filename='js/chat.js') }}"></script>

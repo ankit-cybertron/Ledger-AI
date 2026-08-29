@@ -1835,7 +1835,7 @@
       if (btnImportAI) btnImportAI.disabled = true;
 
       const statusMsg = useLlm
-        ? `Importing & Auto-Organizing ${pendingFiles.length} file(s) with AI (Claude Semantic Engine)…`
+        ? `Importing & Auto-Organizing ${pendingFiles.length} file(s) with LLM Semantic Engine…`
         : `Importing ${pendingFiles.length} file(s) into database…`;
 
       setStatus(source, statusMsg, "loading");
@@ -2098,10 +2098,13 @@
         const rows = stmt.row_count || 0;
         const created = stmt.created_at ? String(stmt.created_at).slice(0, 10) : "Today";
 
+        const displayName = stmt.name || (stmt.filename ? stmt.filename.replace(/\.[^/.]+$/, "").replace(/_/g, " ").replace(/-/g, " ").toUpperCase() : "Statement");
+
         tr.innerHTML = `
           <td>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="text" class="form-input stmt-name-input" value="${escapeHtml(stmt.name)}" style="background: var(--bg-surface, #12161f); border: 1px solid var(--border-color, #272f3e); color: var(--text-primary, #f8fafc); padding: 4px 8px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; width: 100%; min-width: 140px;">
+              <span class="stmt-name-text" style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary, #f8fafc); cursor: pointer;" title="Click to edit name">${escapeHtml(displayName)}</span>
+              <input type="text" class="form-input stmt-name-input" value="${escapeHtml(displayName)}" style="display: none; background: var(--bg-surface, #12161f); border: 1px solid var(--border-color, #272f3e); color: var(--text-primary, #f8fafc); padding: 4px 8px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; width: 100%; min-width: 140px;">
               ${isPrimary ? '<span style="color:#eab308; font-size:0.7rem; font-weight:700; border:1px solid #eab308; padding:1px 4px; border-radius:3px;" title="Primary Source">PRIMARY</span>' : ''}
             </div>
           </td>
@@ -2122,22 +2125,48 @@
           <td class="text-right">
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
               <button type="button" class="btn btn-sm btn-table-view" data-id="${stmt.id}" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 600; color: #60a5fa; background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 6px; cursor: pointer;" title="View Entries">View</button>
-              <button type="button" class="btn btn-sm btn-table-delete" data-id="${stmt.id}" data-name="${escapeHtml(stmt.name)}" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 600; color: #f87171; background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.35); border-radius: 6px; cursor: pointer;" title="Delete">Delete</button>
+              <button type="button" class="btn btn-sm btn-table-delete" data-id="${stmt.id}" data-name="${escapeHtml(displayName)}" style="padding: 4px 12px; font-size: 0.78rem; font-weight: 600; color: #f87171; background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.35); border-radius: 6px; cursor: pointer;" title="Delete">Delete</button>
             </div>
           </td>
         `;
 
+        const nameText = tr.querySelector(".stmt-name-text");
         const nameInput = tr.querySelector(".stmt-name-input");
-        if (nameInput) {
-          nameInput.addEventListener("change", async () => {
+
+        if (nameText && nameInput) {
+          nameText.addEventListener("click", () => {
+            nameText.style.display = "none";
+            nameInput.style.display = "inline-block";
+            nameInput.focus();
+            nameInput.select();
+          });
+
+          const saveName = async () => {
             const newName = nameInput.value.trim();
-            if (newName && newName !== stmt.name) {
+            nameInput.style.display = "none";
+            nameText.style.display = "inline-block";
+            if (newName && newName !== displayName) {
+              nameText.textContent = newName;
               await window.LedgerApi.renameStatement(stmt.id, newName);
               await loadSidebarSources();
               if (activeStatementId === stmt.id) {
                 const titleEl = document.getElementById("stmtViewTitle");
                 if (titleEl) titleEl.textContent = newName;
               }
+            } else {
+              nameInput.value = displayName;
+            }
+          };
+
+          nameInput.addEventListener("blur", saveName);
+          nameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              nameInput.blur();
+            } else if (e.key === "Escape") {
+              nameInput.value = displayName;
+              nameInput.style.display = "none";
+              nameText.style.display = "inline-block";
             }
           });
         }
@@ -4003,14 +4032,9 @@
     const hdrBadgeEl = document.getElementById("hdrManualBadge");
     const topbarBadgeEl = document.getElementById("topbarExceptionBadge");
 
-    if (!container) return;
-    container.innerHTML = "";
+    const items = exceptions || [];
+    const pendingCount = items.length;
 
-    const openItems = (exceptions || []).filter(
-      (ex) => (ex.resolution_status || "open").toLowerCase() === "open"
-    );
-
-    const pendingCount = openItems.length;
     if (badgeEl) badgeEl.textContent = `${pendingCount} item${pendingCount === 1 ? "" : "s"} pending`;
     if (navBadgeEl) {
       navBadgeEl.textContent = pendingCount;
@@ -4025,297 +4049,13 @@
       hdrBadgeEl.style.display = pendingCount > 0 ? "inline-block" : "none";
     }
 
-    if (!openItems || openItems.length === 0) {
-      if (emptyEl) emptyEl.style.display = "block";
-      return;
+    if (container) {
+      container.innerHTML = "";
+      container.style.display = "none";
     }
-
-    if (emptyEl) emptyEl.style.display = "none";
-
-    openItems.forEach((ex) => {
-      const card = document.createElement("div");
-      card.className = "manual-review-card collapsed";
-      const isResolved = (ex.resolution_status || "").toLowerCase() !== "open";
-      const outcome = (ex.resolved_outcome || "").toLowerCase();
-
-      const excId = ex.exception_id || ex.settlement_id || "EXC-100";
-      const settlementId = ex.settlement_id || excId;
-      const descText = ex.description || ex.settlement_id || "Unresolved Transaction";
-      const amtText = formatMoney(ex.amount);
-      const bankUtr = ex.bank_transaction_id || "Unlinked / Candidate Target";
-      const srcType = (ex.source_type || ex.source || "bank").toLowerCase().replace(/\s+/g, "_");
-      const srcLabel = ex.source_name || (ex.source && !ex.source.includes("2nd Source") ? ex.source : "Internal Order Book");
-      const targetSrcLabel = ex.target_source_name || (ex.target_source && !ex.target_source.includes("2nd Source") ? ex.target_source : "Bank Statement");
-      const confPct = Math.round((ex.confidence || 0.85) * 100);
-
-      let actionHtml = "";
-      if (isResolved) {
-        const isMatch = outcome === "confirmed_match" || outcome === "match";
-        const badgeClass = isMatch ? "badge-resolved-match" : "badge-resolved-non-match";
-        const label = isMatch ? "Resolved: Confirmed Match" : "Resolved: Confirmed Non-Match";
-        actionHtml = `<span class="resolved-status-badge ${badgeClass}">${label}</span>`;
-      } else {
-        actionHtml = `
-          <div class="review-action-row">
-            <button type="button" class="btn-llm-smart-match" data-exc-id="${excId}">
-              LLM Smart Match
-            </button>
-            <button type="button" class="btn-confirm-non-match" data-exc-id="${excId}">
-              Confirm Non-Match
-            </button>
-            <button type="button" class="btn-confirm-match" data-exc-id="${excId}">
-              Confirm Match
-            </button>
-          </div>
-        `;
-      }
-
-      card.innerHTML = `
-        <div class="review-card-header">
-          <div class="review-card-header-left">
-            <span class="review-expand-chevron">▸</span>
-            <div class="review-status-tag">
-              <span class="pulse-dot"></span>
-              <span>AMBIGUOUS</span>
-            </div>
-            <div class="review-exc-id font-mono">ID: ${excId}</div>
-            <div class="review-card-title">${descText}</div>
-          </div>
-          <div class="review-card-header-right">
-            <span class="review-target-utr font-mono">Target: ${bankUtr}</span>
-            <span class="review-card-amt font-mono">${amtText}</span>
-          </div>
-        </div>
-
-        <div class="review-card-body" style="display: none;">
-          <!-- Inline Side-by-Side Record Comparison Header -->
-          <div class="inline-compare-header">
-            <div class="inline-compare-title">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px; vertical-align:middle; color:#60a5fa;"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
-              Side-by-Side Record Comparison
-              <span class="inline-compare-subtitle">(Different Sources strictly enforced)</span>
-            </div>
-            <span class="inline-conf-badge" id="exc-conf-badge-${excId}">
-              ${confPct}% Confidence
-            </span>
-          </div>
-
-          <!-- 2-Column Comparison Grid -->
-          <div class="review-comparison-grid">
-            <div class="comparison-side flagged-side">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div class="side-label">FLAGGED TRANSACTION (${srcLabel.toUpperCase()})</div>
-                <button type="button" class="btn-cmp-view-source btn-inline-view-source" data-source="${srcType}" data-id="${ex.primary_id || ex.utr || ''}" title="View in Source Table">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> View Source
-                </button>
-              </div>
-              <div class="primary-text">${descText}</div>
-              <div class="secondary-info">Date: ${ex.date || "—"} &bull; Source: ${srcLabel}</div>
-              <div class="amount-tag font-mono">${amtText}</div>
-            </div>
-
-            <div class="comparison-divider">
-              <div class="divider-icon" title="Candidate Comparison"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><line x1="3" y1="5" x2="21" y2="5"/><polyline points="7 23 3 19 7 15"/><line x1="21" y1="19" x2="3" y2="19"/></svg></div>
-            </div>
-
-            <div class="comparison-side target-side source-bank" id="exc-target-side-${excId}">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <div class="side-label">CANDIDATE TARGET (${targetSrcLabel.toUpperCase()})</div>
-                <button type="button" class="btn-cmp-view-source btn-inline-view-source" data-source="bank" data-id="${bankUtr}" title="View in Source Table">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> View Source
-                </button>
-              </div>
-              <div class="primary-text font-mono">${bankUtr}</div>
-              <div class="secondary-info">Status: Requires Resolution &bull; Source: ${targetSrcLabel}</div>
-              <div class="confidence-tag font-mono">ML Confidence: Ambiguous (${confPct}%)</div>
-            </div>
-          </div>
-
-          <!-- Parameter Match Matrix Table -->
-          <div class="inline-matrix-container">
-            <div class="matrix-title">Parameter Match Matrix</div>
-            <table class="inline-matrix-table">
-              <thead>
-                <tr>
-                  <th>Parameter / Field</th>
-                  <th>Flagged Source Record</th>
-                  <th>Candidate Target Record</th>
-                  <th>Status & Variance</th>
-                </tr>
-              </thead>
-              <tbody id="exc-matrix-body-${excId}">
-                <tr>
-                  <td><strong>Source Type</strong></td>
-                  <td>${srcLabel}</td>
-                  <td>${targetSrcLabel}</td>
-                  <td><span class="status-pill status-exact">Different Sources (Passed)</span></td>
-                </tr>
-                <tr>
-                  <td><strong>UTR / Reference ID</strong></td>
-                  <td class="font-mono">${excId}</td>
-                  <td class="font-mono">${bankUtr}</td>
-                  <td><span class="status-pill status-tolerance">Fuzzy Reference Match</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Reconciled Amount</strong></td>
-                  <td class="font-mono">${amtText}</td>
-                  <td class="font-mono">${amtText}</td>
-                  <td><span class="status-pill status-exact">Exact Match</span></td>
-                </tr>
-                <tr>
-                  <td><strong>Transaction Date</strong></td>
-                  <td>${ex.date || "—"}</td>
-                  <td>${ex.date || "—"}</td>
-                  <td><span class="status-pill status-exact">Same Date</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- LLM Audit Trail Box -->
-          <div class="review-ai-box">
-            <div class="ai-box-header">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              <span>LLM AUDIT TRAIL & REASONING</span>
-            </div>
-            <div class="ai-box-content" id="exc-ai-content-${excId}">${ex.reason || "LLM review required: The amounts and currency align closely, but date gap or lack of matching identifiers creates ambiguity, warranting manual review."}</div>
-          </div>
-
-          <div class="review-card-footer" id="action-container-${excId}">
-            ${actionHtml}
-          </div>
-        </div>
-      `;
-
-      // Expand / Collapse toggle on header click!
-      const headerEl = card.querySelector(".review-card-header");
-      const bodyEl = card.querySelector(".review-card-body");
-      const chevronEl = card.querySelector(".review-expand-chevron");
-
-      headerEl.addEventListener("click", () => {
-        const isCollapsed = bodyEl.style.display === "none";
-        if (isCollapsed) {
-          bodyEl.style.display = "block";
-          card.classList.remove("collapsed");
-          card.classList.add("expanded");
-          chevronEl.textContent = "▾";
-        } else {
-          bodyEl.style.display = "none";
-          card.classList.remove("expanded");
-          card.classList.add("collapsed");
-          chevronEl.textContent = "▸";
-        }
-      });
-
-      const smartLlmBtn = card.querySelector(".btn-llm-smart-match");
-      const matchBtn = card.querySelector(".btn-confirm-match");
-      const nonMatchBtn = card.querySelector(".btn-confirm-non-match");
-
-      if (smartLlmBtn) {
-        smartLlmBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          smartLlmBtn.disabled = true;
-          const origHtml = smartLlmBtn.innerHTML;
-          smartLlmBtn.innerHTML = '<span class="spinner"></span> Searching sources & running LLM...';
-
-          try {
-            const res = await window.LedgerApi.llmSmartMatch(excId, settlementId, ex.amount, ex.date, descText, ex.source_type || "settlement", ex.source_name || srcLabel, ex.statement_id || "");
-            if (res && res.ok) {
-              if (res.found_candidate && res.best_candidate) {
-                const cand = res.best_candidate;
-                const mat = res.parameter_matrix || {};
-
-                // Update Target Box
-                const targetSide = card.querySelector(`#exc-target-side-${excId}`);
-                if (targetSide) {
-                  targetSide.innerHTML = `
-                    <div class="side-label">CANDIDATE TARGET (${cand.source_label.toUpperCase()})</div>
-                    <div class="primary-text font-mono">${cand.bank_transaction_id || cand.utr}</div>
-                    <div class="secondary-info">Date: ${cand.date || "—"} &bull; Desc: ${cand.description || "—"}</div>
-                    <div class="confidence-tag font-mono" style="color: #4ade80;">LLM Confidence: ${Math.round(res.confidence * 100)}% Match</div>
-                  `;
-                }
-
-                // Update Confidence Badge
-                const confBadge = card.querySelector(`#exc-conf-badge-${excId}`);
-                if (confBadge) {
-                  confBadge.textContent = `${Math.round(res.confidence * 100)}% Match Confidence`;
-                  confBadge.style.background = "rgba(34, 197, 94, 0.18)";
-                  confBadge.style.color = "#4ade80";
-                }
-
-                // Update Header Target UTR
-                const headerTarget = card.querySelector(".review-target-utr");
-                if (headerTarget) headerTarget.textContent = `Target: ${cand.bank_transaction_id || cand.utr}`;
-
-                // Update Parameter Match Matrix
-                const matrixBody = card.querySelector(`#exc-matrix-body-${excId}`);
-                if (matrixBody) {
-                  matrixBody.innerHTML = `
-                    <tr>
-                      <td><strong>Source Type</strong></td>
-                      <td>${srcLabel}</td>
-                      <td>${cand.source_label}</td>
-                      <td><span class="status-pill status-exact">${mat.source_type_pass || "Different Sources (Passed)"}</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>UTR / Reference ID</strong></td>
-                      <td class="font-mono">${settlementId}</td>
-                      <td class="font-mono">${cand.bank_transaction_id || cand.utr}</td>
-                      <td><span class="status-pill status-exact">${mat.utr_status || "Reference Matched"}</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Reconciled Amount</strong></td>
-                      <td class="font-mono">${amtText}</td>
-                      <td class="font-mono">${formatMoney(cand.amount)}</td>
-                      <td><span class="status-pill status-exact">${mat.amt_status || "Exact Match"}</span></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Transaction Date</strong></td>
-                      <td>${ex.date || "—"}</td>
-                      <td>${cand.date || "—"}</td>
-                      <td><span class="status-pill status-exact">${mat.date_status || "Same Date"}</span></td>
-                    </tr>
-                  `;
-                }
-
-                // Update LLM Reasoning Box
-                const aiContent = card.querySelector(`#exc-ai-content-${excId}`);
-                if (aiContent) {
-                  aiContent.textContent = res.llm_reasoning;
-                  aiContent.classList.add("updated-glow");
-                  setTimeout(() => aiContent.classList.remove("updated-glow"), 2500);
-                }
-              } else {
-                const aiContent = card.querySelector(`#exc-ai-content-${excId}`);
-                if (aiContent) aiContent.textContent = res.reason || "No matching transactions found across other statement sources.";
-              }
-            }
-          } catch (err) {
-            alert(`LLM Smart Match error: ${err.message || err}`);
-          } finally {
-            smartLlmBtn.disabled = false;
-            smartLlmBtn.innerHTML = origHtml;
-          }
-        });
-      }
-
-      if (matchBtn) {
-        matchBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          await handleExceptionResolution(excId, "confirmed_match", card);
-        });
-      }
-
-      if (nonMatchBtn) {
-        nonMatchBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          await handleExceptionResolution(excId, "confirmed_non_match", card);
-        });
-      }
-
-      container.appendChild(card);
-    });
+    if (emptyEl) {
+      emptyEl.style.display = "none";
+    }
   }
 
   async function handleExceptionResolution(excId, outcome, cardElement) {

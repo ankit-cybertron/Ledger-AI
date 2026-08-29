@@ -26,10 +26,10 @@ class MatchingConfig:
     schema_version: str = "2.0.0"
 
     # Tolerance & Window Rules
-    date_tolerance_days: int = 3
+    date_tolerance_days: int = 4
     absolute_amount_tolerance: float = 1.00
-    percentage_tolerance: Optional[float] = None
-    max_tolerance_cap: Optional[float] = None
+    percentage_tolerance: Optional[float] = 0.035
+    max_tolerance_cap: Optional[float] = 100.0
 
     # Similarity & Confidence Thresholds
     narration_similarity_threshold: float = 0.50
@@ -70,6 +70,7 @@ class MatchingConfig:
     scoring_weight_amount: float = 0.30
     scoring_weight_date: float = 0.15
     scoring_weight_narration: float = 0.15
+    incompatibility_penalty: float = 0.50
     evaluation_threshold_sweep: tuple = (0.50, 0.70, 0.80, 0.90, 0.95)
 
     # LLM Settings (Part 5, T5.5)
@@ -77,6 +78,19 @@ class MatchingConfig:
     llm_review_lower_bound: float = 0.30
     llm_review_upper_bound: float = 0.999
     llm_max_retries: int = 2
+
+    def __post_init__(self):
+        """Loads external scoring weights from config/scoring_weights.json if present."""
+        scoring_file = Path(__file__).parent / "scoring_weights.json"
+        if scoring_file.exists():
+            try:
+                with open(scoring_file, "r", encoding="utf-8") as f:
+                    weights = json.load(f)
+                    for k, v in weights.items():
+                        if hasattr(self, k) and v is not None:
+                            setattr(self, k, float(v))
+            except Exception:
+                pass
 
 
 

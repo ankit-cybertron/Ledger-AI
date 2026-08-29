@@ -67,6 +67,7 @@ def detect_duplicate_columns(
     col_mapping = column_mapping_dict or {}
 
     def get_priority(col_name: str) -> int:
+        """Returns numeric priority index for a column based on configuration rules."""
         mapped_field = col_mapping.get(col_name, col_name.lower())
         if mapped_field in field_priority:
             return field_priority.index(mapped_field)

@@ -32,6 +32,7 @@ def _safe_read_csv(path: Path) -> pd.DataFrame:
 
 
 def load_data():
+    """Loads primary and counterpart transaction dataframes from storage."""
     primary = _safe_read_csv(GENERATED_DIR / "primary_records.csv")
     if primary.empty:
         primary = _safe_read_csv(GENERATED_DIR / "bank_statement.csv")
@@ -106,7 +107,7 @@ def exact_match(
     prefixes = getattr(cfg, "utr_prefix_strip_list", None)
 
     for tx_p in primary_txs:
-        if not tx_p.transaction_id or tx_p.transaction_id == "tx_unk" or (tx_p.net_amount or 0.0) <= 0:
+        if not tx_p.transaction_id or tx_p.transaction_id == "tx_unk":
             continue
 
         available_cnt = [tx for tx in counterpart_txs if tx.transaction_id not in matched_cnt_ids]
@@ -115,31 +116,53 @@ def exact_match(
 
         p_order_norm = _norm_str(tx_p.order_id or tx_p.transaction_id, prefixes)
         p_utr_norm = _norm_str(tx_p.utr or tx_p.transaction_id, prefixes)
+        p_rrn_norm = _norm_str(tx_p.rrn, prefixes)
+        p_gw_norm = _norm_str(tx_p.gateway_reference, prefixes)
+        p_auth_norm = _norm_str(tx_p.auth_code, prefixes)
+        p_settl_norm = _norm_str(tx_p.settlement_id, prefixes)
 
         matched_cnt_target = None
 
-        # Priority 1: Identifier Cross-Matching
+        # Priority 1: Identifier Cross-Matching (UTR -> RRN -> Gateway Ref -> Auth Code -> Order ID / Settlement ID)
         for tx_c in available_cnt:
             if not candidates_compatible(tx_p, tx_c):
                 continue
 
+            p_desc_norm = _norm_str(tx_p.description, prefixes)
             c_desc_norm = _norm_str(tx_c.description, prefixes)
             c_utr_norm = _norm_str(tx_c.utr or tx_c.transaction_id, prefixes)
+            c_rrn_norm = _norm_str(tx_c.rrn, prefixes)
+            c_gw_norm = _norm_str(tx_c.gateway_reference, prefixes)
+            c_auth_norm = _norm_str(tx_c.auth_code, prefixes)
             c_order_norm = _norm_str(tx_c.order_id or tx_c.transaction_id, prefixes)
+            c_settl_norm = _norm_str(tx_c.settlement_id, prefixes)
 
             # Check UTR match
-            if p_utr_norm and len(p_utr_norm) >= min_len and (p_utr_norm == c_utr_norm or p_utr_norm in c_desc_norm):
-                ddiff = _date_diff_days(tx_p.transaction_date, tx_c.transaction_date) or 0
-                ev = MatchEvidence(identifier_match_type="exact_utr", amount_diff=0.0, date_diff_days=ddiff, narration_similarity=1.0)
-                conf = compute_confidence(ev, cfg)
-                matched_cnt_target = (tx_c, "exact_utr_match", conf)
+            if (p_utr_norm and len(p_utr_norm) >= min_len and (p_utr_norm == c_utr_norm or p_utr_norm in c_desc_norm)) or \
+               (c_utr_norm and len(c_utr_norm) >= min_len and c_utr_norm in p_desc_norm):
+                matched_cnt_target = (tx_c, "exact_utr_match", 1.00)
                 break
-            # Check Order ID match
-            elif p_order_norm and len(p_order_norm) >= min_len and (p_order_norm == c_order_norm or p_order_norm in c_desc_norm):
-                ddiff = _date_diff_days(tx_p.transaction_date, tx_c.transaction_date) or 0
-                ev = MatchEvidence(identifier_match_type="exact_order_id", amount_diff=0.0, date_diff_days=ddiff, narration_similarity=1.0)
-                conf = compute_confidence(ev, cfg)
-                matched_cnt_target = (tx_c, "exact_order_id_match", conf)
+            # Check RRN match
+            elif (p_rrn_norm and len(p_rrn_norm) >= min_len and (p_rrn_norm == c_rrn_norm or p_rrn_norm in c_desc_norm)) or \
+                 (c_rrn_norm and len(c_rrn_norm) >= min_len and c_rrn_norm in p_desc_norm):
+                matched_cnt_target = (tx_c, "exact_rrn_match", 1.00)
+                break
+            # Check Gateway Ref match
+            elif (p_gw_norm and len(p_gw_norm) >= min_len and (p_gw_norm == c_gw_norm or p_gw_norm in c_desc_norm)) or \
+                 (c_gw_norm and len(c_gw_norm) >= min_len and c_gw_norm in p_desc_norm):
+                matched_cnt_target = (tx_c, "exact_gateway_ref_match", 1.00)
+                break
+            # Check Auth Code match
+            elif (p_auth_norm and len(p_auth_norm) >= min_len and (p_auth_norm == c_auth_norm or p_auth_norm in c_desc_norm)) or \
+                 (c_auth_norm and len(c_auth_norm) >= min_len and c_auth_norm in p_desc_norm):
+                matched_cnt_target = (tx_c, "exact_auth_code_match", 1.00)
+                break
+            # Check Order ID / Settlement ID match
+            elif (p_order_norm and len(p_order_norm) >= min_len and (p_order_norm == c_order_norm or p_order_norm in c_desc_norm)) or \
+                 (c_order_norm and len(c_order_norm) >= min_len and c_order_norm in p_desc_norm) or \
+                 (p_settl_norm and len(p_settl_norm) >= min_len and (p_settl_norm == c_settl_norm or p_settl_norm in c_desc_norm)) or \
+                 (c_settl_norm and len(c_settl_norm) >= min_len and c_settl_norm in p_desc_norm):
+                matched_cnt_target = (tx_c, "exact_order_id_match", 1.00)
                 break
 
         if matched_cnt_target:
@@ -193,6 +216,7 @@ def exact_match(
 
 
 def main():
+    """CLI execution entrypoint for running exact matching standalone."""
     primary, counterpart = load_data()
     matches = exact_match(primary, counterpart)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)

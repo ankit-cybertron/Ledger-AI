@@ -31,18 +31,21 @@ def _serialize_session_summary(session):
 
 @chat_bp.route("/sessions", methods=["GET"])
 def get_sessions():
+    """Returns list of active chat sessions."""
     sessions = [_serialize_session_summary(s) for s in chat_store.list_sessions()]
     return jsonify({"ok": True, "sessions": sessions})
 
 
 @chat_bp.route("/sessions", methods=["POST"])
 def create_session():
+    """Creates a new chat session."""
     session = chat_store.create_session()
     return jsonify({"ok": True, "session": _serialize_session_summary(session)})
 
 
 @chat_bp.route("/sessions/<session_id>", methods=["GET"])
 def get_session(session_id):
+    """Retrieves chat session details by ID."""
     session = chat_store.get_session(session_id)
     if not session:
         return _error("Chat session not found.", 404)
@@ -51,6 +54,7 @@ def get_session(session_id):
 
 @chat_bp.route("/sessions/<session_id>", methods=["DELETE"])
 def delete_session(session_id):
+    """Deletes a chat session by ID."""
     if not chat_store.delete_session(session_id):
         return _error("Chat session not found.", 404)
     return jsonify({"ok": True})
@@ -58,6 +62,7 @@ def delete_session(session_id):
 
 @chat_bp.route("/sessions/<session_id>/messages", methods=["POST"])
 def post_message(session_id):
+    """Processes user query through Settlement QA Agent and appends response to session history."""
     session = chat_store.get_session(session_id)
     if not session:
         return _error("Chat session not found.", 404)
