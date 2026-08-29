@@ -23,8 +23,10 @@ class CanonicalTransaction:
     # Primary Identifier (Required)
     transaction_id: str
 
-    # Source & Channel Taxonomy (Extensible strings or Enums)
-    source_type: Optional[str] = None
+    # Primary & Role Attributes
+    is_primary: bool = False
+
+    # Channel Taxonomy (Extensible strings or Enums)
     channel: Optional[str] = None
 
     # Temporal Attributes
@@ -61,10 +63,16 @@ class CanonicalTransaction:
     expected_settlement_date: Optional[str] = None
     account_identifier: Optional[str] = None
 
-    # Provenance Attributes
+    # Provenance & Statement Attributes
+    statement_id: Optional[str] = None
+    primary_statement_id: Optional[str] = None
+    counterpart_statement_id: Optional[str] = None
+    source_name: Optional[str] = None
+    source_color: Optional[str] = None
     source_file: Optional[str] = None
     source_row_number: Optional[int] = None
     source_sheet: Optional[str] = None
+
 
     # Content Hashing & Deduplication
     content_hash: Optional[str] = None

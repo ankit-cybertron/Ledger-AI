@@ -93,8 +93,9 @@ def determine_priority(exception_type, confidence):
 
 def build_exception_ledger(reconciliation):
     exceptions = reconciliation[
-        reconciliation["status"] == "manual_review"
+        reconciliation["status"].isin(["SIMILAR", "similar", "manual_review", "review"])
     ].copy()
+
 
     # Load existing exception ledger if present to preserve human resolution fields (T7.2)
     existing_lookup = {}
@@ -133,27 +134,33 @@ def build_exception_ledger(reconciliation):
     # Load source records to populate real amount, description, date
     sources = {}
     gen_dir = ROOT / "data" / "generated"
-    for fname in ["razorpay_settlements.csv", "internal_orders.csv"]:
+    for fname in ["primary_records.csv", "bank_statement.csv", "counterpart_records.csv", "razorpay_settlements.csv", "internal_orders.csv"]:
         fpath = gen_dir / fname
         if fpath.exists():
             try:
                 sdf = pd.read_csv(fpath)
-                sid_col = "settlement_id" if "settlement_id" in sdf.columns else ("order_id" if "order_id" in sdf.columns else None)
-                if sid_col:
+                id_cols = ["primary_transaction_id", "transaction_id", "settlement_id", "bank_transaction_id", "order_id"]
+                found_id_cols = [c for c in id_cols if c in sdf.columns]
+                if found_id_cols:
                     for _, srow in sdf.iterrows():
-                        sid = str(srow[sid_col])
-                        amt = srow.get("amount") if pd.notna(srow.get("amount")) else srow.get("credit", 0)
-                        desc_val = srow.get("description")
-                        if pd.isna(desc_val) or not str(desc_val).strip() or str(desc_val).strip() == "nan":
-                            desc_val = srow.get("customer") or srow.get("order_id") or sid
-                        dt = srow.get("date") or srow.get("created_at") or srow.get("settlement_date") or ""
-                        stype = "Orders" if "order_id" in fname or "order_id" in str(srow) else "Settlement"
-                        sources[sid] = {
-                            "amount": float(pd.to_numeric(amt, errors="coerce") or 0.0),
-                            "description": str(desc_val),
-                            "date": str(dt),
-                            "source": stype
-                        }
+                        for id_c in found_id_cols:
+                            sid = str(srow[id_c]).strip()
+                            if not sid or sid == "nan":
+                                continue
+                            raw_amt = srow.get("amount") if pd.notna(srow.get("amount")) else (srow.get("net_amount") if pd.notna(srow.get("net_amount")) else srow.get("credit", 0))
+                            amt_val = float(pd.to_numeric(raw_amt, errors="coerce") or 0.0)
+                            desc_val = srow.get("description") if pd.notna(srow.get("description")) else srow.get("narration")
+                            if pd.isna(desc_val) or not str(desc_val).strip() or str(desc_val).strip() == "nan":
+                                desc_val = srow.get("customer") or srow.get("order_id") or sid
+                            dt = srow.get("date") or srow.get("transaction_date") or srow.get("created_at") or srow.get("settlement_date") or ""
+                            stype = "Orders" if "order_id" in fname or "order_id" in str(srow) else ("Bank Statement" if "primary" in fname or "bank" in fname else "Settlement")
+                            if sid not in sources or (sources[sid]["amount"] == 0.0 and amt_val != 0.0):
+                                sources[sid] = {
+                                    "amount": amt_val,
+                                    "description": str(desc_val),
+                                    "date": str(dt),
+                                    "source": stype
+                                }
             except Exception:
                 pass
 

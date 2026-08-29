@@ -4,28 +4,6 @@
     "headers": 0.45,
     "values": 0.20
   },
-  "source_types": {
-    "BANK": {
-      "filename_keywords": ["bank", "statement", "passbook", "account_statement", "hdfc", "icici", "sbi", "axis"],
-      "header_keywords": ["narration", "particulars", "chq_no", "cheque", "balance", "credit", "debit", "value_date"],
-      "value_patterns": ["\\bneft\\b", "\\bimps\\b", "\\brtgs\\b", "\\btransfer\\b"]
-    },
-    "GATEWAY": {
-      "filename_keywords": ["razorpay", "stripe", "paytm", "gateway", "settlement", "payout", "merchant"],
-      "header_keywords": ["settlement_id", "gateway_ref", "fee", "tax", "gst", "auth_code", "card_network", "payment_id"],
-      "value_patterns": ["setl_", "pay_", "razorpay"]
-    },
-    "INTERNAL_ORDER": {
-      "filename_keywords": ["order", "internal_order", "sales", "invoice", "order_book", "checkout"],
-      "header_keywords": ["order_id", "ord_id", "customer_name", "billing_address", "sku", "item_name", "payment_status"],
-      "value_patterns": ["ord_", "order_"]
-    },
-    "SUBLEDGER": {
-      "filename_keywords": ["upi", "card", "cash", "wallet", "subledger", "register"],
-      "header_keywords": ["vpa", "card_no", "terminal_id", "cashier", "sub_ledger"],
-      "value_patterns": ["@upi", "@ok", "card_"]
-    }
-  },
   "channels": {
     "UPI": {
       "filename_keywords": ["upi", "gpay", "phonepe", "paytm_upi"],

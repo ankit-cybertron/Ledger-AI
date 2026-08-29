@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overview — Ledger</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
+  <title>Overview — Ledger AI</title>
+  <meta name="description" content="Ledger AI — Reconciliation overview and status">
+  <script>(function(){ var t=localStorage.getItem('ledger-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }());</script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <!-- Chart.js for Overview Visualizations (Part 9) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -20,9 +21,9 @@
   <div class="bg-glow"></div>
 
   <div class="app-shell">
-    {% include "_nav.html" %}
+    {% include "_topbar.html" %}
 
-    <section class="overview-panel">
+  <section class="overview-panel" style="max-width:1140px;margin:0 auto;padding:24px 20px;">
       <div class="overview-hero">
         <h1 class="overview-headline">Welcome back to<br><span class="ghost">Ledger</span></h1>
         <p class="overview-subhead">
@@ -42,26 +43,93 @@
         </div>
       </div>
 
-      {% if data_available %}
       <div class="stat-cards-lg">
         <div class="stat-card-lg">
-          <div class="stat-card-lg-value">{{ percent_auto_matched ~ '%' if percent_auto_matched is not none else '—' }}
-          </div>
+          <div class="stat-card-lg-value">{{ percent_auto_matched ~ '%' if percent_auto_matched is not none else '—' }}</div>
           <div class="stat-card-lg-label">Matched automatically</div>
           <div class="stat-card-lg-hint">No human touch — rules and matching did the work</div>
         </div>
         <div class="stat-card-lg">
-          <div class="stat-card-lg-value">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '—' }}
-          </div>
+          <div class="stat-card-lg-value">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '—' }}</div>
           <div class="stat-card-lg-label">Reconciled overall</div>
-          <div class="stat-card-lg-hint">Of {{ total_transactions }} transactions, {{ open_exceptions }} needed a person
-          </div>
+          <div class="stat-card-lg-hint">Of {{ total_transactions }} transactions, {{ open_exceptions }} needed a person</div>
         </div>
         <div class="stat-card-lg">
           <div class="stat-card-lg-value">{{ manual_matched if manual_matched is not none else '—' }}</div>
           <div class="stat-card-lg-label">Manual / LLM reviewed</div>
           <div class="stat-card-lg-hint">Resolved with human or LLM judgment, not guessed</div>
         </div>
+      </div>
+
+      <!-- PART 9 OVERVIEW CHARTS GRID (6 Charts) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px; margin: 32px 0;">
+        
+        <!-- Chart 1: Status Breakdown (Donut) -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Taxonomy Status Breakdown</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">SETTLED vs MATCHED vs SIMILAR vs UNMATCHED distribution</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartStatusBreakdown"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Reconciliation Funnel -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Reconciliation Pipeline Funnel</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Transaction volume flow across pipeline stages</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartReconFunnel"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Source-wise Contribution (Stacked Bar) -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Source-Wise Contribution & Exceptions</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Taxonomy status breakdown per statement source</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartSourceContribution"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Confidence Score Distribution Histogram -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Confidence Score Distribution</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Scoring engine calibration & match mass distribution</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartConfidenceDist"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 5: Exception Aging Chart -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Open Exception Aging</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Age buckets for SIMILAR / manual-review items</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartExceptionAging"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 6: Match Rate Trend Line -->
+        <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Reconciliation Match Rate Trend</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Historical match percentage over pipeline import runs</div>
+          </div>
+          <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
+            <canvas id="ssrChartMatchTrend"></canvas>
+          </div>
+        </div>
+
       </div>
 
       <div class="info-box-row">
@@ -71,8 +139,7 @@
             <path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
-          <span>Every committed match balances to the penny. Anything that doesn't balance stays flagged, not buried, in
-            the Exception Ledger.</span>
+          <span>Every committed match balances to the penny. Anything that doesn't balance stays flagged, not buried, in the Exception Ledger.</span>
         </div>
         <div class="info-box">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -80,60 +147,150 @@
             <path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round" />
           </svg>
-          <span>{{ open_exceptions }} exception{{ '' if open_exceptions == 1 else 's' }} currently open — reviewable in
-            plain language from Talk to Ledger.</span>
+          <span>{{ open_exceptions }} exception{{ '' if open_exceptions == 1 else 's' }} currently open — reviewable in plain language from Talk to Ledger.</span>
         </div>
       </div>
-
-      <div class="engine-card">
-        <div class="engine-card-header">
-          <span>RECONCILIATION ENGINE</span>
-          <span class="engine-status"><span class="dot"></span> Active</span>
-        </div>
-
-        {% if latest_match_row %}
-        <div class="engine-row engine-row-matched">
-          <div class="engine-row-fields">
-            {% for key, value in latest_match_row.items() %}
-            {% if loop.index0 < 4 %} <div class="engine-field">
-              <span class="engine-field-label">{{ key }}</span>
-              <span class="engine-field-value">{{ value }}</span>
-          </div>
-          {% endif %}
-          {% endfor %}
-        </div>
-        <span class="engine-matched-tag">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M13.5 6.5l4 4-4 4M6.5 17.5l-4-4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          MATCHED
-        </span>
-      </div>
-      {% else %}
-      <div class="engine-row-empty">No reconciled transactions found yet.</div>
-      {% endif %}
-
-      <div class="engine-metrics">
-        <div class="engine-metric">
-          <div class="label">Reconciled Overall</div>
-          <div class="value">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '—' }}</div>
-        </div>
-        <div class="engine-metric">
-          <div class="label">Open Exceptions</div>
-          <div class="value">{{ open_exceptions }}</div>
-        </div>
-      </div>
-  </div>
-
-  {% else %}
-  <div class="empty-state" style="max-width:520px;margin:40px auto;text-align:center;padding:40px 20px;">
-    <h3 style="margin-bottom:12px;font-size:1.25rem;color:var(--ink);"></h3>
-  </div>
-  {% endif %}
   </section>
   </div>
 
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script>
+  (function() {
+    const chartsData = {{ charts | tojson }};
+    const total = {{ total_transactions or 0 }};
+    const hasData = total > 0;
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
+
+    if (!window.Chart || !chartsData) return;
+
+    function showEmpty(canvas, msg) {
+      if (!canvas) return;
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      canvas.style.display = "none";
+      const div = document.createElement("div");
+      div.style.cssText = "display:flex;align-items:center;justify-content:center;height:100%;min-height:180px;color:var(--text-muted);font-size:0.82rem;text-align:center;padding:20px;background:var(--bg-elevated);border-radius:8px;border:1px dashed var(--border);";
+      div.textContent = msg;
+      parent.appendChild(div);
+    }
+
+    // Chart 1: Status Breakdown
+    const c1 = document.getElementById("ssrChartStatusBreakdown");
+    if (c1) {
+      if (!hasData) showEmpty(c1, "No transaction status breakdown available yet.");
+      else {
+        const sb = chartsData.status_breakdown || {};
+        new Chart(c1.getContext("2d"), {
+          type: "doughnut",
+          data: {
+            labels: sb.labels || ["SETTLED", "MATCHED", "SIMILAR", "UNMATCHED"],
+            datasets: [{
+              data: sb.counts || [0, 0, 0, 0],
+              backgroundColor: ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"],
+              borderWidth: 2,
+              borderColor: isDark ? "#0f172a" : "#ffffff"
+            }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: textColor } } } }
+        });
+      }
+    }
+
+    // Chart 2: Funnel
+    const c2 = document.getElementById("ssrChartReconFunnel");
+    if (c2) {
+      if (!hasData) showEmpty(c2, "No pipeline volume flow available yet.");
+      else {
+        const fn = chartsData.funnel_data || {};
+        new Chart(c2.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: fn.stages || ["Total", "Auto", "Settled", "Similar", "Unmatched"],
+            datasets: [{ label: "Volume Flow", data: fn.counts || [0, 0, 0, 0, 0], backgroundColor: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"], borderRadius: 6 }]
+          },
+          options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { display: false }, ticks: { color: textColor } } } }
+        });
+      }
+    }
+
+    // Chart 3: Source Contribution
+    const c3 = document.getElementById("ssrChartSourceContribution");
+    if (c3) {
+      if (!hasData) showEmpty(c3, "No statement contribution data available yet.");
+      else {
+        const sc = chartsData.source_contribution || {};
+        const ds = sc.datasets || {};
+        new Chart(c3.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: sc.labels || ["No Sources"],
+            datasets: [
+              { label: "SETTLED", data: ds.SETTLED || [0], backgroundColor: "#10b981" },
+              { label: "MATCHED", data: ds.MATCHED || [0], backgroundColor: "#3b82f6" },
+              { label: "SIMILAR", data: ds.SIMILAR || [0], backgroundColor: "#f59e0b" },
+              { label: "UNMATCHED", data: ds.UNMATCHED || [0], backgroundColor: "#ef4444" }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { color: textColor } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: textColor } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor } } } }
+        });
+      }
+    }
+
+    // Chart 4: Confidence Score Distribution
+    const c4 = document.getElementById("ssrChartConfidenceDist");
+    if (c4) {
+      if (!hasData) showEmpty(c4, "No confidence scoring distribution available yet.");
+      else {
+        const cd = chartsData.confidence_distribution || {};
+        new Chart(c4.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: cd.labels || ["0.0 - 0.5", "0.5 - 0.7", "0.7 - 0.8", "0.8 - 0.9", "0.9 - 1.0"],
+            datasets: [{ label: "Transaction Count", data: cd.counts || [0, 0, 0, 0, 0], backgroundColor: "#8b5cf6", borderRadius: 6 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } } }
+        });
+      }
+    }
+
+    // Chart 5: Exception Aging
+    const c5 = document.getElementById("ssrChartExceptionAging");
+    if (c5) {
+      const ea = chartsData.exception_aging || {};
+      const totExc = (ea.counts || []).reduce((a, b) => a + b, 0);
+      if (!hasData || totExc === 0) showEmpty(c5, "No open exception items to age.");
+      else {
+        new Chart(c5.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: ea.labels || ["0-1 day", "1-3 days", "3-7 days", "7+ days"],
+            datasets: [{ label: "Open Exception Items", data: ea.counts || [0, 0, 0, 0], backgroundColor: ["#3b82f6", "#f59e0b", "#f97316", "#ef4444"], borderRadius: 6 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } } }
+        });
+      }
+    }
+
+    // Chart 6: Trend Line
+    const c6 = document.getElementById("ssrChartMatchTrend");
+    if (c6) {
+      if (!hasData) showEmpty(c6, "No match-rate historical trend available yet.");
+      else {
+        const tl = chartsData.trend_line || {};
+        new Chart(c6.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: tl.labels || ["Current Run"],
+            datasets: [{ label: "Match Rate (%)", data: tl.match_rates || [0], borderColor: "#10b981", backgroundColor: "rgba(16, 185, 129, 0.12)", fill: true, tension: 0.35, pointRadius: 4 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor } }, y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + "%" } } } }
+        });
+      }
+    }
+  }());
+</script>
 </body>
 
 </html>

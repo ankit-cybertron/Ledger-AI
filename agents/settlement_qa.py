@@ -20,6 +20,10 @@ BANK_PATH = (
     GENERATED_DIR / "bank_statement.csv"
 )
 
+INTERNAL_ORDERS_PATH = (
+    GENERATED_DIR / "internal_orders.csv"
+)
+
 RECONCILIATION_PATH = (
     RESULTS_DIR / "reconciliation_results.csv"
 )
@@ -38,12 +42,13 @@ EXCEPTION_LEDGER_PATH = (
 
 _settlements = None
 _bank = None
+_internal_orders = None
 _reconciliation = None
 _exceptions = None
 
 
 def _load():
-    global _settlements, _bank, _reconciliation, _exceptions
+    global _settlements, _bank, _internal_orders, _reconciliation, _exceptions
 
     if _settlements is None:
         _settlements = pd.read_csv(
@@ -54,6 +59,14 @@ def _load():
         _bank = pd.read_csv(
             BANK_PATH
         ).set_index("bank_transaction_id", drop=False)
+
+    if _internal_orders is None:
+        if INTERNAL_ORDERS_PATH.exists():
+            _internal_orders = pd.read_csv(
+                INTERNAL_ORDERS_PATH
+            ).set_index("order_id", drop=False)
+        else:
+            _internal_orders = pd.DataFrame()
 
     if _reconciliation is None:
         _reconciliation = pd.read_csv(
@@ -83,9 +96,10 @@ def reload_data():
     the reconciliation pipeline has been re-run since this
     process started.
     """
-    global _settlements, _bank, _reconciliation, _exceptions
+    global _settlements, _bank, _internal_orders, _reconciliation, _exceptions
     _settlements = None
     _bank = None
+    _internal_orders = None
     _reconciliation = None
     _exceptions = None
     _load()
@@ -445,4 +459,163 @@ def get_bank_transaction(bank_transaction_id):
         "found": True,
         "bank_transaction": bank_record,
         "linked_reconciliation_rows": linked,
+    }
+
+
+# ============================================================
+# TOOL 6 -- GET INTERNAL ORDER
+# ============================================================
+
+def get_order(order_id):
+    """
+    Returns details for an internal order by order_id or Bill No.
+    """
+    _load()
+    order_id_str = str(order_id).strip().lower()
+    if _internal_orders is not None and not _internal_orders.empty:
+        for idx, row in _internal_orders.iterrows():
+            if (
+                str(row.get("order_id", "")).lower() == order_id_str
+                or str(row.get("Bill No", "")).lower() == order_id_str
+                or str(idx).lower() == order_id_str
+            ):
+                return {"found": True, "order": _clean(row.to_dict())}
+    return {
+        "found": False,
+        "order_id": order_id,
+        "message": f"No internal order with reference '{order_id}' exists in the dataset."
+    }
+
+
+# ============================================================
+# TOOL 7 -- SEARCH BY KEYWORD OR IDENTIFIER (UTR, UPI ID, ETC)
+# ============================================================
+
+def search_by_keyword_or_identifier(query):
+    """
+    Search for a UTR number, UPI ID, settlement ID, bank transaction ID,
+    order ID, narration string, or reference code across all reconciliation data.
+    Returns full details and key statistics.
+    """
+    import re
+    _load()
+    query_str = str(query).strip().lower()
+    if not query_str:
+        return {"found": False, "query": query, "message": "Search query was empty."}
+
+    stop_words = {"tell", "me", "about", "the", "from", "in", "book", "for", "a", "an", "is", "was", "show", "get", "find", "transaction", "transactions", "detail", "details"}
+    tokens = [t for t in re.findall(r'\w+', query_str) if t not in stop_words and len(t) > 2]
+
+    matched_settlement_ids = set()
+    matched_bank_ids = set()
+    matched_order_ids = set()
+
+    # Search Settlements
+    for idx, row in _settlements.iterrows():
+        row_str = " ".join([str(v).lower() for k, v in row.items() if pd.notna(v)]) + " " + str(idx).lower()
+        if query_str in row_str or (tokens and all(t in row_str for t in tokens)):
+            matched_settlement_ids.add(str(row["settlement_id"]).strip())
+        elif "refund" in query_str and ("refund" in row_str or "return" in row_str):
+            matched_settlement_ids.add(str(row["settlement_id"]).strip())
+
+    # Search Bank Statements
+    for idx, row in _bank.iterrows():
+        row_str = " ".join([str(v).lower() for k, v in row.items() if pd.notna(v)]) + " " + str(idx).lower()
+        if query_str in row_str or (tokens and all(t in row_str for t in tokens)):
+            matched_bank_ids.add(str(row["bank_transaction_id"]).strip())
+            if pd.notna(row.get("settlement_id")):
+                matched_settlement_ids.add(str(row["settlement_id"]).strip())
+
+    # Search Internal Orders
+    if _internal_orders is not None and not _internal_orders.empty:
+        for idx, row in _internal_orders.iterrows():
+            row_str = " ".join([str(v).lower() for k, v in row.items() if pd.notna(v)]) + " " + str(idx).lower()
+            if query_str in row_str or (tokens and all(t in row_str for t in tokens)):
+                matched_order_ids.add(str(row["order_id"]).strip())
+            elif "refund" in query_str and ("refunded" in row_str or "return" in row_str):
+                matched_order_ids.add(str(row["order_id"]).strip())
+
+    # Search Reconciliation Results
+    recon_matches = _reconciliation[
+        _reconciliation["settlement_id"].astype(str).str.lower().str.contains(query_str, na=False)
+        | _reconciliation["bank_transaction_id"].astype(str).str.lower().str.contains(query_str, na=False)
+        | _reconciliation["reason"].astype(str).str.lower().str.contains(query_str, na=False)
+    ]
+
+    for _, r in recon_matches.iterrows():
+        if pd.notna(r.get("settlement_id")):
+            matched_settlement_ids.add(str(r["settlement_id"]).strip())
+        if pd.notna(r.get("bank_transaction_id")):
+            matched_bank_ids.add(str(r["bank_transaction_id"]).strip())
+
+    if not matched_settlement_ids and not matched_bank_ids and not matched_order_ids:
+        return {
+            "found": False,
+            "query": query,
+            "message": f"No records found matching identifier or keyword '{query}'."
+        }
+
+    results = []
+    total_amount_settled = 0.0
+    total_bank_credited = 0.0
+    total_order_amount = 0.0
+    matched_count = 0
+    exception_count = 0
+    stages_found = set()
+
+    for sid in matched_settlement_ids:
+        s_data = get_settlement(sid)
+        if s_data.get("found"):
+            results.append(s_data)
+            s_rec = s_data.get("settlement", {})
+            total_amount_settled += float(s_rec.get("amount") or 0.0)
+            if s_data.get("overall_status") == "matched":
+                matched_count += 1
+            if s_data.get("open_exception"):
+                exception_count += 1
+            for rel in s_data.get("relationships", []):
+                if rel.get("stage"):
+                    stages_found.add(rel["stage"])
+
+    bank_records = []
+    for bid in matched_bank_ids:
+        b_data = get_bank_transaction(bid)
+        if b_data.get("found"):
+            bank_records.append(b_data)
+            b_rec = b_data.get("bank_transaction", {})
+            total_bank_credited += float(b_rec.get("amount") or b_rec.get("Credit (INR)") or 0.0)
+
+    order_records = []
+    for oid in matched_order_ids:
+        o_data = get_order(oid)
+        if o_data.get("found"):
+            order_records.append(o_data)
+            o_rec = o_data.get("order", {})
+            total_order_amount += float(o_rec.get("amount") or 0.0)
+
+    total_found = len(matched_settlement_ids) + len(bank_records) + len(matched_order_ids)
+    match_rate = round((matched_count / len(matched_settlement_ids) * 100), 2) if matched_settlement_ids else 0.0
+    amount_diff = round(total_amount_settled - total_bank_credited, 2)
+
+    stats = {
+        "total_records_found": total_found,
+        "settlements_count": len(matched_settlement_ids),
+        "bank_transactions_count": len(bank_records),
+        "internal_orders_count": len(matched_order_ids),
+        "reconciliation_match_rate": f"{match_rate}%",
+        "total_settlement_amount": total_amount_settled,
+        "total_bank_credit_amount": total_bank_credited,
+        "total_internal_order_amount": total_order_amount,
+        "net_amount_variance": amount_diff,
+        "open_exceptions_count": exception_count,
+        "stages_involved": list(stages_found)
+    }
+
+    return {
+        "found": True,
+        "query": query,
+        "stats": stats,
+        "settlements": results,
+        "bank_transactions": bank_records,
+        "internal_orders": order_records
     }

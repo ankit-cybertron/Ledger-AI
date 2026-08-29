@@ -1,5 +1,44 @@
+# Environment & Dependencies
 .env
 .venv/
+venv/
+env/
+
+# Python Bytecode & Cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System Files
 .DS_Store
+Thumbs.db
+
+# Project Data (Inputs, Outputs, Processed Datasets, Database State, and Logs)
+data/uploads/*
+!data/uploads/.gitkeep
+data/generated/*
+!data/generated/.gitkeep
+data/results/*
+!data/results/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/ml/*
+!data/ml/.gitkeep
+data/logs/*
+!data/logs/.gitkeep
+data/statements_db.json
+
+# Input Files
+Input/
+INPUT/*.csv
+INPUT/*.json
+Test_data/
+TEST_DATA/*.csv
+TEST_DATA/*.json
+
+# Logs
+*.log

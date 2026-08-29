@@ -95,6 +95,48 @@ def _compute_content_hash(fields_dict: Dict[str, Any]) -> str:
     return hashlib.sha256(raw_str.encode("utf-8")).hexdigest()[:16]
 
 
+def _is_valid_id(val: Any) -> bool:
+    if val is None:
+        return False
+    s = str(val).strip()
+    if not s or s.lower() in ("nan", "none", "null", "unknown", "n/a", "na", "—", "-", "undefined"):
+        return False
+    # Reject date-like strings (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY)
+    if re.match(r"^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}$", s) or re.match(r"^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}$", s):
+        return False
+    return True
+
+
+def _generate_clean_fallback_tx_id(src_file: Optional[str], row_num: Any) -> str:
+    num = int(row_num) if isinstance(row_num, (int, str)) and str(row_num).isdigit() else 1
+    if not src_file:
+        return f"TXN-{num:04d}"
+    
+    stem = Path(str(src_file)).stem.lower()
+    # Clean up prefixes like rw_, raw_, input_, data_, stmt_
+    stem = re.sub(r"^(rw_\d*|raw_\d*|input_\d*|data_\d*|stmt_\d*)", "", stem).strip("_")
+    # Clean up leading digits e.g. 01_
+    stem = re.sub(r"^\d+_", "", stem).strip("_")
+    
+    if "bank" in stem:
+        prefix = "BNK"
+    elif "order" in stem:
+        prefix = "ORD"
+    elif "upi" in stem:
+        prefix = "UPI"
+    elif "card" in stem:
+        prefix = "CARD"
+    elif "cash" in stem:
+        prefix = "CASH"
+    elif "settlement" in stem or "razorpay" in stem or "stripe" in stem:
+        prefix = "SETL"
+    else:
+        clean_tokens = [t.upper() for t in re.findall(r"[a-zA-Z0-9]+", stem) if t]
+        prefix = clean_tokens[0][:6] if clean_tokens else "TXN"
+    
+    return f"{prefix}-TXN-{num:04d}"
+
+
 def normalize_row(
     raw_row: Dict[str, Any],
     mappings: List[ColumnMapping],
@@ -151,50 +193,63 @@ def normalize_row(
     norm_status = TransactionStatus.normalize(raw_status) if raw_status else None
 
     # 4. Reference Identifiers & Free-Text Regex Backfill
+    raw_tx_id = str(mapped_vals.get("transaction_id")).strip() if mapped_vals.get("transaction_id") else None
     utr_val = str(mapped_vals.get("utr")).strip() if mapped_vals.get("utr") else None
     order_val = str(mapped_vals.get("order_id")).strip() if mapped_vals.get("order_id") else None
     setl_val = str(mapped_vals.get("settlement_id")).strip() if mapped_vals.get("settlement_id") else None
+    auth_val = str(mapped_vals.get("auth_code")).strip() if mapped_vals.get("auth_code") else None
+    rrn_val = str(mapped_vals.get("rrn")).strip() if mapped_vals.get("rrn") else None
     desc_val = str(mapped_vals.get("description")).strip() if mapped_vals.get("description") else None
 
     if desc_val:
         # Regex backfill if explicit identifiers are missing
-        if not order_val and "order_id" in id_patterns:
+        if not _is_valid_id(order_val) and "order_id" in id_patterns:
             for pat in id_patterns["order_id"]:
                 m = re.search(pat, desc_val, re.IGNORECASE)
                 if m:
                     order_val = m.group(1)
                     break
 
-        if not utr_val and "utr" in id_patterns:
+        if not _is_valid_id(utr_val) and "utr" in id_patterns:
             for pat in id_patterns["utr"]:
                 m = re.search(pat, desc_val, re.IGNORECASE)
                 if m:
                     utr_val = m.group(1)
                     break
 
-        if not setl_val and "settlement_id" in id_patterns:
+        if not _is_valid_id(setl_val) and "settlement_id" in id_patterns:
             for pat in id_patterns["settlement_id"]:
                 m = re.search(pat, desc_val, re.IGNORECASE)
                 if m:
                     setl_val = m.group(1)
                     break
 
+    # Validate and filter out invalid/date-like IDs
+    raw_tx_id = raw_tx_id if _is_valid_id(raw_tx_id) else None
+    utr_val = utr_val if _is_valid_id(utr_val) else None
+    order_val = order_val if _is_valid_id(order_val) else None
+    setl_val = setl_val if _is_valid_id(setl_val) else None
+    auth_val = auth_val if _is_valid_id(auth_val) else None
+    rrn_val = rrn_val if _is_valid_id(rrn_val) else None
+
     # 5. Currency Inference
     currency_val = str(mapped_vals.get("currency")).strip() if mapped_vals.get("currency") else None
     if not currency_val:
         currency_val = _infer_currency_from_headers(source_headers, default_curr)
 
-    # 6. Provenance & Primary Transaction ID
+    # 6. Provenance & Primary Transaction ID Selection
     prov = provenance or {}
     src_file = prov.get("source_file") or raw_row.get("source_file")
     src_sheet = prov.get("source_sheet") or raw_row.get("source_sheet")
-    src_row_num = prov.get("source_row_number") or raw_row.get("source_row_number")
+    src_row_num = prov.get("source_row_number") or raw_row.get("source_row_number") or 1
 
-    # Primary Tx ID logic: preference order -> settlement_id > utr > order_id > synthetic provenance key
-    tx_id = setl_val or utr_val or order_val
+    # Primary Tx ID logic: explicit transaction ID, UTR, Order ID, Auth Code, RRN, or composite settlement ID
+    tx_id = raw_tx_id or utr_val or order_val or auth_val or rrn_val
     if not tx_id:
-        file_slug = str(src_file).replace(" ", "_").lower() if src_file else "raw"
-        tx_id = f"tx_{file_slug}_{src_row_num or 1}"
+        if setl_val:
+            tx_id = f"{setl_val}_{order_val}" if order_val else f"{setl_val}_row{src_row_num}"
+        else:
+            tx_id = _generate_clean_fallback_tx_id(src_file, src_row_num)
 
     # Build fields dict for hash computation
     hash_fields = {
@@ -209,7 +264,7 @@ def normalize_row(
 
     return CanonicalTransaction(
         transaction_id=tx_id,
-        source_type=prov.get("source_type"),
+        is_primary=bool(prov.get("is_primary", False)),
         channel=prov.get("channel"),
         transaction_date=str(mapped_vals.get("transaction_date")).strip() if mapped_vals.get("transaction_date") else None,
         value_date=str(mapped_vals.get("value_date")).strip() if mapped_vals.get("value_date") else None,

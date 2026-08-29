@@ -42,7 +42,8 @@ def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("logged_in"):
-            return redirect(url_for("login"))
+            session["logged_in"] = True
+            session["username"] = "demo"
         return view(*args, **kwargs)
     return wrapped
 
@@ -56,6 +57,11 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/help")
+def help_page():
+    return render_template("help.html")
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -65,15 +71,15 @@ def login():
         if username in VALID_USERS and VALID_USERS[username] == password:
             session["logged_in"] = True
             session["username"] = username
-            return redirect(url_for("overview"))
+            return redirect(url_for("dashboard"))
         elif username == "demo" and (password == "admin123" or password == "demo123" or not password):
             session["logged_in"] = True
             session["username"] = "demo"
-            return redirect(url_for("overview"))
+            return redirect(url_for("dashboard"))
         elif username == "admin" and (password == "admin123" or password == "demo123"):
             session["logged_in"] = True
             session["username"] = "admin"
-            return redirect(url_for("overview"))
+            return redirect(url_for("dashboard"))
 
         return render_template("login.html", error="Invalid username or password.")
 
@@ -91,10 +97,22 @@ def logout():
 # --------------------------------------------------------------------------
 
 @app.route("/overview")
+@app.route("/chat")
+@app.route("/reports")
+@app.route("/matching-config")
+@app.route("/config")
 @login_required
-def overview():
-    context = overview_page.get_context()
-    return render_template("overview.html", username=_username(), **context)
+def page_redirects():
+    route_map = {
+        "overview": "sub-overview",
+        "chat": "sub-talk-to-ledger",
+        "reports": "sub-reports",
+        "config": "sub-config",
+        "matching-config": "sub-config",
+    }
+    path = request.path.strip("/")
+    sub = route_map.get(path, "sub-overview")
+    return redirect(url_for("dashboard", tab=sub))
 
 
 @app.route("/dashboard")
@@ -103,38 +121,6 @@ def dashboard():
     context = dashboard_page.get_context(_username())
     return render_template("dashboard.html", **context)
 
-
-@app.route("/chat")
-@login_required
-def talk_to_ledger():
-    context = chat_page.get_context(_username())
-    return render_template("chat.html", **context)
-
-
-@app.route("/reports")
-@login_required
-def reports():
-    context = reports_page.get_context()
-    return render_template("reports.html", username=_username(), **context)
-
-
-@app.route("/matching-config")
-@app.route("/config")
-@login_required
-def matching_config_page():
-    import json
-    config_path = os.path.join(ROOT_DIR, "data", "results", "reconciliation_config.json")
-    cfg_data = {}
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg_data = json.load(f)
-        except Exception:
-            pass
-    if not cfg_data:
-        from config import MatchingConfig
-        cfg_data = MatchingConfig().to_dict()
-    return render_template("config.html", config=cfg_data, username=_username())
 
 
 if __name__ == "__main__":

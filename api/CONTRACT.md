@@ -1,10 +1,10 @@
 # API Contract Documentation (Ledger AI v2)
 
-This document defines the frozen API contract between the Flask backend (`frontend/api/routes.py`, `frontend/api/chat_routes.py`) and the frontend JS client (`frontend/static/js/api.js`).
+This document defines the frozen API contract between the Flask backend (`frontend/api/routes.py`, `frontend/api/chat_routes.py`) and the frontend client (`frontend/static/js/api.js`).
 
 ---
 
-## 1. Statement Store API (`/api/statements`)
+## 1. Statement Store API (`/api/statements` & `/api/data/clear`)
 
 ### `GET /api/statements`
 - **Method**: `GET`
@@ -87,6 +87,28 @@ This document defines the frozen API contract between the Flask backend (`fronte
   }
   ```
 
+### `POST /api/statements/<statement_id>/update-rows`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"rows": [{"row_index": 0, "updates": {"Customer Name": "Jane Doe"}}]}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "message": "1 rows updated."
+  }
+  ```
+
+### `POST /api/statements/<statement_id>/delete-columns`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"columns": ["UnusedCol"]}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "message": "1 columns deleted."
+  }
+  ```
+
 ### `DELETE /api/statements/<statement_id>`
 - **Method**: `DELETE`
 - **Response**:
@@ -96,9 +118,19 @@ This document defines the frozen API contract between the Flask backend (`fronte
   }
   ```
 
+### `POST /api/data/clear`
+- **Method**: `POST`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "message": "All statement data and reconciliation results have been cleared."
+  }
+  ```
+
 ---
 
-## 2. Legacy Upload API (`/api/upload`)
+## 2. Legacy Upload API (`/api/upload`) (Deprecated)
 
 ### `POST /api/upload/razorpay`, `POST /api/upload/bank`, `POST /api/upload/orders`
 - **Method**: `POST` (`multipart/form-data`)
@@ -108,7 +140,7 @@ This document defines the frozen API contract between the Flask backend (`fronte
   {
     "ok": true,
     "source": "bank",
-    "upload_id": "abc12345",
+    "upload_id": "stmt_123",
     "filename": "statement.csv",
     "row_count": 100,
     "uploaded_at": "2026-08-25T00:00:00Z"
@@ -117,7 +149,7 @@ This document defines the frozen API contract between the Flask backend (`fronte
 
 ---
 
-## 3. Reconciliation & Dashboard API (`/api/reconcile`, `/api/reconciliation`, `/api/exceptions`)
+## 3. Reconciliation, Pipeline & Dashboard API
 
 ### `POST /api/reconcile`
 - **Method**: `POST` (`application/json`)
@@ -179,6 +211,37 @@ This document defines the frozen API contract between the Flask backend (`fronte
   }
   ```
 
+### `GET /api/reconciliation/runs`
+- **Method**: `GET`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "runs": [
+      {
+        "run_id": "run_9876",
+        "period_label": "August 2026",
+        "status": "completed",
+        "created_at": "2026-08-25T00:00:00Z"
+      }
+    ]
+  }
+  ```
+
+### `POST /api/reconciliation/<run_id>/close`
+- **Method**: `POST`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "run": {
+      "run_id": "run_9876",
+      "closed": true,
+      "status": "closed"
+    }
+  }
+  ```
+
 ### `GET /api/exceptions` & `GET /api/exceptions/<run_id>`
 - **Method**: `GET`
 - **Response**:
@@ -210,17 +273,14 @@ This document defines the frozen API contract between the Flask backend (`fronte
   }
   ```
 
-### `POST /api/reconciliation/<run_id>/close`
-- **Method**: `POST`
+### `POST /api/exceptions/<exception_id>/resolve`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"target_status": "matched", "bank_transaction_id": "BANK2002", "notes": "Manually verified"}`
 - **Response**:
   ```json
   {
     "ok": true,
-    "run": {
-      "run_id": "run_9876",
-      "closed": true,
-      "status": "closed"
-    }
+    "message": "Exception EXC-0001 resolved successfully."
   }
   ```
 
@@ -237,14 +297,18 @@ This document defines the frozen API contract between the Flask backend (`fronte
   }
   ```
 
-### `GET /api/transactions`
+### `GET /api/report-html`
+- **Method**: `GET`
+- **Response**: Returns rendered HTML string (`text/html`).
+
+### `GET /api/pipeline/status`
 - **Method**: `GET`
 - **Response**:
   ```json
   {
     "ok": true,
-    "count": 50,
-    "transactions": [...]
+    "status": "idle",
+    "log": [...]
   }
   ```
 
@@ -268,7 +332,87 @@ This document defines the frozen API contract between the Flask backend (`fronte
 
 ---
 
-## 4. Talk to Ledger Chat API (`/api/chat`)
+## 4. Manual Overrides, Rematch & Similarity API
+
+### `GET /api/transactions`
+- **Method**: `GET`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "count": 50,
+    "transactions": [...]
+  }
+  ```
+
+### `GET /api/similar-payments`
+- **Method**: `GET` (query params: `settlement_id`, `amount`, `date`, `description`, `limit`)
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "settlement_id": "SETL1001",
+    "candidates": [...]
+  }
+  ```
+
+### `POST /api/transactions/flag-manual`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"transaction_id": "SETL1001", "reason": "Audit required"}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "message": "Transaction flagged for manual review."
+  }
+  ```
+
+### `POST /api/transactions/rematch-llm`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"settlement_id": "SETL1001", "bank_transaction_id": "BANK2001"}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "decision": "match",
+    "confidence": 0.95,
+    "reason": "Matching amounts and date proximity",
+    "evidence": { ... }
+  }
+  ```
+
+### `POST /api/transactions/llm-smart-match`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"settlement_id": "SETL1001", "candidates": [...]}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "selected_candidate_id": "BANK2001",
+    "decision": "match",
+    "confidence": 0.95,
+    "reason": "Cluster candidate similarity evaluation",
+    "evidence": { ... }
+  }
+  ```
+
+### `POST /api/transactions/override-status`
+- **Method**: `POST` (`application/json`)
+- **Body**: `{"settlement_id": "SETL1001", "bank_transaction_id": "BANK2001", "target_status": "matched"}`
+- **Response**:
+  ```json
+  {
+    "ok": true,
+    "message": "Transaction 'SETL1001' successfully marked as MATCHED.",
+    "settlement_id": "SETL1001",
+    "target_status": "matched",
+    "run_id": "run_9876"
+  }
+  ```
+
+---
+
+## 5. Talk to Ledger Chat API (`/api/chat`)
 
 ### `GET /api/chat/sessions`
 - **Method**: `GET`
@@ -349,3 +493,25 @@ This document defines the frozen API contract between the Flask backend (`fronte
     "answer": "EXC-0001 is open due to an ambiguous tie between two candidate bank transactions."
   }
   ```
+
+---
+
+## 6. Report Export API (`/api/reports/export`) (Part 10)
+
+### `POST /api/reports/export` & `GET /api/reports/export`
+- **Method**: `POST` (`application/json`) or `GET`
+- **Body (POST)**:
+  ```json
+  {
+    "format": "pdf",
+    "statuses": ["SETTLED", "MATCHED", "SIMILAR", "UNMATCHED"],
+    "sources": ["all"],
+    "start_date": "2026-01-01",
+    "end_date": "2026-12-31",
+    "sections": ["summary", "charts", "transactions", "exceptions", "integrity"]
+  }
+  ```
+- **Response**:
+  - Binary file download attachment (`application/pdf` or `text/markdown`).
+  - Headers: `Content-Disposition: attachment; filename="ledger_reconciliation_report.pdf"` (or `.md`).
+

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reports — Ledger</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Reports — Ledger AI</title>
+<meta name="description" content="Ledger AI — Reconciliation audit reports">
+<script>(function(){ var t=localStorage.getItem('ledger-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }());</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
@@ -15,29 +16,28 @@
 <div class="bg-grid"></div>
 <div class="bg-glow"></div>
 
-<div class="app-shell">
-  {% include "_nav.html" %}
+<div class="app-shell" style="flex-direction: column; height: 100vh;">
+  {% include "_topbar.html" %}
 
-  <div class="app-frame">
-    <main class="main-content" style="width:100%; overflow-y:auto;">
-      {% if report_html %}
-        <div class="report-content">{{ report_html | safe }}</div>
-      {% else %}
-        <div class="run-panel-inner">
-          <h2>Reports</h2>
-          <p>
-            {% if report_found %}
+  <main class="main-content" style="width:100%; overflow-y:auto; flex:1;">
+    {% if report_html %}
+      <div class="report-content" style="padding: 24px 32px; max-width: 960px; margin: 0 auto;">{{ report_html | safe }}</div>
+    {% else %}
+      <div style="padding: 48px 32px; text-align: center; color: var(--text-secondary);">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 16px; display: block; color: var(--text-muted);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <h3 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">No Report Generated Yet</h3>
+        <p style="font-size: 0.8125rem;">
+          {% if report_found %}
             <code>data/results/reconciliation_report.md</code> was found but is empty.
-            {% else %}
-            No report yet. Once your reconciliation engine writes
-            <code>data/results/reconciliation_report.md</code>, it will render here automatically.
-            {% endif %}
-          </p>
-        </div>
-      {% endif %}
-    </main>
-  </div>
+          {% else %}
+            Run reconciliation first. Reports will appear here once the engine writes <code>data/results/reconciliation_report.md</code>.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </main>
 </div>
 
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

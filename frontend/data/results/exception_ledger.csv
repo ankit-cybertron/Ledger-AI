@@ -1,7 +1,0 @@
-exception_id,created_at,settlement_id,bank_transaction_id,stage,decision,confidence,exception_type,priority,reason,resolution_status
-EXC-0001,2026-08-22T14:45:18.698674+00:00,setl_orphan_0001,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0002,2026-08-22T14:45:18.699088+00:00,setl_orphan_0002,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0003,2026-08-22T14:45:18.699136+00:00,setl_orphan_0003,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0004,2026-08-22T14:45:18.699177+00:00,setl_orphan_0004,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0005,2026-08-22T14:45:18.699213+00:00,setl_orphan_0005,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open
-EXC-0006,2026-08-22T14:45:18.699248+00:00,setl_orphan_0006,,reconciler,review,0.0,unresolved,high,No deterministic or ML candidate resolved this settlement.,open

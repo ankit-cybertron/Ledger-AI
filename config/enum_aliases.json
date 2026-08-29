@@ -1,21 +1,4 @@
 {
-  "SourceType": {
-    "bank": "BANK",
-    "bank_statement": "BANK",
-    "bank_feed": "BANK",
-    "gateway": "GATEWAY",
-    "razorpay": "GATEWAY",
-    "stripe": "GATEWAY",
-    "paytm": "GATEWAY",
-    "orders": "INTERNAL_ORDER",
-    "internal_order": "INTERNAL_ORDER",
-    "order_book": "INTERNAL_ORDER",
-    "subledger": "SUBLEDGER",
-    "upi": "SUBLEDGER",
-    "card": "SUBLEDGER",
-    "cash": "SUBLEDGER",
-    "wallet": "SUBLEDGER"
-  },
   "Channel": {
     "upi": "UPI",
     "vpa": "UPI",

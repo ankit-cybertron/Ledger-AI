@@ -1,2 +1,0 @@
-settlement_id,bank_transaction_id,ml_confidence,llm_decision,llm_confidence,reason,fallback_triggered
-setl_0022,bank_0022,0.6341666666666667,match,0.85,"Both records reference the same UTR in the description, and the amounts are within a small discrepancy likely due to fees, with dates one day apart.",False

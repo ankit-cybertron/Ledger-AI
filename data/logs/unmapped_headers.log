@@ -1,4 +1,0 @@
-[UNMAPPED_HEADER] file='bank_statement.csv' header='Balance (INR)' best_match='settlement_id' confidence=0.48
-[UNMAPPED_HEADER] file='bank_statement.csv' header='bank_transaction_id' best_match='settlement_id' confidence=0.52
-[UNMAPPED_HEADER] file='bank_statement.csv' header='Balance (INR)' best_match='settlement_id' confidence=0.48
-[UNMAPPED_HEADER] file='bank_statement.csv' header='bank_transaction_id' best_match='settlement_id' confidence=0.52

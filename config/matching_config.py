@@ -33,7 +33,7 @@ class MatchingConfig:
 
     # Similarity & Confidence Thresholds
     narration_similarity_threshold: float = 0.50
-    ml_match_threshold: float = 0.95
+    ml_match_threshold: float = 0.80
     ml_review_threshold: float = 0.50
     llm_match_threshold: float = 0.70
     minimum_score_margin: float = 0.05
@@ -48,6 +48,39 @@ class MatchingConfig:
     source_confidence_auto_accept: float = 0.85
     source_confidence_needs_confirmation: float = 0.60
     column_mapping_confidence_floor: float = 0.60
+
+    # Matcher Confidence & Literal Configurations (T3.5)
+    exact_utr_confidence: float = 1.00
+    exact_order_confidence: float = 1.00
+    amount_only_confidence: float = 0.90
+    split_match_confidence: float = 0.95
+    ambiguous_tie_confidence: float = 0.50
+    one_to_one_tolerance_confidence: float = 0.85
+    n_to_1_confidence: float = 0.95
+    n_to_n_confidence: float = 0.90
+    utr_prefix_strip_list: tuple = (
+        "NEFTCR-", "NEFTCR", "NEFT-", "NEFT", "UPI-", "UPI", "UTR-", "UTR", "GPAY-", "GPAY", "PAYTM-", "RAZORPAY-", "SETTLEMENT-", "INB-", "REF:"
+    )
+    minimum_identifier_length: int = 5
+    date_diff_error_sentinel: int = 999
+
+    # Four-Status Taxonomy & Dynamic Scoring Engine Config (Part 3B & Part 4)
+    similarity_minimum_score: float = 0.40
+    scoring_weight_identifier: float = 0.40
+    scoring_weight_amount: float = 0.30
+    scoring_weight_date: float = 0.15
+    scoring_weight_narration: float = 0.15
+    evaluation_threshold_sweep: tuple = (0.50, 0.70, 0.80, 0.90, 0.95)
+
+    # LLM Settings (Part 5, T5.5)
+    llm_model: str = "openai/gpt-oss-20b"
+    llm_review_lower_bound: float = 0.30
+    llm_review_upper_bound: float = 0.999
+    llm_max_retries: int = 2
+
+
+
+
 
     def to_dict(self) -> Dict[str, Any]:
         """

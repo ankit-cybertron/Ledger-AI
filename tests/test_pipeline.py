@@ -406,9 +406,17 @@ def main():
     if passed != len(tests):
         raise SystemExit(1)
 
+    # Preservation: Do not wipe active statement store on test tearDown
+    # from frontend import statement_store
+    # statement_store.clear_all_statements()
+
     print(
         "ALL PIPELINE TESTS PASSED"
     )
+
+
+def tearDownModule():
+    pass
 
 
 if __name__ == "__main__":

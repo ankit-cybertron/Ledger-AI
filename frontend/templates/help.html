@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide — Ledger AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<!-- Topbar Navigation -->
+<nav class="topbar">
+  <div class="page-topbar-left">
+    <a href="{{ url_for('index') }}" class="page-topbar-brand" title="Ledger AI">
+      <span class="brand-main">Ledger</span><span class="brand-sub">AI</span>
+    </a>
+  </div>
+  <div class="topbar-nav">
+    <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+    <a href="{{ url_for('help_page') }}" class="nav-link active" style="color:var(--accent-blue);">Guide</a>
+    <button id="themeToggleBtn" class="theme-toggle-landing-btn" title="Toggle Theme" aria-label="Toggle Theme">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm">Launch App &rarr;</a>
+  </div>
+</nav>
+
+<!-- Main Help Container -->
+<main class="help-page-container">
+  
+  <!-- Hero Section -->
+  <header class="help-hero">
+    <div class="help-badge">TECHNICAL DOCUMENTATION & GUIDE</div>
+    <h1 class="help-headline">End-to-End Pipeline & Decision Logic</h1>
+    <p class="help-subhead">
+      Learn how Ledger AI ingests multi-format statements, maps data schemas, executes a deterministic 3-pass reconciliation cascade, and leverages Groq Llama-3 LLM reasoning for genuine ambiguities.
+    </p>
+
+    <!-- Nav Pills -->
+    <nav class="help-nav-pills">
+      <a href="#ingestion-pipeline" class="help-pill">1. Ingestion Pipeline</a>
+      <a href="#decision-tree" class="help-pill">2. Decision Flowchart</a>
+      <a href="#reconciliation-passes" class="help-pill">3. 3-Pass Rules Cascade</a>
+      <a href="#llm-matching" class="help-pill">4. LLM Matching Agent</a>
+      <a href="#status-taxonomy" class="help-pill">5. Status Taxonomy</a>
+    </nav>
+  </header>
+
+  <!-- Section 1: Ingestion & Processing Pipeline -->
+  <section id="ingestion-pipeline" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 01</div>
+      <h2>Multi-Format Statement Ingestion Pipeline</h2>
+      <p>From raw file upload (`.csv`, `.xlsx`, `.pdf`) to canonical normalized transaction models.</p>
+    </div>
+
+    <!-- Visual Flowchart Grid (5 Clean Step Cards without file paths) -->
+    <div class="ingestion-pipeline-grid">
+      <div class="pipeline-step-card">
+        <div class="pipeline-card-header">
+          <span class="step-pill">STEP 01</span>
+          <div class="step-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+        </div>
+        <h4>Multi-Format Parser</h4>
+        <p>Parses CSV spreadsheets, Excel workbooks, and structured PDF statement tables into unified data models.</p>
+      </div>
+
+      <div class="pipeline-step-card">
+        <div class="pipeline-card-header">
+          <span class="step-pill">STEP 02</span>
+          <div class="step-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </div>
+        </div>
+        <h4>Duplicate Resolver</h4>
+        <p>Identifies duplicate header names across uploaded columns and resolves primary metrics with zero data loss.</p>
+      </div>
+
+      <div class="pipeline-step-card">
+        <div class="pipeline-card-header">
+          <span class="step-pill">STEP 03</span>
+          <div class="step-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/></svg>
+          </div>
+        </div>
+        <h4>3-Stage Header Mapper</h4>
+        <p>Maps custom statement headers using exact dictionary aliases and Levenshtein distance ratio algorithms.</p>
+      </div>
+
+      <div class="pipeline-step-card">
+        <div class="pipeline-card-header">
+          <span class="step-pill">STEP 04</span>
+          <div class="step-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+        </div>
+        <h4>Normalizer & ID Generator</h4>
+        <p>Sanitizes regional currency formats, extracts UTR/Order codes, and assigns clean synthetic transaction IDs.</p>
+      </div>
+
+      <div class="pipeline-step-card">
+        <div class="pipeline-card-header">
+          <span class="step-pill">STEP 05</span>
+          <div class="step-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+        <h4>Deduplication Hash</h4>
+        <p>Generates cryptographic SHA-256 row fingerprints to prevent accidental re-imports of duplicate transactions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Decision Tree & Visual Flowchart -->
+  <section id="decision-tree" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 02</div>
+      <h2>Reconciliation Decision Flowchart & Logic Tree</h2>
+      <p>How the engine evaluates every primary record against candidate counterpart statements in sequence.</p>
+    </div>
+
+    <div class="decision-flow-pipeline">
+      
+      <!-- Start Node -->
+      <div class="flow-start-banner">
+        <div class="start-dot"></div>
+        <div class="start-text">
+          <strong>Primary Ledger Record Ingested</strong>
+          <span>Bank statement row, gateway payout line, or order entry candidate</span>
+        </div>
+      </div>
+
+      <div class="flow-connector-vertical"></div>
+
+      <!-- Pass 1 Row -->
+      <div class="flow-stage-card">
+        <div class="stage-card-main">
+          <div class="stage-badge-row">
+            <span class="pass-tag tag-p1">PASS 1 &bull; EXACT RULE MATCHER</span>
+            <span class="stage-formula">UTR / Order Match &bull; Net Delta = Rs. 0.00 &bull; Gap &le; 3 Days</span>
+          </div>
+          <h3>Exact Reference & Amount Matcher</h3>
+          <p>Scans counterpart statements for explicit reference codes and exact zero amount variance.</p>
+        </div>
+
+        <div class="stage-outcomes-container">
+          <div class="outcome-box outcome-yes">
+            <div class="outcome-header">
+              <span class="branch-pill pill-yes">YES (Matched)</span>
+              <span class="status-pill status-settled">SETTLED</span>
+            </div>
+            <p>100% Balanced Parity. Auto-committed to Settled Ledger.</p>
+          </div>
+          <div class="outcome-box outcome-no">
+            <div class="outcome-header">
+              <span class="branch-pill pill-no">NO (Unmatched)</span>
+              <span class="next-pass-text">Proceeds to Pass 2 &downarrow;</span>
+            </div>
+            <p>No exact UTR match found. Routing to Composite Scoring.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-connector-vertical"></div>
+
+      <!-- Pass 2 Row -->
+      <div class="flow-stage-card">
+        <div class="stage-card-main">
+          <div class="stage-badge-row">
+            <span class="pass-tag tag-p2">PASS 2 &bull; COMPOSITE SCORER</span>
+            <span class="stage-formula">S = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr)</span>
+          </div>
+          <h3>4-Factor Weighted Similarity Matrix</h3>
+          <p>Calculates multi-vector similarity score across fuzzy IDs, date proximity, narration tokens, and amount variance decay.</p>
+        </div>
+
+        <div class="stage-outcomes-grid3">
+          <div class="outcome-box outcome-yes">
+            <div class="outcome-header">
+              <span class="branch-pill pill-yes">S &ge; 0.85</span>
+              <span class="status-pill status-matched">MATCHED</span>
+            </div>
+            <p>High-confidence pair. Auto-approved match.</p>
+          </div>
+          <div class="outcome-box outcome-warn">
+            <div class="outcome-header">
+              <span class="branch-pill pill-warn">0.50 &le; S &lt; 0.85</span>
+              <span class="status-pill status-similar">SIMILAR</span>
+            </div>
+            <p>Moderate confidence. Queued in Candidate Drawer for review.</p>
+          </div>
+          <div class="outcome-box outcome-no">
+            <div class="outcome-header">
+              <span class="branch-pill pill-no">S &lt; 0.50</span>
+              <span class="next-pass-text">Proceeds to Pass 3 &downarrow;</span>
+            </div>
+            <p>Low confidence score. Routing to Split Payout Solver.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-connector-vertical"></div>
+
+      <!-- Pass 3 Row -->
+      <div class="flow-stage-card">
+        <div class="stage-card-main">
+          <div class="stage-badge-row">
+            <span class="pass-tag tag-p3">PASS 3 &bull; SPLIT & FEE SOLVER</span>
+            <span class="stage-formula">Net Payout = &sum; Gross Sales &minus; Gateway Fees &minus; GST</span>
+          </div>
+          <h3>1-to-N Batch Payout Fee Equation</h3>
+          <p>Evaluates batch settlement deposits against multiple order line items while accounting for gateway commissions.</p>
+        </div>
+
+        <div class="stage-outcomes-container">
+          <div class="outcome-box outcome-yes">
+            <div class="outcome-header">
+              <span class="branch-pill pill-yes">YES (Fee Parity Met)</span>
+              <span class="status-pill status-settled">SETTLED</span>
+            </div>
+            <p>Batch fee equation balances. Auto-settled.</p>
+          </div>
+          <div class="outcome-box outcome-no">
+            <div class="outcome-header">
+              <span class="branch-pill pill-no">NO (Unbalanced)</span>
+              <span class="next-pass-text">Proceeds to Pass 4 &downarrow;</span>
+            </div>
+            <p>Fee equation fails to balance. Routing to LLM Agent.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-connector-vertical"></div>
+
+      <!-- Pass 4 Row -->
+      <div class="flow-stage-card">
+        <div class="stage-card-main">
+          <div class="stage-badge-row">
+            <span class="pass-tag tag-p4">PASS 4 &bull; GROQ LLM AGENT</span>
+            <span class="stage-formula">Context Prompt &bull; Customer Name & Narrative Analysis</span>
+          </div>
+          <h3>Groq LLM Exception Resolver</h3>
+          <p>Executes deep semantic evaluation on customer names, transposition errors, and non-standard narrative text.</p>
+        </div>
+
+        <div class="stage-outcomes-container">
+          <div class="outcome-box outcome-yes">
+            <div class="outcome-header">
+              <span class="branch-pill pill-yes">CONFIRMED</span>
+              <span class="status-pill status-matched">MATCHED</span>
+            </div>
+            <p>AI verified match with natural language audit trail.</p>
+          </div>
+          <div class="outcome-box outcome-danger">
+            <div class="outcome-header">
+              <span class="branch-pill pill-no">REJECTED</span>
+              <span class="status-pill status-unmatched">UNMATCHED</span>
+            </div>
+            <p>Orphan discrepancy logged in Exception Ledger.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Section 3: 3-Pass Rules Cascade -->
+  <section id="reconciliation-passes" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 03</div>
+      <h2>Multi-Pass Rules & Mathematical Scoring Formulas</h2>
+      <p>Deterministic mathematical rules execute first; machine learning heuristics execute second.</p>
+    </div>
+
+    <div class="rules-grid">
+      <div class="rule-detail-card">
+        <div class="card-tag tag-exact">PASS 1 &bull; EXACT RULE MATCH</div>
+        <h3>Exact Identifier & Amount Parity</h3>
+        <ul class="rule-list">
+          <li><strong>UTR / Order Match</strong>: Explicit reference code equality.</li>
+          <li><strong>Amount Difference</strong>: Must equal exactly ₹0.00.</li>
+          <li><strong>Date Window</strong>: Transaction gap &le; 3 calendar days.</li>
+          <li><strong>Outcome</strong>: Assigned <code>SETTLED</code> status immediately.</li>
+        </ul>
+      </div>
+
+      <div class="rule-detail-card">
+        <div class="card-tag tag-scoring">PASS 2 &bull; COMPOSITE SCORING</div>
+        <h3>4-Factor Weighted Similarity Matrix</h3>
+        <div class="formula-box">
+          <code>Score = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr)</code>
+        </div>
+        <ul class="rule-list">
+          <li><strong>ID Weight (0.40)</strong>: Levenshtein distance on partial reference keys.</li>
+          <li><strong>Amount Weight (0.30)</strong>: Exponential decay penalty on variance &le; ₹1.00.</li>
+          <li><strong>Date Weight (0.15)</strong>: Day gap delta decay over 3-day max window.</li>
+          <li><strong>Narration Weight (0.15)</strong>: Shared keyword token matching.</li>
+        </ul>
+      </div>
+
+      <div class="rule-detail-card">
+        <div class="card-tag tag-fee">PASS 3 &bull; SPLIT & FEE SOLVER</div>
+        <h3>1-to-N Batch Payout Fee Equation</h3>
+        <div class="formula-box">
+          <code>Net Settlement = &sum; Gross Sales &minus; Fees &minus; Taxes</code>
+        </div>
+        <ul class="rule-list">
+          <li><strong>Multi-Order Consolidation</strong>: Matches bank payouts against multiple gateway orders.</li>
+          <li><strong>Fee Deduction Verification</strong>: Deducts gateway commission & GST automatically.</li>
+          <li><strong>Outcome</strong>: Assigned <code>SETTLED</code> status upon exact net parity.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: Groq LLM Matching Agent -->
+  <section id="llm-matching" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 04</div>
+      <h2>Groq LLM Ambiguous Matching Agent</h2>
+      <p>Handles non-standard narrations, customer name variations, and ambiguous reference keys using high-speed Llama-3 inference.</p>
+    </div>
+
+    <div class="llm-explanation-box">
+      <div class="llm-card-left">
+        <h3>Agent Trigger Conditions</h3>
+        <p>
+          The LLM agent is invoked automatically when candidate scores fall in the ambiguous range (<code>0.60 &le; Score &lt; 0.85</code>), or when a user clicks <strong>"Run LLM Match"</strong> in the Comparison Modal.
+        </p>
+        
+        <h4>Structured JSON Input Context:</h4>
+        <pre class="json-code-block">
+{
+  "primary_record": {
+    "id": "BNK-TXN-0004",
+    "amount": 4999.00,
+    "description": "CARD-SETL Meera Iyer"
+  },
+  "candidate_record": {
+    "id": "PGREF202421",
+    "amount": 5000.00,
+    "fee": 1.00,
+    "description": "Payment ORD8034 Meera Iyer"
+  }
+}
+        </pre>
+      </div>
+
+      <div class="llm-card-right">
+        <h3>Structured Reasoning Output</h3>
+        <p>
+          The Groq LLM API returns JSON adhering to a strict response schema, including natural language audit explanation:
+        </p>
+
+        <div class="llm-response-preview">
+          <div class="preview-row">
+            <span class="preview-label">Recommendation:</span>
+            <span class="status-pill status-matched">CONFIRMED</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">Confidence Score:</span>
+            <span class="conf-score-badge">0.92 / 1.00</span>
+          </div>
+          <div class="preview-row">
+            <span class="preview-label">Audit Reasoning:</span>
+            <p class="reasoning-text">
+              "The bank transaction 'CARD-SETL Meera Iyer' for ₹4,999.00 matches card payment PGREF202421 for ₹5,000.00 minus a ₹1.00 gateway processing fee. Customer name 'Meera Iyer' and transaction dates (1-day gap) align perfectly."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: Status Taxonomy Reference Grid -->
+  <section id="status-taxonomy" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 05</div>
+      <h2>Complete Status Taxonomy Specification</h2>
+      <p>Definitions, qualification criteria, and UI representations for all 4 reconciliation outcomes.</p>
+    </div>
+
+    <div class="taxonomy-grid">
+      <!-- SETTLED -->
+      <div class="taxonomy-card card-settled">
+        <div class="tax-card-header">
+          <span class="status-pill status-settled">SETTLED</span>
+          <span class="tax-code">100_SETTLED</span>
+        </div>
+        <h4>Fully Reconciled & Balanced</h4>
+        <p class="tax-desc">100% mathematical parity. Reference match with zero amount delta or valid fee equation.</p>
+        <ul class="tax-list">
+          <li><strong>Score</strong>: 1.00 (Exact)</li>
+          <li><strong>Amount Delta</strong>: Exactly ₹0.00</li>
+          <li><strong>UI Action</strong>: Auto-committed to primary summary dashboard.</li>
+        </ul>
+      </div>
+
+      <!-- MATCHED -->
+      <div class="taxonomy-card card-matched">
+        <div class="tax-card-header">
+          <span class="status-pill status-matched">MATCHED</span>
+          <span class="tax-code">200_MATCHED</span>
+        </div>
+        <h4>High-Confidence Pair</h4>
+        <p class="tax-desc">Passes composite scoring thresholds (&ge; 0.85) or verified by Groq LLM match reasoning.</p>
+        <ul class="tax-list">
+          <li><strong>Score</strong>: &ge; 0.85</li>
+          <li><strong>Tolerance</strong>: Variance &le; ₹1.00</li>
+          <li><strong>UI Action</strong>: Displayed in main reconciliation table.</li>
+        </ul>
+      </div>
+
+      <!-- SIMILAR -->
+      <div class="taxonomy-card card-similar">
+        <div class="tax-card-header">
+          <span class="status-pill status-similar">SIMILAR</span>
+          <span class="tax-code">300_SIMILAR</span>
+        </div>
+        <h4>Potential Candidate Match</h4>
+        <p class="tax-desc">Candidate matches in the moderate confidence band requiring human review or shared keyword audit.</p>
+        <ul class="tax-list">
+          <li><strong>Score</strong>: 0.50 &le; Score &lt; 0.85</li>
+          <li><strong>Keywords</strong>: Shared customer tokens highlighted.</li>
+          <li><strong>UI Action</strong>: Routed to "Find Similar Payments" drawer.</li>
+        </ul>
+      </div>
+
+      <!-- UNMATCHED -->
+      <div class="taxonomy-card card-unmatched">
+        <div class="tax-card-header">
+          <span class="status-pill status-unmatched">UNMATCHED</span>
+          <span class="tax-code">400_UNMATCHED</span>
+        </div>
+        <h4>Exception Discrepancy</h4>
+        <p class="tax-desc">Orphaned entry unable to find any candidate match scoring above the 0.50 floor.</p>
+        <ul class="tax-list">
+          <li><strong>Score</strong>: &lt; 0.50</li>
+          <li><strong>Reason</strong>: Missing deposit, chargeback, or uncollected fee.</li>
+          <li><strong>UI Action</strong>: Isolated into Exception Ledger table.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="help-footer">
+    <div class="footer-links">
+      <a href="{{ url_for('index') }}" class="btn btn-secondary-nav">&larr; Back to Home</a>
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Open Reconciliation Dashboard &rarr;</a>
+    </div>
+    <p class="footer-copy">Ledger AI &bull; Autonomous Financial Reconciliation System</p>
+  </footer>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

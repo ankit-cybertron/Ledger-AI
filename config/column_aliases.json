@@ -1,50 +1,217 @@
 {
+  "transaction_id": [
+    "transaction_id",
+    "txn_id",
+    "tx_id",
+    "bank_transaction_id",
+    "bank_txn_id"
+  ],
   "gross_amount": [
-    "gross_amount", "gross", "total_amount", "order_amount", "tx_amount", "txn_amount"
+    "gross_amount",
+    "gross",
+    "total_amount",
+    "order_amount",
+    "tx_amount",
+    "txn_amount",
+    "gross amount (usd)",
+    "Gross Amount"
   ],
   "net_amount": [
-    "amount", "net_amount", "settlement_amount", "payout_amount", "amount_inr", "net_inr", "amount (inr)"
+    "amount",
+    "net_amount",
+    "settlement_amount",
+    "payout_amount",
+    "amount_inr",
+    "net_inr",
+    "amount (inr)",
+    "net settled to bank",
+    "net (usd)",
+    "net_salary_paid",
+    "amount received",
+    "amount_received",
+    "amount in",
+    "amount_in",
+    "amount out",
+    "amount_out",
+    "Gross Amt Paid",
+    "Net Salary Paid",
+    "Card Network",
+    "Net Amount"
   ],
   "credit_amount": [
-    "credit", "credit_amount", "deposit", "credit (inr)", "cr_amount"
+    "credit",
+    "credit_amount",
+    "deposit",
+    "credit (inr)",
+    "cr_amount",
+    "credit_inr",
+    "deposit (cr)",
+    "refund amount",
+    "refund_amount"
   ],
   "debit_amount": [
-    "debit", "debit_amount", "withdrawal", "debit (inr)", "dr_amount"
+    "debit",
+    "debit_amount",
+    "withdrawal",
+    "debit (inr)",
+    "dr_amount",
+    "debit_inr",
+    "withdrawal (dr)"
   ],
   "fee_amount": [
-    "fee", "fee_amount", "gateway_fee", "charges", "commission", "service_tax"
+    "fee",
+    "fee_amount",
+    "gateway_fee",
+    "charges",
+    "commission",
+    "service_tax",
+    "fee (usd)"
   ],
   "tax_amount": [
-    "tax", "tax_amount", "gst", "cgst", "sgst", "igst", "vat"
+    "tax",
+    "tax_amount",
+    "gst",
+    "cgst",
+    "sgst",
+    "igst",
+    "vat"
   ],
   "transaction_date": [
-    "date", "txn_date", "transaction_date", "created_at", "post_date", "tx_date", "time"
+    "date",
+    "txn_date",
+    "transaction_date",
+    "created_at",
+    "post_date",
+    "tx_date",
+    "time",
+    "order_date",
+    "txn_time",
+    "refund date",
+    "refund_date",
+    "payment date",
+    "payment_date",
+    "transaction_time",
+    "Order Date"
   ],
   "value_date": [
-    "value_date", "val_date", "settlement_date"
+    "value_date",
+    "val_date",
+    "settlement_date",
+    "expected_settlement_date",
+    "Value Post Date",
+    "Settlement Date"
   ],
   "utr": [
-    "utr", "utr_number", "bank_ref", "bank_ref_no", "rrn", "ref_no", "reference_no", "gateway_ref", "neft_ref"
+    "utr",
+    "utr_number",
+    "bank_ref",
+    "bank_ref_no",
+    "bank_rrn",
+    "rrn",
+    "ref_no",
+    "reference_no",
+    "gateway_ref",
+    "gateway_reference",
+    "neft_ref",
+    "utr___reference_no",
+    "ref / utr",
+    "ref/utr",
+    "original reference",
+    "original_reference",
+    "transaction_reference",
+    "Order Ref Code",
+    "Bank UTR Number",
+    "Reference No",
+    "Auth Code / Ref",
+    "Refund ID",
+    "Refund Amount"
   ],
   "order_id": [
-    "order_id", "ord_id", "order_no", "invoice_no", "merchant_order_id"
+    "order_id",
+    "ord_id",
+    "order_no",
+    "order_number",
+    "invoice_no",
+    "merchant_order_id",
+    "refund id",
+    "refund_id",
+    "Order ID",
+    "Order Amount",
+    "Order Status"
   ],
   "settlement_id": [
-    "settlement_id", "setl_id", "payout_id", "batch_id", "voucher_no", "upi_txn_id"
+    "settlement_id",
+    "setl_id",
+    "payout_id",
+    "batch_id",
+    "voucher_no",
+    "upi_txn_id",
+    "Settlement ID",
+    "Net Settled to Bank",
+    "Voucher No"
   ],
   "description": [
-    "description", "particulars", "narration", "remarks", "memo", "details"
+    "description",
+    "particulars",
+    "narration",
+    "remarks",
+    "memo",
+    "details",
+    "masked card",
+    "masked_card",
+    "reason",
+    "adjustment type",
+    "adjustment_type",
+    "particulars / notes"
   ],
   "customer_name": [
-    "customer_name", "customer", "payer_name", "vpa", "remitter_name"
+    "customer_name",
+    "customer",
+    "payer_name",
+    "vpa",
+    "remitter_name",
+    "vpa / phone",
+    "vpa/phone",
+    "vendor name",
+    "vendor_name",
+    "employee name",
+    "employee_name",
+    "Client Full Name",
+    "Customer Name"
+  ],
+  "channel": [
+    "payment_mode",
+    "mode",
+    "channel",
+    "type",
+    "source type",
+    "source_type",
+    "payment method",
+    "payment_method",
+    "transaction_type",
+    "Adjustment Type",
+    "Payment Mode"
   ],
   "status": [
-    "status", "payment_status", "txn_status", "state"
+    "status",
+    "payment_status",
+    "txn_status",
+    "state",
+    "order_status",
+    "statement_id",
+    "primary_statement_id",
+    "counterpart_statement_id",
+    "expected_status"
   ],
   "auth_code": [
-    "auth_code", "approval_code"
+    "auth_code",
+    "approval_code",
+    "auth code / ref",
+    "auth code/ref"
   ],
   "card_network": [
-    "card_network", "card_type", "scheme"
+    "card_network",
+    "card_type",
+    "scheme"
   ]
 }

@@ -4,12 +4,15 @@ Contains the canonical transaction definitions, taxonomy registries, and config 
 """
 
 from schema.canonical_transaction import CanonicalTransaction
-from schema.enums import SourceType, Channel, Direction, TransactionStatus
+from schema.enums import Channel, Direction, TransactionStatus
+from schema.row_adapter import row_to_canonical
 
 __all__ = [
     "CanonicalTransaction",
-    "SourceType",
     "Channel",
     "Direction",
     "TransactionStatus",
+    "row_to_canonical",
 ]
+
+

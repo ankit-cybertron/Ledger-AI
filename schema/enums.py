@@ -60,7 +60,6 @@ class ExtensibleRegistry:
 
 
 # Global Instances exposing .normalize(raw_value)
-SourceType = ExtensibleRegistry("SourceType", default_value="UNKNOWN")
 Channel = ExtensibleRegistry("Channel", default_value="UNKNOWN")
 Direction = ExtensibleRegistry("Direction", default_value="UNKNOWN")
 TransactionStatus = ExtensibleRegistry("TransactionStatus", default_value="UNKNOWN")

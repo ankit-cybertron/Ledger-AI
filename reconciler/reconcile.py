@@ -1,13 +1,20 @@
 """
-reconcile.py — Reconciliation Pipeline Orchestrator (v2 extended) for Ledger AI v2.
+reconcile.py — Reconciliation Pipeline Orchestrator (v2 extended with Part 3B Four-Status Taxonomy) for Ledger AI v2.
 
 Orchestrates multi-stage reconciliation:
-  Stage 1: Deterministic Exact Matches
-  Stage 2: Dynamic Tolerance Matches (1:1 and 1:N split settlements)
-  Stage 3: ML Confidence Matching with Margin-Aware Decision Gate (T4.4)
-  Stage 4: LLM Review / Exception Handling
+  Stage 1: Deterministic Exact Matches (primary <-> counterpart)
+  Stage 2: Dynamic Tolerance & Split Matches (1:1, 1:N, N:1, N:N)
+  Stage 3: ML Confidence Matching (batch thresholding)
+  Stage 4: Similarity Scan for Unmatched Primary Records -> SIMILAR or UNMATCHED
 
-Persists reconciliation_config.json on every run for reproducibility.
+Four Status Taxonomy (T3B.1):
+  - SETTLED: Matched and involves a primary statement transaction.
+  - MATCHED: Matched counterpart-to-counterpart (neither side primary).
+  - SIMILAR: Unmatched primary record with candidates cleared by similarity engine.
+  - UNMATCHED: Zero matching features found.
+
+Rule 7(d): LLM matching is manual-review-only, invoked on-demand from the UI, NOT as part of this batch pipeline.
+Persists reconciliation_config.json on every run.
 """
 
 import sys
@@ -20,12 +27,17 @@ if str(ROOT) not in sys.path:
 import os
 from datetime import datetime
 import json
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Set
 
 import pandas as pd
 from dotenv import load_dotenv
 
 from config import MatchingConfig
+from schema import row_to_canonical
+from matcher.exact_matcher import exact_match
+from matcher.tolerance_matcher import tolerance_match
+from matcher.similarity_engine import find_similar_candidates
+from reconciler.settlement_status import evaluate_period_settlement
 
 load_dotenv(ROOT / ".env")
 
@@ -33,23 +45,15 @@ GENERATED_DIR = ROOT / "data" / "generated"
 RESULTS_DIR = ROOT / "data" / "results"
 ML_DIR = ROOT / "data" / "ml"
 
-SETTLEMENTS_PATH = GENERATED_DIR / "razorpay_settlements.csv"
 EXACT_RESULTS_PATH = RESULTS_DIR / "exact_matches.csv"
 TOLERANCE_RESULTS_PATH = RESULTS_DIR / "tolerance_matches.csv"
 CONFIDENCE_RESULTS_PATH = ML_DIR / "confidence_predictions.csv"
-LLM_RESULTS_PATH = RESULTS_DIR / "llm_matches.csv"
 OUTPUT_PATH = RESULTS_DIR / "reconciliation_results.csv"
 CONFIG_OUTPUT_PATH = RESULTS_DIR / "reconciliation_config.json"
 
 
-def normalize_bank_ids(value):
-    if pd.isna(value):
-        return []
-    return [x.strip() for x in str(value).split("|") if x.strip()]
-
-
-def load_csv(path):
-    if not Path(path).exists():
+def load_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
         return pd.DataFrame()
     try:
         return pd.read_csv(path)
@@ -57,250 +61,293 @@ def load_csv(path):
         return pd.DataFrame()
 
 
-def load_exact_matches():
-    exact = load_csv(EXACT_RESULTS_PATH)
-    if exact.empty:
-        return []
+def _get_primary_statement_ids() -> Set[str]:
+    primary_ids = set()
+    db_path = ROOT / "frontend" / "data" / "statements_db.json"
+    if db_path.exists():
+        try:
+            with open(db_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for stmt_id, stmt in data.items():
+                    if stmt.get("is_primary"):
+                        primary_ids.add(str(stmt_id))
+        except Exception:
+            pass
 
-    required = {"settlement_id", "bank_transaction_id"}
-    missing = required - set(exact.columns)
-    if missing:
-        raise ValueError(f"exact_matches.csv is missing columns: {sorted(missing)}")
-
-    results = []
-    for _, row in exact.iterrows():
-        bank_ids = normalize_bank_ids(row["bank_transaction_id"])
-        for bank_id in bank_ids:
-            res_dict = {
-                "settlement_id": str(row["settlement_id"]),
-                "bank_transaction_id": bank_id,
-                "stage": "exact",
-                "decision": "match",
-                "confidence": 1.0,
-                "reason": "Exact deterministic match.",
-                "status": "matched",
-            }
-            if "amount" in row and pd.notna(row["amount"]):
-                res_dict["amount"] = row["amount"]
-            if "date" in row and pd.notna(row["date"]):
-                res_dict["date"] = row["date"]
-            results.append(res_dict)
-
-    return results
+    pri_csv = GENERATED_DIR / "primary_records.csv"
+    if pri_csv.exists():
+        try:
+            df = pd.read_csv(pri_csv)
+            for col in ["primary_statement_id", "statement_id"]:
+                if col in df.columns:
+                    primary_ids.update(df[col].dropna().astype(str))
+        except Exception:
+            pass
+    return primary_ids
 
 
-def load_tolerance_matches(already_matched):
-    tolerance = load_csv(TOLERANCE_RESULTS_PATH)
-    if tolerance.empty:
-        return []
-
-    required = {"settlement_id", "bank_transaction_id"}
-    missing = required - set(tolerance.columns)
-    if missing:
-        raise ValueError(f"tolerance_matches.csv is missing columns: {sorted(missing)}")
-
-    results = []
-    for _, row in tolerance.iterrows():
-        settlement_id = str(row["settlement_id"])
-        if settlement_id in already_matched:
-            continue
-
-        bank_ids = normalize_bank_ids(row["bank_transaction_id"])
-        for bank_id in bank_ids:
-            results.append({
-                "settlement_id": settlement_id,
-                "bank_transaction_id": bank_id,
-                "stage": "tolerance",
-                "decision": "match",
-                "confidence": 1.0,
-                "reason": "Tolerance-stage match.",
-                "status": "matched",
-            })
-        already_matched.add(settlement_id)
-
-    return results
-
-
-def load_ml_candidates(already_matched):
-    predictions = load_csv(CONFIDENCE_RESULTS_PATH)
-    if predictions.empty:
-        return []
-
-    required = {"settlement_id", "bank_transaction_id", "confidence"}
-    missing = required - set(predictions.columns)
-    if missing:
-        raise ValueError(f"confidence_predictions.csv is missing columns: {sorted(missing)}")
-
-    active_settlements = load_csv(SETTLEMENTS_PATH)
-    if not active_settlements.empty and "settlement_id" in active_settlements.columns:
-        valid_ids = set(active_settlements["settlement_id"].astype(str))
-        predictions = predictions[predictions["settlement_id"].astype(str).isin(valid_ids)]
-
-    candidates = []
-    for _, row in predictions.iterrows():
-        settlement_id = str(row["settlement_id"])
-        if settlement_id in already_matched:
-            continue
-
-        confidence = float(row["confidence"])
-        margin = float(row.get("margin", 1.0)) if pd.notna(row.get("margin")) else 1.0
-
-        candidates.append({
-            "settlement_id": settlement_id,
-            "bank_transaction_id": str(row["bank_transaction_id"]),
-            "confidence": confidence,
-            "margin": margin,
-        })
-
-    return candidates
-
-
-def load_llm_results():
-    if not LLM_RESULTS_PATH.exists():
-        return pd.DataFrame(columns=[
-            "settlement_id", "bank_transaction_id", "ml_confidence",
-            "llm_decision", "llm_confidence", "reason", "fallback_triggered"
-        ])
-    return load_csv(LLM_RESULTS_PATH)
-
-
-def build_llm_lookup(llm_results):
-    lookup = {}
-    for _, row in llm_results.iterrows():
-        key = (str(row["settlement_id"]), str(row["bank_transaction_id"]))
-        lookup[key] = row
-    return lookup
-
-
-def reconcile(cfg: Optional[MatchingConfig] = None):
+def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
+    """
+    Orchestrates universal multi-source reconciliation across all uploaded statements (T3B.1).
+    - If primary statement(s) exist (is_primary=True): Primary vs Counterparts -> SETTLED.
+    - Counterparts vs Counterparts (or all statements if no primary set) -> MATCHED.
+    - Unresolved records scanned across all other statement sources -> SIMILAR or UNMATCHED.
+    """
     if cfg is None:
         cfg = MatchingConfig.load_with_env_overrides()
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     cfg.save(CONFIG_OUTPUT_PATH)
 
+    from frontend import statement_store
+
+    all_stmts_meta = statement_store.list_statements()
+    all_stmts = []
+    for s in all_stmts_meta:
+        sdetail = statement_store.get_statement(s["id"])
+        rows = sdetail.get("rows", []) if sdetail else []
+        clean_rows = [r for r in rows if not statement_store._is_summary_dict_row(r)]
+        all_stmts.append({
+            "id": str(s["id"]),
+            "name": str(s.get("name") or s.get("filename") or f"Statement {s['id']}"),
+            "is_primary": bool(s.get("is_primary", False)),
+            "rows": clean_rows,
+            "txs": [row_to_canonical(r, "tx") for r in clean_rows]
+        })
+
+    pri_stmts = [s for s in all_stmts if s["is_primary"]]
+    cnt_stmts = [s for s in all_stmts if not s["is_primary"]]
+
+    resolved_ids = set()
     final_results = []
-    matched_settlements = set()
 
-    # STAGE 1 — EXACT
-    exact_results = load_exact_matches()
-    final_results.extend(exact_results)
-    for result in exact_results:
-        matched_settlements.add(result["settlement_id"])
+    def to_df(tx_list):
+        if not tx_list:
+            return pd.DataFrame()
+        return pd.DataFrame([t.to_dict() for t in tx_list])
 
-    # STAGE 2 — TOLERANCE
-    tolerance_results = load_tolerance_matches(matched_settlements)
-    final_results.extend(tolerance_results)
+    # Pass 1: Primary vs Counterpart matching (if primary statement exists)
+    if pri_stmts:
+        pri_txs = [t for s in pri_stmts for t in s["txs"]]
+        cnt_txs = [t for s in cnt_stmts for t in s["txs"]]
 
-    # STAGE 3 — ML & MARGIN GATE (T4.4)
-    ml_candidates = load_ml_candidates(matched_settlements)
-    llm_results = load_llm_results()
-    llm_lookup = build_llm_lookup(llm_results)
-
-    for candidate in ml_candidates:
-        settlement_id = candidate["settlement_id"]
-        bank_id = candidate["bank_transaction_id"]
-        ml_confidence = candidate["confidence"]
-        margin = candidate["margin"]
-
-        if settlement_id in matched_settlements:
-            continue
-
-        # Margin-Aware Decision Gate (T4.4)
-        has_high_confidence = (ml_confidence >= cfg.ml_match_threshold)
-        has_sufficient_margin = (margin >= cfg.minimum_score_margin)
-
-        if has_high_confidence and has_sufficient_margin:
-            final_results.append({
-                "settlement_id": settlement_id,
-                "bank_transaction_id": bank_id,
-                "stage": "ml",
-                "decision": "match",
-                "confidence": ml_confidence,
-                "reason": "High-confidence ML match with sufficient score margin.",
-                "status": "matched",
-            })
-            matched_settlements.add(settlement_id)
-            continue
-
-        # Low-margin or lower confidence -> Route to LLM review
-        if ml_confidence >= cfg.ml_review_threshold:
-            key = (settlement_id, bank_id)
-            llm = llm_lookup.get(key)
-
-            reason_str = (
-                f"Candidate cleared score threshold ({ml_confidence:.2f} >= {cfg.ml_match_threshold}) but failed margin check ({margin:.4f} < {cfg.minimum_score_margin})."
-                if has_high_confidence and not has_sufficient_margin
-                else "Candidate falls inside LLM review band."
-            )
-
-            if llm is None:
+        em_df = exact_match(to_df(pri_txs), to_df(cnt_txs), cfg)
+        if not em_df.empty:
+            for _, r in em_df.iterrows():
+                p_id = str(r["primary_transaction_id"])
+                c_id = str(r["counterpart_transaction_id"])
+                ps_id = str(r.get("primary_statement_id", ""))
+                cs_id = str(r.get("counterpart_statement_id", ""))
+                resolved_ids.add(p_id)
+                resolved_ids.add(c_id)
                 final_results.append({
-                    "settlement_id": settlement_id,
-                    "bank_transaction_id": bank_id,
-                    "stage": "llm",
-                    "decision": "review",
-                    "confidence": ml_confidence,
-                    "reason": reason_str,
-                    "status": "manual_review",
+                    "primary_transaction_id": p_id,
+                    "primary_statement_id": ps_id,
+                    "counterpart_transaction_id": c_id,
+                    "counterpart_statement_id": cs_id,
+                    "settlement_id": p_id,
+                    "bank_transaction_id": c_id,
+                    "stage": "exact",
+                    "decision": "match",
+                    "confidence": float(r.get("confidence", 1.0)),
+                    "reason": "Exact deterministic match with primary statement.",
+                    "status": "SETTLED"
                 })
+
+        unres_pri = [t for t in pri_txs if t.transaction_id not in resolved_ids]
+        unres_cnt = [t for t in cnt_txs if t.transaction_id not in resolved_ids]
+        if unres_pri and unres_cnt:
+            tm_df, _ = tolerance_match(to_df(unres_pri), to_df(unres_cnt), cfg=cfg)
+            if not tm_df.empty:
+                for _, r in tm_df.iterrows():
+                    p_id = str(r["primary_transaction_id"])
+                    c_id = str(r["counterpart_transaction_id"])
+                    ps_id = str(r.get("primary_statement_id", ""))
+                    cs_id = str(r.get("counterpart_statement_id", ""))
+                    resolved_ids.add(p_id)
+                    resolved_ids.add(c_id)
+                    final_results.append({
+                        "primary_transaction_id": p_id,
+                        "primary_statement_id": ps_id,
+                        "counterpart_transaction_id": c_id,
+                        "counterpart_statement_id": cs_id,
+                        "settlement_id": p_id,
+                        "bank_transaction_id": c_id,
+                        "stage": "tolerance",
+                        "decision": "match",
+                        "confidence": float(r.get("confidence", 0.85)),
+                        "reason": "Tolerance-stage match with primary statement.",
+    # Pass 1B: Primary vs Primary matching (Inter-bank transfers between multiple primary statements)
+    if len(pri_stmts) > 1:
+        for i in range(len(pri_stmts)):
+            for j in range(i + 1, len(pri_stmts)):
+                p1 = pri_stmts[i]
+                p2 = pri_stmts[j]
+                unres_1 = [t for t in p1["txs"] if t.transaction_id not in resolved_ids]
+                unres_2 = [t for t in p2["txs"] if t.transaction_id not in resolved_ids]
+                if not unres_1 or not unres_2:
+                    continue
+
+                em_df = exact_match(to_df(unres_1), to_df(unres_2), cfg)
+                if not em_df.empty:
+                    for _, r in em_df.iterrows():
+                        p_id = str(r["primary_transaction_id"])
+                        c_id = str(r["counterpart_transaction_id"])
+                        resolved_ids.add(p_id)
+                        resolved_ids.add(c_id)
+                        final_results.append({
+                            "primary_transaction_id": p_id,
+                            "primary_statement_id": p1["id"],
+                            "counterpart_transaction_id": c_id,
+                            "counterpart_statement_id": p2["id"],
+                            "settlement_id": p_id,
+                            "bank_transaction_id": c_id,
+                            "stage": "exact",
+                            "decision": "match",
+                            "confidence": float(r.get("confidence", 1.0)),
+                            "reason": f"Exact match between primary sources ({p1['name']} vs {p2['name']}).",
+                            "status": "SETTLED"
+                        })
+
+                unres_1_rem = [t for t in p1["txs"] if t.transaction_id not in resolved_ids]
+                unres_2_rem = [t for t in p2["txs"] if t.transaction_id not in resolved_ids]
+                if unres_1_rem and unres_2_rem:
+                    tm_df, _ = tolerance_match(to_df(unres_1_rem), to_df(unres_2_rem), cfg=cfg)
+                    if not tm_df.empty:
+                        for _, r in tm_df.iterrows():
+                            p_id = str(r["primary_transaction_id"])
+                            c_id = str(r["counterpart_transaction_id"])
+                            resolved_ids.add(p_id)
+                            resolved_ids.add(c_id)
+                            final_results.append({
+                                "primary_transaction_id": p_id,
+                                "primary_statement_id": p1["id"],
+                                "counterpart_transaction_id": c_id,
+                                "counterpart_statement_id": p2["id"],
+                                "settlement_id": p_id,
+                                "bank_transaction_id": c_id,
+                                "stage": "tolerance",
+                                "decision": "match",
+                                "confidence": float(r.get("confidence", 0.85)),
+                                "reason": f"Tolerance match between primary sources ({p1['name']} vs {p2['name']}).",
+                                "status": "SETTLED"
+                            })
+
+    # Pass 2: Counterpart vs Counterpart (or Multi-Source Pairwise matching if no primary statement)
+    match_sources = cnt_stmts if pri_stmts else all_stmts
+    for i in range(len(match_sources)):
+        for j in range(i + 1, len(match_sources)):
+            s1 = match_sources[i]
+            s2 = match_sources[j]
+
+            unres_1 = [t for t in s1["txs"] if t.transaction_id not in resolved_ids]
+            unres_2 = [t for t in s2["txs"] if t.transaction_id not in resolved_ids]
+            if not unres_1 or not unres_2:
                 continue
 
-            llm_decision = str(llm.get("llm_decision", "review"))
-            llm_confidence = float(llm.get("llm_confidence", 0.50))
-            llm_reason = str(llm.get("reason", "LLM evaluation."))
+            em_df = exact_match(to_df(unres_1), to_df(unres_2), cfg)
+            if not em_df.empty:
+                for _, r in em_df.iterrows():
+                    p_id = str(r["primary_transaction_id"])
+                    c_id = str(r["counterpart_transaction_id"])
+                    resolved_ids.add(p_id)
+                    resolved_ids.add(c_id)
+                    final_results.append({
+                        "primary_transaction_id": p_id,
+                        "primary_statement_id": s1["id"],
+                        "counterpart_transaction_id": c_id,
+                        "counterpart_statement_id": s2["id"],
+                        "settlement_id": p_id,
+                        "bank_transaction_id": c_id,
+                        "stage": "exact",
+                        "decision": "match",
+                        "confidence": float(r.get("confidence", 1.0)),
+                        "reason": f"Exact match between non-primary sources ({s1['name']} vs {s2['name']}).",
+                        "status": "MATCHED"
+                    })
 
-            if llm_decision == "match" and llm_confidence >= cfg.llm_match_threshold:
-                final_results.append({
-                    "settlement_id": settlement_id,
-                    "bank_transaction_id": bank_id,
-                    "stage": "llm",
-                    "decision": "match",
-                    "confidence": llm_confidence,
-                    "reason": f"LLM confirmed match: {llm_reason}",
-                    "status": "matched",
-                })
-                matched_settlements.add(settlement_id)
-            else:
-                final_results.append({
-                    "settlement_id": settlement_id,
-                    "bank_transaction_id": bank_id,
-                    "stage": "llm",
-                    "decision": "review",
-                    "confidence": llm_confidence,
-                    "reason": f"LLM review required: {llm_reason}",
-                    "status": "manual_review",
-                })
-
-    # STAGE 4 — UNMATCHED ORDERS SCAN (Track 100% of primary order book)
-    orders_path = GENERATED_DIR / "internal_orders.csv"
-    if orders_path.exists():
-        try:
-            orders_df = pd.read_csv(orders_path)
-            if "order_id" in orders_df.columns:
-                for _, orow in orders_df.iterrows():
-                    oid = str(orow["order_id"]).strip()
-                    if oid and oid not in matched_settlements:
+            unres_1_rem = [t for t in s1["txs"] if t.transaction_id not in resolved_ids]
+            unres_2_rem = [t for t in s2["txs"] if t.transaction_id not in resolved_ids]
+            if unres_1_rem and unres_2_rem:
+                tm_df, _ = tolerance_match(to_df(unres_1_rem), to_df(unres_2_rem), cfg=cfg)
+                if not tm_df.empty:
+                    for _, r in tm_df.iterrows():
+                        p_id = str(r["primary_transaction_id"])
+                        c_id = str(r["counterpart_transaction_id"])
+                        resolved_ids.add(p_id)
+                        resolved_ids.add(c_id)
                         final_results.append({
-                            "settlement_id": oid,
-                            "bank_transaction_id": "UNMATCHED",
-                            "stage": "unmatched",
-                            "decision": "unmatched",
-                            "confidence": 0.0,
-                            "reason": "Unreconciled order — missing from bank statement.",
-                            "status": "unmatched",
+                            "primary_transaction_id": p_id,
+                            "primary_statement_id": s1["id"],
+                            "counterpart_transaction_id": c_id,
+                            "counterpart_statement_id": s2["id"],
+                            "settlement_id": p_id,
+                            "bank_transaction_id": c_id,
+                            "stage": "tolerance",
+                            "decision": "match",
+                            "confidence": float(r.get("confidence", 0.85)),
+                            "reason": f"Tolerance match between non-primary sources ({s1['name']} vs {s2['name']}).",
+                            "status": "MATCHED"
                         })
-                        matched_settlements.add(oid)
-        except Exception:
-            pass
+
+    # Pass 3: Universal Similar & Unmatched Scan across ALL unresolved records in ANY statement
+    for s_owner in all_stmts:
+        for tx in s_owner["txs"]:
+            if tx.transaction_id in resolved_ids:
+                continue
+
+            cand_pool = []
+            for s_other in all_stmts:
+                if s_other["id"] == s_owner["id"]:
+                    continue
+                cand_pool.extend([t for t in s_other["txs"] if t.transaction_id not in resolved_ids])
+
+            similar_cands = find_similar_candidates(tx, to_df(cand_pool), cfg)
+            if similar_cands:
+                top_cand = similar_cands[0]
+                c_id = str(top_cand["candidate_id"]).strip()
+                resolved_ids.add(str(tx.transaction_id).strip())
+                if c_id and c_id != "UNMATCHED":
+                    resolved_ids.add(c_id)
+                final_results.append({
+                    "primary_transaction_id": tx.transaction_id,
+                    "primary_statement_id": s_owner["id"],
+                    "counterpart_transaction_id": top_cand["candidate_id"],
+                    "counterpart_statement_id": top_cand.get("statement_id", ""),
+                    "settlement_id": tx.transaction_id,
+                    "bank_transaction_id": top_cand["candidate_id"],
+                    "stage": "similarity_engine",
+                    "decision": "review",
+                    "confidence": top_cand["similarity_score"],
+                    "reason": f"Similar candidate found: {top_cand['candidate_id']} ({', '.join(top_cand['matching_features'])}).",
+                    "status": "SIMILAR"
+                })
+            else:
+                resolved_ids.add(str(tx.transaction_id).strip())
+                final_results.append({
+                    "primary_transaction_id": tx.transaction_id,
+                    "primary_statement_id": s_owner["id"],
+                    "counterpart_transaction_id": "UNMATCHED",
+                    "counterpart_statement_id": "",
+                    "settlement_id": tx.transaction_id,
+                    "bank_transaction_id": "UNMATCHED",
+                    "stage": "unmatched",
+                    "decision": "unmatched",
+                    "confidence": 0.0,
+                    "reason": "No candidate features overlap with other statement sources.",
+                    "status": "UNMATCHED"
+                })
 
     res_df = pd.DataFrame(final_results) if final_results else pd.DataFrame(columns=[
-        "settlement_id", "bank_transaction_id", "stage", "decision", "confidence", "reason", "status"
+        "primary_transaction_id", "primary_statement_id", "counterpart_transaction_id",
+        "counterpart_statement_id", "settlement_id", "bank_transaction_id",
+        "stage", "decision", "confidence", "reason", "status"
     ])
+
     res_df.to_csv(OUTPUT_PATH, index=False)
 
     print("=" * 60)
-    print("LEDGER - RECONCILIATION COMPLETE (v2 Extended)")
+    print("LEDGER - RECONCILIATION COMPLETE (Four-Status Taxonomy v2)")
     print("=" * 60)
     print(f"Total results: {len(res_df)}")
     print(f"Config saved : {CONFIG_OUTPUT_PATH}")

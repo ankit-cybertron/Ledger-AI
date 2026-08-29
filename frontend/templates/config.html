@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Matching Config — Ledger</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Matching Config — Ledger AI</title>
+<meta name="description" content="Ledger AI — Matching engine configuration">
+<script>(function(){ var t=localStorage.getItem('ledger-theme'); if(t) document.documentElement.setAttribute('data-theme',t); }());</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <style>
@@ -117,10 +118,10 @@
 <div class="bg-grid"></div>
 <div class="bg-glow"></div>
 
-<div class="app-shell">
-  {% include "_nav.html" %}
+<div class="app-shell" style="flex-direction: column; height:100vh;">
+  {% include "_topbar.html" %}
 
-  <main class="config-panel">
+  <main class="config-panel" style="overflow-y:auto; flex:1;">
     <div class="config-hero">
       <div class="config-hero-text">
         <h1>Matching Engine Configuration</h1>
@@ -218,5 +219,6 @@
   </main>
 </div>
 
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
 </html>

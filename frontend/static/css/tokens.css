@@ -1,0 +1,251 @@
+/* ==========================================================================
+   Ledger AI — Design Token System
+   Phase 1: Core CSS Custom Properties
+   
+   Usage:
+     Dark mode:  default (no attribute needed)
+     Light mode: <html data-theme="light">
+   ========================================================================== */
+
+/* ── Google Fonts: Inter + JetBrains Mono ─────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DARK THEME (default)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Background Layers ───────────────────────────────────────────────── */
+  --bg-base:      #0B0D0F;   /* page background */
+  --bg-surface:   #111418;   /* card, panel */
+  --bg-elevated:  #171A1F;   /* dropdown, tooltip, popover */
+  --bg-hover:     #1D2229;   /* hover state */
+  --bg-overlay:   rgba(0, 0, 0, 0.65); /* modal backdrop */
+  --bg-input:     #0F1216;   /* form input background */
+
+  /* ── Borders ─────────────────────────────────────────────────────────── */
+  --border:       #252A31;   /* default 1px border */
+  --border-light: #1A1E25;   /* very subtle separator */
+  --border-focus: #4C8DFF;   /* focused input outline */
+  --border-hover: #323A44;   /* border on hover */
+
+  /* ── Text ────────────────────────────────────────────────────────────── */
+  --text-primary:   #F1F3F5; /* headings, key values */
+  --text-secondary: #8B929C; /* labels, descriptions */
+  --text-muted:     #5F6670; /* placeholders, hints */
+  --text-disabled:  #3A3F47; /* disabled state */
+  --text-inverse:   #0D1117; /* text on light backgrounds */
+
+  /* ── Brand Accent Colors ─────────────────────────────────────────────── */
+  --accent-blue:        #4C8DFF;    /* primary action, links, focus */
+  --accent-blue-hover:  #6AA3FF;    /* blue hover */
+  --accent-blue-subtle: rgba(76, 141, 255, 0.12); /* tinted bg */
+  --accent-blue-border: rgba(76, 141, 255, 0.30); /* tinted border */
+
+  /* ── Semantic Colors ─────────────────────────────────────────────────── */
+  /* Green  → matched, success, credit, positive */
+  --color-success:        #32C48D;
+  --color-success-subtle: rgba(50, 196, 141, 0.12);
+  --color-success-border: rgba(50, 196, 141, 0.30);
+
+  /* Amber  → warning, pending, under review */
+  --color-warning:        #F5B942;
+  --color-warning-subtle: rgba(245, 185, 66, 0.12);
+  --color-warning-border: rgba(245, 185, 66, 0.30);
+
+  /* Red    → error, debit, unmatched */
+  --color-danger:        #EF5B64;
+  --color-danger-subtle: rgba(239, 91, 100, 0.12);
+  --color-danger-border: rgba(239, 91, 100, 0.30);
+
+  /* Purple → LLM / AI features */
+  --color-ai:        #9B72F8;
+  --color-ai-subtle: rgba(155, 114, 248, 0.12);
+  --color-ai-border: rgba(155, 114, 248, 0.30);
+
+  /* Teal   → informational, neutral highlight */
+  --color-info:        #38BDF8;
+  --color-info-subtle: rgba(56, 189, 248, 0.12);
+  --color-info-border: rgba(56, 189, 248, 0.30);
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
+  --font-serif: 'Georgia', serif; /* landing page only */
+
+  /* Font Sizes */
+  --text-2xs: 0.625rem;  /* 10px — micro labels */
+  --text-xs:  0.6875rem; /* 11px — chip labels, metadata */
+  --text-sm:  0.75rem;   /* 12px — table headers, badges */
+  --text-base: 0.8125rem; /* 13px — body, table rows */
+  --text-md:  0.875rem;  /* 14px — secondary headings */
+  --text-lg:  1rem;      /* 16px — section titles */
+  --text-xl:  1.125rem;  /* 18px — stat label */
+  --text-2xl: 1.375rem;  /* 22px — stat figures */
+  --text-3xl: 1.75rem;   /* 28px — large hero stats */
+
+  /* Font Weights */
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* Line Heights */
+  --leading-tight:  1.2;
+  --leading-snug:   1.4;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ── Spacing ─────────────────────────────────────────────────────────── */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Border Radius ───────────────────────────────────────────────────── */
+  --radius-xs: 3px;   /* micro chips */
+  --radius-sm: 4px;   /* badges, tags */
+  --radius-md: 6px;   /* buttons, inputs, table cells */
+  --radius-lg: 8px;   /* cards, panels */
+  --radius-xl: 12px;  /* modals, drawers */
+  --radius-2xl: 16px; /* large cards */
+  --radius-full: 9999px; /* pills */
+
+  /* ── Transitions ─────────────────────────────────────────────────────── */
+  --transition-fast:   0.1s ease;
+  --transition-base:   0.15s ease;
+  --transition-slow:   0.25s ease;
+  --transition-sidebar: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Shadows (used sparingly — prefer borders) ───────────────────────── */
+  --shadow-xs:  0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm:  0 2px 6px rgba(0,0,0,0.35);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.45);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.5);
+  --shadow-focus: 0 0 0 3px rgba(76, 141, 255, 0.3);
+
+  /* ── Layout Dimensions ───────────────────────────────────────────────── */
+  --sidebar-width:          220px;
+  --sidebar-collapsed-width: 52px;
+  --table-row-height:       44px;
+  --table-header-height:    36px;
+  --topbar-height:          52px; /* persistent header height */
+
+  /* ── Z-index Scale ───────────────────────────────────────────────────── */
+  --z-base:    0;
+  --z-raised:  10;
+  --z-dropdown: 100;
+  --z-sticky:  200;
+  --z-overlay: 300;
+  --z-modal:   400;
+  --z-tooltip: 500;
+
+  /* ── Chart Colors (semantic, 8-color palette) ────────────────────────── */
+  --chart-1: #4C8DFF;  /* blue   — primary series */
+  --chart-2: #32C48D;  /* green  — matched */
+  --chart-3: #F5B942;  /* amber  — pending */
+  --chart-4: #EF5B64;  /* red    — unmatched */
+  --chart-5: #9B72F8;  /* purple — LLM */
+  --chart-6: #38BDF8;  /* teal   — informational */
+  --chart-7: #FB923C;  /* orange — manual */
+  --chart-8: #A3E635;  /* lime   — other */
+
+  /* ── Legacy compat (maps old vars to new tokens) ─────────────────────── */
+  --bg:           var(--bg-base);
+  --bg-2:         var(--bg-surface);
+  --panel:        var(--bg-surface);
+  --panel-border: var(--border);
+  --ink:          var(--text-primary);
+  --muted:        var(--text-secondary);
+  --muted-2:      var(--text-muted);
+  --accent:       var(--accent-blue);
+  --accent-2:     var(--accent-blue-hover);
+  --sans:         var(--font-ui);
+  --serif:        var(--font-ui);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LIGHT THEME
+   Applied when: <html data-theme="light">
+   ══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+
+  /* ── Background Layers (High Contrast) ───────────────────────────────── */
+  --bg-base:      #EBF0F5;   /* distinct cool gray page background */
+  --bg-surface:   #FFFFFF;   /* crisp white card background */
+  --bg-elevated:  #F4F7FA;   /* dropdown, tooltip */
+  --bg-hover:     #E2E8F0;   /* crisp row & button hover */
+  --bg-overlay:   rgba(15, 23, 42, 0.65);
+  --bg-input:     #FFFFFF;
+
+  /* ── Borders (Crisp & Visible) ────────────────────────────────────────── */
+  --border:       #CBD5E1;   /* solid visible 1px border */
+  --border-light: #E2E8F0;
+  --border-focus: #2563EB;
+  --border-hover: #94A3B8;
+
+  /* ── Text (Dark, High Contrast) ──────────────────────────────────────── */
+  --text-primary:   #0F172A;   /* deep charcoal/black for titles */
+  --text-secondary: #334155;   /* dark slate for subtext & row values */
+  --text-muted:     #475569;   /* visible slate gray for headers & metadata */
+  --text-disabled:  #94A3B8;
+  --text-inverse:   #FFFFFF;
+
+  /* ── Brand Accent ────────────────────────────────────────────────────── */
+  --accent-blue:        #1D4ED8;
+  --accent-blue-hover:  #1E40AF;
+  --accent-blue-subtle: #EFF6FF;
+  --accent-blue-border: #BFDBFE;
+
+  /* ── Semantic Colors (Vibrant & High-Contrast in Light Mode) ───────────── */
+  --color-success:        #16A34A;
+  --color-success-subtle: #DCFCE7;
+  --color-success-border: #86EFAC;
+
+  --color-warning:        #D97706;
+  --color-warning-subtle: #FEF3C7;
+  --color-warning-border: #FCD34D;
+
+  --color-danger:        #DC2626;
+  --color-danger-subtle: #FEE2E2;
+  --color-danger-border: #FCA5A5;
+
+  --color-ai:        #6D28D9;
+  --color-ai-subtle: #F3E8FF;
+  --color-ai-border: #DDD6FE;
+
+  --color-info:        #0284C7;
+  --color-info-subtle: #E0F2FE;
+  --color-info-border: #BAE6FD;
+
+  /* ── Shadows (Crisp Soft Elevation for Light Mode Cards) ──────────────── */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md:  0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+  --shadow-lg:  0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --shadow-xl:  0 20px 25px -5px rgba(15, 23, 42, 0.10);
+  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.20);
+
+  /* ── Legacy compat ───────────────────────────────────────────────────── */
+  --bg:           var(--bg-base);
+  --bg-2:         var(--bg-surface);
+  --panel:        var(--bg-surface);
+  --panel-border: var(--border);
+  --ink:          var(--text-primary);
+  --muted:        var(--text-secondary);
+  --muted-2:      var(--text-muted);
+  --accent:       var(--accent-blue);
+  --accent-2:     var(--accent-blue-hover);
+}

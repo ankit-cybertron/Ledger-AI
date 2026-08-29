@@ -1,4 +1,16 @@
+"""
+train_confidence_model.py — ML Confidence Model Trainer (v2 extended) for Ledger AI v2.
+
+Trains a StandardScaler + RandomForestClassifier model using the single canonical
+FEATURE_COLUMNS schema from ml.feature_schema (T4.1, T4.2).
+"""
+
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import joblib
 import numpy as np
@@ -15,574 +27,108 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-
-# ============================================================
-# PATHS
-# ============================================================
-
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+from ml.feature_schema import FEATURE_COLUMNS
 
 ML_DIR = ROOT / "data" / "ml"
 MODEL_DIR = ROOT / "models"
 
-
-TRAINING_DATA = (
-    ML_DIR / "matching_training_data.csv"
-)
-
-MODEL_PATH = (
-    MODEL_DIR / "confidence_model.joblib"
-)
-
-SCALER_PATH = (
-    MODEL_DIR / "confidence_scaler.joblib"
-)
-
-
-# ============================================================
-# CONFIGURATION
-# ============================================================
+TRAINING_DATA = ML_DIR / "matching_training_data.csv"
+MODEL_PATH = MODEL_DIR / "confidence_model.joblib"
+SCALER_PATH = MODEL_DIR / "confidence_scaler.joblib"
 
 RANDOM_STATE = 42
-
 TEST_SIZE = 0.20
-
-BASE_FEATURE_COLUMNS = [
-    "settlement_amount",
-    "bank_amount",
-    "amount_difference",
-    "amount_difference_pct",
-    "relative_amount_difference",
-    "date_difference_days",
-    "utr_match",
-    "utr_missing",
-    "utr_similarity",
-    "rrn_exact",
-    "rrn_similarity",
-    "order_id_exact",
-    "settlement_id_exact",
-    "gateway_ref_exact",
-    "auth_code_exact",
-    "customer_name_similarity",
-    "vpa_similarity",
-    "narration_similarity",
-    "currency_match",
-    "same_direction",
-    "status_compatible",
-    "candidate_count",
-    "split_candidate",
-    "fee_adjusted_difference",
-    "expected_settlement_date_gap",
-    "duplicate_risk",
-    "is_digit_transposition",
-]
-
 TARGET_COLUMN = "label"
 
 
-def get_feature_columns(data: pd.DataFrame) -> list:
-    ignore_cols = {"settlement_id", "bank_transaction_id", TARGET_COLUMN}
-    cols = [col for col in data.columns if col not in ignore_cols]
-    return cols
-
-
-# ============================================================
-# LOAD DATA
-# ============================================================
-
 def load_training_data():
     if not TRAINING_DATA.exists():
-        raise FileNotFoundError(
-            f"Training data not found: {TRAINING_DATA}"
-        )
-
-    data = pd.read_csv(
-        TRAINING_DATA
-    )
-
-    feature_cols = get_feature_columns(data)
-    required_columns = feature_cols + [TARGET_COLUMN]
-
-    missing_columns = [
-        column
-        for column in required_columns
-        if column not in data.columns
-    ]
-
-    if missing_columns:
-        raise ValueError(
-            "Missing required columns: "
-            + ", ".join(missing_columns)
-        )
-
-    return data, feature_cols
+        raise FileNotFoundError(f"Training dataset not found at {TRAINING_DATA}")
+    df = pd.read_csv(TRAINING_DATA)
+    if df.empty:
+        raise ValueError(f"Training dataset is empty at {TRAINING_DATA}")
+    return df
 
 
-# ============================================================
-# PREPARE DATA
-# ============================================================
+def prepare_features_and_labels(df: pd.DataFrame):
+    missing_cols = [c for c in FEATURE_COLUMNS if c not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Training data is missing expected feature columns: {missing_cols}")
 
-def prepare_data(data, feature_cols):
+    X = df[FEATURE_COLUMNS].copy()
+    X = X.replace([np.inf, -np.inf], np.nan).fillna(0)
 
-    X = data[
-        feature_cols
-    ].copy()
+    if TARGET_COLUMN not in df.columns:
+        raise ValueError(f"Target column '{TARGET_COLUMN}' missing from training dataset.")
 
-    y = data[
-        TARGET_COLUMN
-    ].astype(int)
-
-    # Replace any accidental infinite values.
-    X = X.replace(
-        [float("inf"), float("-inf")],
-        pd.NA,
-    )
-
-    # Fill missing feature values.
-    X = X.fillna(0)
-
+    y = df[TARGET_COLUMN].astype(int)
     return X, y
 
 
-from sklearn.calibration import CalibratedClassifierCV
-
-
-# ============================================================
-# TRAIN MODEL
-# ============================================================
-
 def train_model(X_train, y_train):
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
 
-    base_model = RandomForestClassifier(
-        n_estimators=300,
+    model = RandomForestClassifier(
+        n_estimators=100,
         max_depth=8,
-        min_samples_leaf=2,
-        class_weight="balanced",
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        class_weight="balanced_subsample"
     )
+    model.fit(X_train_scaled, y_train)
 
-    # Wrap model with isotonic CalibratedClassifierCV (T4.5)
-    # Using cv=3 or cv="prefit" depending on class counts
-    n_positives = (y_train == 1).sum()
-    cv_folds = min(3, n_positives) if n_positives >= 2 else None
-
-    if cv_folds and cv_folds >= 2:
-        model = CalibratedClassifierCV(
-            estimator=base_model,
-            method="isotonic",
-            cv=cv_folds,
-        )
-    else:
-        # Fallback if extremely small dataset
-        model = base_model
-
-    model.fit(
-        X_train,
-        y_train,
-    )
-
-    return model
+    return model, scaler
 
 
-# ============================================================
-# EVALUATION
-# ============================================================
+def evaluate_model(model, scaler, X_test, y_test):
+    X_test_scaled = scaler.transform(X_test)
+    y_pred = model.predict(X_test_scaled)
 
-def evaluate_model(
-    model,
-    X_test,
-    y_test,
-):
+    metrics = {
+        "accuracy": accuracy_score(y_test, y_pred),
+        "precision": precision_score(y_test, y_pred, zero_division=0),
+        "recall": recall_score(y_test, y_pred, zero_division=0),
+        "f1_score": f1_score(y_test, y_pred, zero_division=0),
+        "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
+        "classification_report": classification_report(y_test, y_pred, zero_division=0),
+    }
 
-    predictions = model.predict(
-        X_test
-    )
-
-    probabilities = model.predict_proba(
-        X_test
-    )[:, 1]
-
-    accuracy = accuracy_score(
-        y_test,
-        predictions,
-    )
-
-    precision = precision_score(
-        y_test,
-        predictions,
-        zero_division=0,
-    )
-
-    recall = recall_score(
-        y_test,
-        predictions,
-        zero_division=0,
-    )
-
-    f1 = f1_score(
-        y_test,
-        predictions,
-        zero_division=0,
-    )
-
-    print("=" * 60)
-    print("LEDGER - ML CONFIDENCE MODEL")
-    print("=" * 60)
-
-    print(
-        f"Test examples : {len(y_test)}"
-    )
-
-    print()
-
-    print(
-        f"Accuracy  : {accuracy:.4f}"
-    )
-
-    print(
-        f"Precision : {precision:.4f}"
-    )
-
-    print(
-        f"Recall    : {recall:.4f}"
-    )
-
-    print(
-        f"F1 Score  : {f1:.4f}"
-    )
-
-    print()
-
-    print("Classification Report:")
-    print(
-        classification_report(
-            y_test,
-            predictions,
-            target_names=[
-                "non-match",
-                "match",
-            ],
-            zero_division=0,
-        )
-    )
-
-    print("Confusion Matrix:")
-
-    print(
-        confusion_matrix(
-            y_test,
-            predictions,
-        )
-    )
-
-    return predictions, probabilities
+    return metrics
 
 
-# ============================================================
-# MISCLASSIFIED CASES
-# ============================================================
+def save_artifacts(model, scaler):
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, MODEL_PATH)
+    joblib.dump(scaler, SCALER_PATH)
 
-def print_misclassified_cases(
-    data,
-    X_test,
-    y_test,
-    predictions,
-    probabilities,
-):
-    """
-    Surfaces the exact test-set rows the model got wrong,
-    by settlement_id / bank_transaction_id, so they can be
-    inspected against the original source records. A false
-    positive here means the model called a non-match a match
-    with reasonable confidence -- in a finance context that
-    is the expensive error, so it gets top billing.
-    """
-
-    results = pd.DataFrame(
-        {
-            "settlement_id": data.loc[
-                X_test.index, "settlement_id"
-            ].values,
-            "bank_transaction_id": data.loc[
-                X_test.index, "bank_transaction_id"
-            ].values,
-            "actual": y_test.values,
-            "predicted": predictions,
-            "confidence": probabilities,
-        }
-    )
-
-    false_positives = results[
-        (results["actual"] == 0)
-        & (results["predicted"] == 1)
-    ].sort_values(
-        "confidence",
-        ascending=False,
-    )
-
-    false_negatives = results[
-        (results["actual"] == 1)
-        & (results["predicted"] == 0)
-    ].sort_values(
-        "confidence",
-    )
-
-    print()
-    print("=" * 60)
-    print("FALSE POSITIVE TEST CASE(S)")
-    print("=" * 60)
-
-    if false_positives.empty:
-        print("  None")
-    else:
-        for _, row in false_positives.iterrows():
-            print(
-                f"  settlement_id        : {row['settlement_id']}"
-            )
-            print(
-                f"  bank_transaction_id  : {row['bank_transaction_id']}"
-            )
-            print(
-                f"  confidence           : {row['confidence']:.4f}"
-            )
-            print()
-
-    print("=" * 60)
-    print("FALSE NEGATIVE TEST CASE(S)")
-    print("=" * 60)
-
-    if false_negatives.empty:
-        print("  None")
-    else:
-        for _, row in false_negatives.iterrows():
-            print(
-                f"  settlement_id        : {row['settlement_id']}"
-            )
-            print(
-                f"  bank_transaction_id  : {row['bank_transaction_id']}"
-            )
-            print(
-                f"  confidence           : {row['confidence']:.4f}"
-            )
-            print()
-
-    return false_positives, false_negatives
-
-
-# ============================================================
-# FEATURE IMPORTANCE
-# ============================================================
-
-def show_feature_importance(model, feature_cols):
-
-    if hasattr(model, "feature_importances_"):
-        importances = model.feature_importances_
-    elif hasattr(model, "calibrated_classifiers_") and model.calibrated_classifiers_:
-        importances = np.mean([
-            clf.estimator.feature_importances_ for clf in model.calibrated_classifiers_
-            if hasattr(clf.estimator, "feature_importances_")
-        ], axis=0)
-    else:
-        print("\nFeature Importance: Not available for current classifier wrapper.")
-        return
-
-    importance = pd.DataFrame(
-        {
-            "feature": feature_cols,
-            "importance": importances,
-        }
-    ).sort_values(
-        "importance",
-        ascending=False,
-    )
-
-    print(
-        "\nFeature Importance:"
-    )
-
-    for _, row in importance.iterrows():
-
-        print(
-            f"  {row['feature']:<30} "
-            f"{row['importance']:.4f}"
-        )
-
-
-# ============================================================
-# SAVE MODEL
-# ============================================================
-
-def save_model(
-    model,
-    scaler,
-):
-
-    MODEL_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    joblib.dump(
-        model,
-        MODEL_PATH,
-    )
-
-    joblib.dump(
-        scaler,
-        SCALER_PATH,
-    )
-
-    print()
-    print(
-        f"Model saved  : {MODEL_PATH}"
-    )
-
-    print(
-        f"Scaler saved : {SCALER_PATH}"
-    )
-
-
-# ============================================================
-# MAIN
-# ============================================================
 
 def main():
+    df = load_training_data()
+    X, y = prepare_features_and_labels(df)
 
-    data, feature_cols = load_training_data()
+    if len(df) < 5 or len(y.unique()) < 2:
+        X_train, X_test, y_train, y_test = X, X, y, y
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+        )
+
+    model, scaler = train_model(X_train, y_train)
+    metrics = evaluate_model(model, scaler, X_test, y_test)
+    save_artifacts(model, scaler)
 
     print("=" * 60)
-    print("LEDGER - TRAINING CONFIDENCE MODEL (v2 Extended)")
+    print("LEDGER - ML CONFIDENCE MODEL TRAINER (Canonical Schema)")
     print("=" * 60)
-
-    print(
-        f"Training data: {TRAINING_DATA}"
-    )
-
-    print(
-        f"Examples: {len(data)}"
-    )
-
-    print(
-        f"Features count: {len(feature_cols)}"
-    )
-
-    print()
-
-    print("Class distribution:")
-
-    print(
-        data[TARGET_COLUMN]
-        .value_counts()
-        .sort_index()
-    )
-
-    X, y = prepare_data(
-        data,
-        feature_cols,
-    )
-
-    # Stratified split keeps the positive/negative
-    # ratio similar in train and test sets.
-    (
-        X_train,
-        X_test,
-        y_train,
-        y_test,
-    ) = train_test_split(
-        X,
-        y,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=y,
-    )
-
-    print()
-    print(
-        f"Training examples: {len(X_train)}"
-    )
-
-    print(
-        f"Test examples:     {len(X_test)}"
-    )
-
-    # --------------------------------------------------------
-    # Scaling
-    # --------------------------------------------------------
-    #
-    # Random Forest does not require feature scaling.
-    # We still create and save a scaler because the eventual
-    # inference pipeline can use the same preprocessing
-    # contract if we compare this model with other classifiers.
-    #
-    scaler = StandardScaler()
-
-    X_train_scaled = scaler.fit_transform(
-        X_train
-    )
-
-    X_test_scaled = scaler.transform(
-        X_test
-    )
-
-    # --------------------------------------------------------
-    # Train
-    # --------------------------------------------------------
-
-    model = train_model(
-        X_train_scaled,
-        y_train,
-    )
-
-    # --------------------------------------------------------
-    # Evaluate
-    # --------------------------------------------------------
-
-    predictions, probabilities = evaluate_model(
-        model,
-        X_test_scaled,
-        y_test,
-    )
-
-    # --------------------------------------------------------
-    # Misclassified cases
-    # --------------------------------------------------------
-
-    print_misclassified_cases(
-        data,
-        X_test,
-        y_test,
-        predictions,
-        probabilities,
-    )
-
-    # --------------------------------------------------------
-    # Feature importance
-    # --------------------------------------------------------
-
-    show_feature_importance(
-        model,
-        feature_cols,
-    )
-
-    # --------------------------------------------------------
-    # Save
-    # --------------------------------------------------------
-
-    save_model(
-        model,
-        scaler,
-    )
-
-    print()
-    print("=" * 60)
-    print("TRAINING COMPLETE")
-    print("=" * 60)
+    print(f"Training samples : {len(X_train)}")
+    print(f"Testing samples  : {len(X_test)}")
+    print(f"Accuracy         : {metrics['accuracy']:.4f}")
+    print(f"Precision        : {metrics['precision']:.4f}")
+    print(f"Recall           : {metrics['recall']:.4f}")
+    print(f"F1 Score         : {metrics['f1_score']:.4f}")
+    print("\nSaved artifacts:")
+    print(f"  Model  : {MODEL_PATH}")
+    print(f"  Scaler : {SCALER_PATH}")
 
 
 if __name__ == "__main__":

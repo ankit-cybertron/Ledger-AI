@@ -1,168 +1,230 @@
 """
-split_aggregate_matcher.py — N-Directional Split & Aggregate Matcher (T3.9) for Ledger AI v2.
+split_aggregate_matcher.py — N-Directional Split & Aggregate Matcher (T3.4, T3.9) for Ledger AI v2.
 
-Supports multi-directional transaction reconciliation:
-  1. 1 <-> N (1 settlement -> N bank rows)
-  2. N <-> 1 (N settlements -> 1 bank row)
-  3. N <-> N (N settlements -> M bank rows, strictly constrained by shared reference/UTR cluster).
+Supports multi-directional transaction reconciliation between primary and counterpart transactions:
+  1. 1 <-> N (1 primary transaction -> N counterpart transactions)
+  2. N <-> 1 (N primary transactions -> 1 counterpart transaction)
+  3. N <-> N (N primary transactions -> M counterpart transactions, strictly constrained by shared reference/UTR cluster).
 
 Rule: Never performs unconstrained combinatorial brute-forcing across unrelated records.
 Uses candidates_compatible() for currency/status gates, expected_net() for fee calculation,
 and get_effective_tolerance() for dynamic tolerance thresholds.
+All confidence thresholds and error sentinels are read directly from MatchingConfig (T3.5).
 """
 
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Union
 import pandas as pd
 
 from config import MatchingConfig
-from schema import CanonicalTransaction
+from schema import CanonicalTransaction, row_to_canonical
 from matcher.eligibility_guards import candidates_compatible
 from matcher.settlement_equation import expected_net
-from matcher.tolerance_matcher import _row_to_canonical, get_effective_tolerance, get_date_diff
+from matcher.date_utils import business_days_between
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "data" / "results"
 
 
+def get_effective_tolerance(reference_amount: float, cfg: MatchingConfig) -> float:
+    abs_tol = cfg.absolute_amount_tolerance if cfg.absolute_amount_tolerance is not None else 1.00
+    pct_tol = (cfg.percentage_tolerance * abs(reference_amount)) if cfg.percentage_tolerance is not None else 0.0
+    effective = max(abs_tol, pct_tol)
+    if cfg.max_tolerance_cap is not None:
+        effective = min(cfg.max_tolerance_cap, effective)
+    return round(effective, 2)
+
+
+def get_date_diff(d1: Optional[str], d2: Optional[str], cfg: MatchingConfig) -> int:
+    sentinel = getattr(cfg, "date_diff_error_sentinel", 999)
+    if cfg.business_day_aware:
+        return business_days_between(d1, d2, error_sentinel=sentinel)
+
+    if not d1 or not d2:
+        return sentinel
+    try:
+        import dateutil.parser
+        dt1 = dateutil.parser.parse(str(d1))
+        dt2 = dateutil.parser.parse(str(d2))
+        return abs((dt1 - dt2).days)
+    except Exception:
+        return sentinel
+
+
+def _to_canonical_list(items: Union[pd.DataFrame, List[Any]], fallback_prefix: str = "tx") -> List[CanonicalTransaction]:
+    if items is None:
+        return []
+    if isinstance(items, pd.DataFrame):
+        return [row_to_canonical(row, fallback_prefix) for _, row in items.iterrows()]
+    return [row_to_canonical(item, fallback_prefix) for item in items]
+
+
 def split_aggregate_match(
-    settlements: pd.DataFrame,
-    bank: pd.DataFrame,
+    primary: Union[pd.DataFrame, List[Any]],
+    counterpart: Union[pd.DataFrame, List[Any]],
     exact_matches: Optional[pd.DataFrame] = None,
     cfg: Optional[MatchingConfig] = None
 ) -> pd.DataFrame:
     """
-    Executes N-directional split and aggregate matching between settlements and bank rows.
+    Executes N-directional split and aggregate matching between primary and counterpart transaction sets.
     """
     if cfg is None:
         cfg = MatchingConfig()
 
-    resolved_settlements = set(exact_matches["settlement_id"]) if exact_matches is not None and not exact_matches.empty else set()
-    resolved_bank = set(exact_matches["bank_transaction_id"]) if exact_matches is not None and not exact_matches.empty else set()
+    pri_list = _to_canonical_list(primary, "pri_id")
+    cnt_list = _to_canonical_list(counterpart, "cnt_id")
 
-    unresolved_s = settlements[~settlements["settlement_id"].isin(resolved_settlements)] if not settlements.empty else pd.DataFrame()
-    available_b = bank[~bank["bank_transaction_id"].isin(resolved_bank)] if not bank.empty else pd.DataFrame()
+    resolved_pri = set()
+    resolved_cnt = set()
 
-    empty_res = pd.DataFrame(columns=["settlement_id", "bank_transaction_id", "match_type", "amount_difference", "date_difference_days", "confidence", "topology"])
+    if exact_matches is not None and not exact_matches.empty:
+        p_col = "primary_transaction_id" if "primary_transaction_id" in exact_matches.columns else "settlement_id"
+        c_col = "counterpart_transaction_id" if "counterpart_transaction_id" in exact_matches.columns else "bank_transaction_id"
+        if p_col in exact_matches.columns:
+            for v in exact_matches[p_col]:
+                resolved_pri.update(str(v).split("|"))
+        if c_col in exact_matches.columns:
+            for v in exact_matches[c_col]:
+                resolved_cnt.update(str(v).split("|"))
 
-    if unresolved_s.empty or available_b.empty:
+    unresolved_pri = [tx for tx in pri_list if tx.transaction_id not in resolved_pri]
+    unresolved_cnt = [tx for tx in cnt_list if tx.transaction_id not in resolved_cnt]
+
+    empty_res = pd.DataFrame(columns=[
+        "primary_transaction_id", "primary_statement_id",
+        "counterpart_transaction_id", "counterpart_statement_id",
+        "match_type", "amount_difference", "date_difference_days",
+        "is_match", "confidence", "topology"
+    ])
+
+    if not unresolved_pri or not unresolved_cnt:
         return empty_res
 
     # Pre-cluster by normalized reference (UTR / order_id / gateway_ref)
-    s_by_ref: Dict[str, List[CanonicalTransaction]] = {}
-    for _, s_row in unresolved_s.iterrows():
-        tx_s = _row_to_canonical(s_row, "settlement_id")
-        ref_key = tx_s.utr or tx_s.order_id or tx_s.gateway_reference
+    pri_by_ref: Dict[str, List[CanonicalTransaction]] = {}
+    for tx_p in unresolved_pri:
+        ref_key = tx_p.utr or tx_p.order_id or tx_p.gateway_reference
         if ref_key and str(ref_key).strip().lower() != "nan":
             norm_k = str(ref_key).strip().upper()
-            s_by_ref.setdefault(norm_k, []).append(tx_s)
+            pri_by_ref.setdefault(norm_k, []).append(tx_p)
 
-    b_by_ref: Dict[str, List[CanonicalTransaction]] = {}
-    for _, b_row in available_b.iterrows():
-        tx_b = _row_to_canonical(b_row, "bank_transaction_id")
-        ref_key = tx_b.utr or tx_b.order_id or tx_b.gateway_reference
+    cnt_by_ref: Dict[str, List[CanonicalTransaction]] = {}
+    for tx_c in unresolved_cnt:
+        ref_key = tx_c.utr or tx_c.order_id or tx_c.gateway_reference
         if ref_key and str(ref_key).strip().lower() != "nan":
             norm_k = str(ref_key).strip().upper()
-            b_by_ref.setdefault(norm_k, []).append(tx_b)
+            cnt_by_ref.setdefault(norm_k, []).append(tx_c)
 
     matches: List[Dict[str, Any]] = []
-    used_s_ids = set()
-    used_b_ids = set()
+    used_pri_ids = set()
+    used_cnt_ids = set()
 
     # Iterate over shared reference clusters
-    common_refs = set(s_by_ref.keys()).intersection(set(b_by_ref.keys()))
+    common_refs = set(pri_by_ref.keys()).intersection(set(cnt_by_ref.keys()))
 
     for ref_k in common_refs:
-        s_cluster = [tx for tx in s_by_ref[ref_k] if tx.transaction_id not in used_s_ids]
-        b_cluster = [tx for tx in b_by_ref[ref_k] if tx.transaction_id not in used_b_ids]
+        p_cluster = [tx for tx in pri_by_ref[ref_k] if tx.transaction_id not in used_pri_ids]
+        c_cluster = [tx for tx in cnt_by_ref[ref_k] if tx.transaction_id not in used_cnt_ids]
 
-        if not s_cluster or not b_cluster:
+        if not p_cluster or not c_cluster:
             continue
 
-        n_s = len(s_cluster)
-        n_b = len(b_cluster)
+        n_p = len(p_cluster)
+        n_c = len(c_cluster)
 
-        # 1. 1 <-> N topology (1 settlement -> N bank rows)
-        if n_s == 1 and n_b > 1:
-            tx_s = s_cluster[0]
-            valid_b = [tx_b for tx_b in b_cluster if candidates_compatible(tx_s, tx_b)]
-            if len(valid_b) >= 2:
-                sum_b = round(sum(tx_b.net_amount or 0.0 for tx_b in valid_b), 2)
-                exp_s = expected_net(tx_s)
-                diff = round(abs(exp_s - sum_b), 2)
-                eff_tol = get_effective_tolerance(exp_s, cfg)
+        # 1. 1 <-> N topology (1 primary -> N counterpart rows)
+        if n_p == 1 and n_c > 1:
+            tx_p = p_cluster[0]
+            valid_c = [tx_c for tx_c in c_cluster if candidates_compatible(tx_p, tx_c)]
+            if len(valid_c) >= 2:
+                sum_c = round(sum(tx_c.net_amount or 0.0 for tx_c in valid_c), 2)
+                exp_p = expected_net(tx_p)
+                diff = round(abs(exp_p - sum_c), 2)
+                eff_tol = get_effective_tolerance(exp_p, cfg)
 
                 if diff <= eff_tol:
-                    b_ids = "|".join(sorted(tx_b.transaction_id for tx_b in valid_b))
-                    max_ddiff = max(get_date_diff(tx_s.transaction_date, tx_b.transaction_date, cfg) for tx_b in valid_b)
+                    c_ids = "|".join(sorted(tx_c.transaction_id for tx_c in valid_c))
+                    c_stmts = "|".join(sorted(set(tx_c.counterpart_statement_id or "" for tx_c in valid_c if tx_c.counterpart_statement_id)))
+                    max_ddiff = max(get_date_diff(tx_p.transaction_date, tx_c.transaction_date, cfg) for tx_c in valid_c)
                     if max_ddiff <= cfg.date_tolerance_days:
                         matches.append({
-                            "settlement_id": tx_s.transaction_id,
-                            "bank_transaction_id": b_ids,
+                            "primary_transaction_id": tx_p.transaction_id,
+                            "primary_statement_id": tx_p.primary_statement_id or "",
+                            "counterpart_transaction_id": c_ids,
+                            "counterpart_statement_id": c_stmts,
                             "match_type": "split_settlement_1toN",
                             "amount_difference": diff,
                             "date_difference_days": max_ddiff,
-                            "confidence": 0.95,
+                            "is_match": True,
+                            "confidence": cfg.split_match_confidence,
                             "topology": "1_to_N"
                         })
-                        used_s_ids.add(tx_s.transaction_id)
-                        used_b_ids.update(tx_b.transaction_id for tx_b in valid_b)
+                        used_pri_ids.add(tx_p.transaction_id)
+                        used_cnt_ids.update(tx_c.transaction_id for tx_c in valid_c)
 
-        # 2. N <-> 1 topology (N settlements -> 1 bank row)
-        elif n_s > 1 and n_b == 1:
-            tx_b = b_cluster[0]
-            valid_s = [tx_s for tx_s in s_cluster if candidates_compatible(tx_s, tx_b)]
-            if len(valid_s) >= 2:
-                sum_s = round(sum(expected_net(tx_s) for tx_s in valid_s), 2)
-                b_amt = tx_b.net_amount or 0.0
-                diff = round(abs(sum_s - b_amt), 2)
-                eff_tol = get_effective_tolerance(b_amt, cfg)
+        # 2. N <-> 1 topology (N primary -> 1 counterpart row)
+        elif n_p > 1 and n_c == 1:
+            tx_c = c_cluster[0]
+            valid_p = [tx_p for tx_p in p_cluster if candidates_compatible(tx_p, tx_c)]
+            if len(valid_p) >= 2:
+                sum_p = round(sum(expected_net(tx_p) for tx_p in valid_p), 2)
+                c_amt = tx_c.net_amount or 0.0
+                diff = round(abs(sum_p - c_amt), 2)
+                eff_tol = get_effective_tolerance(c_amt, cfg)
 
                 if diff <= eff_tol:
-                    s_ids = "|".join(sorted(tx_s.transaction_id for tx_s in valid_s))
-                    max_ddiff = max(get_date_diff(tx_s.transaction_date, tx_b.transaction_date, cfg) for tx_s in valid_s)
+                    p_ids = "|".join(sorted(tx_p.transaction_id for tx_p in valid_p))
+                    p_stmts = "|".join(sorted(set(tx_p.primary_statement_id or "" for tx_p in valid_p if tx_p.primary_statement_id)))
+                    max_ddiff = max(get_date_diff(tx_p.transaction_date, tx_c.transaction_date, cfg) for tx_p in valid_p)
                     if max_ddiff <= cfg.date_tolerance_days:
                         matches.append({
-                            "settlement_id": s_ids,
-                            "bank_transaction_id": tx_b.transaction_id,
+                            "primary_transaction_id": p_ids,
+                            "primary_statement_id": p_stmts,
+                            "counterpart_transaction_id": tx_c.transaction_id,
+                            "counterpart_statement_id": tx_c.counterpart_statement_id or "",
                             "match_type": "aggregate_settlement_Nto1",
                             "amount_difference": diff,
                             "date_difference_days": max_ddiff,
-                            "confidence": 0.95,
+                            "is_match": True,
+                            "confidence": cfg.n_to_1_confidence,
                             "topology": "N_to_1"
                         })
-                        used_s_ids.update(tx_s.transaction_id for tx_s in valid_s)
-                        used_b_ids.add(tx_b.transaction_id)
+                        used_pri_ids.update(tx_p.transaction_id for tx_p in valid_p)
+                        used_cnt_ids.add(tx_c.transaction_id)
 
-        # 3. N <-> N topology (N settlements -> M bank rows on shared cluster)
-        elif n_s > 1 and n_b > 1:
-            # Compatible matrix filter
-            valid_pairs = [(tx_s, tx_b) for tx_s in s_cluster for tx_b in b_cluster if candidates_compatible(tx_s, tx_b)]
+        # 3. N <-> N topology (N primary -> M counterpart on shared cluster)
+        elif n_p > 1 and n_c > 1:
+            valid_pairs = [(tx_p, tx_c) for tx_p in p_cluster for tx_c in c_cluster if candidates_compatible(tx_p, tx_c)]
             if valid_pairs:
-                valid_s_list = list({tx_s for tx_s, _ in valid_pairs})
-                valid_b_list = list({tx_b for _, tx_b in valid_pairs})
+                valid_p_list = list({tx_p for tx_p, _ in valid_pairs})
+                valid_c_list = list({tx_c for _, tx_c in valid_pairs})
 
-                sum_s = round(sum(expected_net(tx_s) for tx_s in valid_s_list), 2)
-                sum_b = round(sum(tx_b.net_amount or 0.0 for tx_b in valid_b_list), 2)
-                diff = round(abs(sum_s - sum_b), 2)
-                eff_tol = get_effective_tolerance(sum_s, cfg)
+                sum_p = round(sum(expected_net(tx_p) for tx_p in valid_p_list), 2)
+                sum_c = round(sum(tx_c.net_amount or 0.0 for tx_c in valid_c_list), 2)
+                diff = round(abs(sum_p - sum_c), 2)
+                eff_tol = get_effective_tolerance(sum_p, cfg)
 
                 if diff <= eff_tol:
-                    s_ids = "|".join(sorted(tx_s.transaction_id for tx_s in valid_s_list))
-                    b_ids = "|".join(sorted(tx_b.transaction_id for tx_b in valid_b_list))
-                    max_ddiff = max(get_date_diff(tx_s.transaction_date, tx_b.transaction_date, cfg) for tx_s in valid_s_list for tx_b in valid_b_list)
+                    p_ids = "|".join(sorted(tx_p.transaction_id for tx_p in valid_p_list))
+                    c_ids = "|".join(sorted(tx_c.transaction_id for tx_c in valid_c_list))
+                    p_stmts = "|".join(sorted(set(tx_p.primary_statement_id or "" for tx_p in valid_p_list if tx_p.primary_statement_id)))
+                    c_stmts = "|".join(sorted(set(tx_c.counterpart_statement_id or "" for tx_c in valid_c_list if tx_c.counterpart_statement_id)))
+                    max_ddiff = max(get_date_diff(tx_p.transaction_date, tx_c.transaction_date, cfg) for tx_p in valid_p_list for tx_c in valid_c_list)
 
                     if max_ddiff <= cfg.date_tolerance_days:
                         matches.append({
-                            "settlement_id": s_ids,
-                            "bank_transaction_id": b_ids,
+                            "primary_transaction_id": p_ids,
+                            "primary_statement_id": p_stmts,
+                            "counterpart_transaction_id": c_ids,
+                            "counterpart_statement_id": c_stmts,
                             "match_type": "cluster_settlement_NtoN",
                             "amount_difference": diff,
                             "date_difference_days": max_ddiff,
-                            "confidence": 0.90,
+                            "is_match": True,
+                            "confidence": cfg.n_to_n_confidence,
                             "topology": "N_to_N"
                         })
-                        used_s_ids.update(tx_s.transaction_id for tx_s in valid_s_list)
-                        used_b_ids.update(tx_b.transaction_id for tx_b in valid_b_list)
+                        used_pri_ids.update(tx_p.transaction_id for tx_p in valid_p_list)
+                        used_cnt_ids.update(tx_c.transaction_id for tx_c in valid_c_list)
 
     return pd.DataFrame(matches) if matches else empty_res

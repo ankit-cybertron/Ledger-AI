@@ -21,6 +21,23 @@ def candidates_compatible(
     Evaluates whether candidate transactions 'a' and 'b' pass fundamental pre-scoring compatibility gates.
     Returns True if compatible; False if rejected by any hard gate.
     """
+    # 0. Same Source Gate: Cannot match transactions from the exact same statement or ID
+    sname_a = str(getattr(a, "source_name", "") or "").lower().strip()
+    sname_b = str(getattr(b, "source_name", "") or "").lower().strip()
+    if sname_a and sname_b and sname_a == sname_b:
+        return False
+
+    sid_a = str(getattr(a, "statement_id", "") or getattr(a, "primary_statement_id", "") or getattr(a, "counterpart_statement_id", "") or "").strip()
+    sid_b = str(getattr(b, "statement_id", "") or getattr(b, "primary_statement_id", "") or getattr(b, "counterpart_statement_id", "") or "").strip()
+    if sid_a and sid_b and sid_a == sid_b:
+        return False
+
+    if a.transaction_id and b.transaction_id:
+        tx_id_a = str(a.transaction_id).strip()
+        tx_id_b = str(b.transaction_id).strip()
+        if tx_id_a and tx_id_b and tx_id_a == tx_id_b:
+            return False
+
     # 1. Currency Gate
     if a.currency and b.currency:
         if a.currency.upper().strip() != b.currency.upper().strip():

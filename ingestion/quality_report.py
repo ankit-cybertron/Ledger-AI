@@ -64,7 +64,7 @@ def build_quality_report(
             missing_amounts=0,
             invalid_dates=0,
             duplicate_ids=0,
-            source_confidence=source_detection.source_type_confidence if source_detection else 0.0,
+            source_confidence=source_detection.channel_confidence if source_detection else 0.0,
             schema_confidence=0.0,
             warnings=["Dataset is empty."]
         )
@@ -147,7 +147,7 @@ def build_quality_report(
     core_present = field_presence_counts["transaction_date"] + field_presence_counts["net_amount"]
     schema_confidence = round(min(1.0, core_present / (total_rows * 2)), 4)
 
-    src_confidence = source_detection.source_type_confidence if source_detection else 1.0
+    src_confidence = source_detection.channel_confidence if source_detection else 1.0
 
     return QualityReport(
         rows_detected=total_rows,

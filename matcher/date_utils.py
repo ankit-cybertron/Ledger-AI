@@ -10,19 +10,20 @@ from typing import Optional, List
 import dateutil.parser
 
 
-def business_days_between(d1: Optional[str], d2: Optional[str], holidays: Optional[List[str]] = None) -> int:
+def business_days_between(d1: Optional[str], d2: Optional[str], holidays: Optional[List[str]] = None, error_sentinel: int = 999) -> int:
     """
     Calculates number of business days between two date strings (excluding weekends and holidays).
     Friday -> Tuesday = 1 business day (skips Sat & Sun).
     """
     if not d1 or not d2:
-        return 999
+        return error_sentinel
 
     try:
         dt1 = dateutil.parser.parse(str(d1)).date()
         dt2 = dateutil.parser.parse(str(d2)).date()
     except Exception:
-        return 999
+        return error_sentinel
+
 
     if dt1 > dt2:
         dt1, dt2 = dt2, dt1

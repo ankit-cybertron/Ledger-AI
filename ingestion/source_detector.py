@@ -18,7 +18,7 @@ from typing import Dict, Any, Optional, List, Tuple
 
 from config import MatchingConfig
 from ingestion.file_reader import RawTable
-from schema import SourceType, Channel
+from schema import Channel
 
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "source_detection_rules.json"
 
@@ -26,11 +26,8 @@ CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "source_detection
 @dataclass
 class SourceDetectionResult:
     """
-    Result container for source and channel detection.
+    Result container for channel detection.
     """
-    source_type: str
-    source_type_scores: Dict[str, float]
-    source_type_confidence: float
     channel: str
     channel_scores: Dict[str, float]
     channel_confidence: float
@@ -46,7 +43,6 @@ def _load_detection_rules() -> Dict[str, Any]:
             pass
     return {
         "weights": {"filename": 0.35, "headers": 0.45, "values": 0.20},
-        "source_types": {},
         "channels": {}
     }
 
@@ -114,7 +110,7 @@ def detect_source(
     cfg: Optional[MatchingConfig] = None
 ) -> SourceDetectionResult:
     """
-    Detects source_type and channel for a RawTable with scoring breakdown.
+    Detects channel for a RawTable with scoring breakdown.
     Applies MatchingConfig thresholds (source_confidence_auto_accept & source_confidence_needs_confirmation).
     """
     if cfg is None:
@@ -130,23 +126,7 @@ def detect_source(
             if k not in ("source_file", "source_sheet", "source_row_number") and v is not None and not str(v).startswith("nan"):
                 sample_values.append(str(v))
 
-    # --- 1. Detect Source Type ---
-    st_rules = rules.get("source_types", {})
-    st_scores, raw_st_cand, raw_st_score = _score_category(
-        st_rules, raw_table.source_file, raw_table.headers, sample_values, weights
-    )
-
-    if raw_st_score >= cfg.source_confidence_auto_accept:
-        final_st = SourceType.normalize(raw_st_cand)
-        st_needs_confirm = False
-    elif raw_st_score >= cfg.source_confidence_needs_confirmation:
-        final_st = SourceType.normalize(raw_st_cand)
-        st_needs_confirm = True
-    else:
-        final_st = "UNKNOWN"
-        st_needs_confirm = True
-
-    # --- 2. Detect Channel ---
+    # --- Detect Channel ---
     ch_rules = rules.get("channels", {})
     ch_scores, raw_ch_cand, raw_ch_score = _score_category(
         ch_rules, raw_table.source_file, raw_table.headers, sample_values, weights
@@ -154,17 +134,18 @@ def detect_source(
 
     if raw_ch_score >= cfg.source_confidence_auto_accept:
         final_ch = Channel.normalize(raw_ch_cand)
+        ch_needs_confirm = False
     elif raw_ch_score >= cfg.source_confidence_needs_confirmation:
         final_ch = Channel.normalize(raw_ch_cand)
+        ch_needs_confirm = True
     else:
         final_ch = "UNKNOWN"
+        ch_needs_confirm = True
 
     return SourceDetectionResult(
-        source_type=final_st,
-        source_type_scores=st_scores,
-        source_type_confidence=raw_st_score,
         channel=final_ch,
         channel_scores=ch_scores,
         channel_confidence=raw_ch_score,
-        needs_confirmation=st_needs_confirm
+        needs_confirmation=ch_needs_confirm
     )
+

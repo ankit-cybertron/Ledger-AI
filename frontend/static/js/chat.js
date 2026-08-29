@@ -17,7 +17,7 @@
   let sending = false;
 
   const GREETING_HTML =
-    "Hi, I'm Ledger's settlement Q&amp;A agent. Ask me about a settlement ID, a bank transaction, or open exceptions.";
+    "Welcome to Ledger AI. I can analyze settlements, match bank transactions, and summarize reconciliation exceptions. How can I help you today?";
 
   function el(html) {
     const template = document.createElement("template");
@@ -160,6 +160,9 @@
     activeSessionId = sessionId;
     renderSessionList();
 
+    const popover = document.getElementById("chatHistoryPopover");
+    if (popover) popover.classList.remove("open");
+
     try {
       const result = await window.LedgerApi.getChatSession(sessionId);
       const messages = result.session.messages || [];
@@ -181,6 +184,8 @@
       activeSessionId = result.session.id;
       renderSessionList();
       showGreeting();
+      const popover = document.getElementById("chatHistoryPopover");
+      if (popover) popover.classList.remove("open");
     } catch (_) {
       alert("Could not start a new chat. Please try again.");
     }
@@ -269,7 +274,31 @@
       btn.addEventListener("click", () => sendMessage(btn.textContent));
     });
 
-    document.getElementById("newChatBtn").addEventListener("click", startNewSession);
+    const newChatBtn = document.getElementById("newChatBtn");
+    if (newChatBtn) newChatBtn.addEventListener("click", startNewSession);
+
+    const toggleBtn = document.getElementById("chatHistoryToggleBtn");
+    const closeBtn = document.getElementById("chatHistoryCloseBtn");
+    const popover = document.getElementById("chatHistoryPopover");
+
+    if (toggleBtn && popover) {
+      toggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        popover.classList.toggle("open");
+      });
+    }
+
+    if (closeBtn && popover) {
+      closeBtn.addEventListener("click", () => {
+        popover.classList.remove("open");
+      });
+    }
+
+    document.addEventListener("click", (e) => {
+      if (popover && !popover.contains(e.target) && toggleBtn && !toggleBtn.contains(e.target)) {
+        popover.classList.remove("open");
+      }
+    });
 
     await refreshSessionList();
     if (sessions.length > 0) {

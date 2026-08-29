@@ -42,7 +42,8 @@ def _load_column_aliases() -> Dict[str, List[str]]:
     if ALIAS_CONFIG_PATH.exists():
         try:
             with open(ALIAS_CONFIG_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                return {k: v for k, v in data.items() if isinstance(v, list) and k != "canonical_field_priority"}
         except Exception:
             pass
     return {}
@@ -112,6 +113,14 @@ def map_columns(raw_table: RawTable, cfg: Optional[MatchingConfig] = None) -> Li
             if canonical_field in mapped_canonical_fields:
                 continue
             
+            # Skip financial amount mapping for account balance columns
+            if "balance" in norm and canonical_field in ("net_amount", "gross_amount", "credit_amount", "debit_amount", "fee_amount", "tax_amount"):
+                continue
+
+            # Skip fuzzy mapping for count / quantity columns (e.g. # Transactions, Txn Count, Qty)
+            if any(k in norm for k in ("count", "#", "qty", "quantity", "num_", "number_of", "no_of", "txns")):
+                continue
+
             # Check similarity against canonical field name and its aliases
             candidates = [canonical_field] + alias_list
             for cand in candidates:

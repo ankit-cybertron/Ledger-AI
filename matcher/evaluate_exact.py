@@ -1,102 +1,38 @@
 from pathlib import Path
-
 import pandas as pd
-
+from matcher.evaluation_metrics import compute_precision_recall_f1, extract_pairs
 
 ROOT = Path(__file__).resolve().parents[1]
-
 RESULTS_DIR = ROOT / "data" / "results"
 GROUND_TRUTH_DIR = ROOT / "data" / "ground_truth"
 
 
 def main():
-    predictions = pd.read_csv(
-        RESULTS_DIR / "exact_matches.csv"
-    )
+    predictions = pd.read_csv(RESULTS_DIR / "exact_matches.csv") if (RESULTS_DIR / "exact_matches.csv").exists() else pd.DataFrame()
+    ground_truth = pd.read_csv(GROUND_TRUTH_DIR / "relationships.csv") if (GROUND_TRUTH_DIR / "relationships.csv").exists() else pd.DataFrame()
 
-    ground_truth = pd.read_csv(
-        GROUND_TRUTH_DIR / "relationships.csv"
-    )
+    true_matches_df = ground_truth[ground_truth["is_match"] == True] if not ground_truth.empty and "is_match" in ground_truth.columns else ground_truth
 
-    # Only true settlement-to-bank relationships are
-    # evaluated as positive matching targets.
-    true_matches = ground_truth[
-        ground_truth["is_match"] == True
-    ][
-        [
-            "settlement_id",
-            "bank_transaction_id",
-        ]
-    ].drop_duplicates()
+    true_pairs = extract_pairs(true_matches_df)
+    predicted_pairs = extract_pairs(predictions)
 
-    predicted_matches = predictions[
-        [
-            "settlement_id",
-            "bank_transaction_id",
-        ]
-    ].drop_duplicates()
 
-    true_pairs = set(
-        zip(
-            true_matches["settlement_id"],
-            true_matches["bank_transaction_id"],
-        )
-    )
-
-    predicted_pairs = set(
-        zip(
-            predicted_matches["settlement_id"],
-            predicted_matches["bank_transaction_id"],
-        )
-    )
-
-    true_positives = len(
-        true_pairs & predicted_pairs
-    )
-
-    false_positives = len(
-        predicted_pairs - true_pairs
-    )
-
-    false_negatives = len(
-        true_pairs - predicted_pairs
-    )
-
-    precision = (
-        true_positives
-        / (true_positives + false_positives)
-        if true_positives + false_positives
-        else 0
-    )
-
-    recall = (
-        true_positives
-        / (true_positives + false_negatives)
-        if true_positives + false_negatives
-        else 0
-    )
-
-    f1 = (
-        2 * precision * recall
-        / (precision + recall)
-        if precision + recall
-        else 0
-    )
+    metrics = compute_precision_recall_f1(predicted_pairs, true_pairs)
 
     print("=" * 60)
     print("LEDGER - EXACT MATCH EVALUATION")
     print("=" * 60)
 
-    print(f"Ground-truth matches : {len(true_pairs)}")
-    print(f"Predicted matches    : {len(predicted_pairs)}")
-    print(f"True positives       : {true_positives}")
-    print(f"False positives      : {false_positives}")
-    print(f"False negatives      : {false_negatives}")
+    print(f"Ground-truth matches : {metrics['ground_truth_count']}")
+    print(f"Predicted matches    : {metrics['predicted_count']}")
+    print(f"True positives       : {metrics['true_positives']}")
+    print(f"False positives      : {metrics['false_positives']}")
+    print(f"False negatives      : {metrics['false_negatives']}")
 
     print()
-    print(f"Precision : {precision:.4f}")
-    print(f"Recall    : {recall:.4f}")
-    print(f"F1 Score  : {f1:.4f}")
+    print(f"Precision : {metrics['precision']:.4f}")
+    print(f"Recall    : {metrics['recall']:.4f}")
+    print(f"F1 Score  : {metrics['f1']:.4f}")
 
 
 if __name__ == "__main__":

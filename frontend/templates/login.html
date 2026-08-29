@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login — Ledger</title>
+<title>Login — Ledger AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </head>
 <body>
 
@@ -15,10 +17,18 @@
 <div class="bg-glow"></div>
 
 <nav class="topbar">
-  <a href="{{ url_for('index') }}" class="brand">
-    <span class="logo-solid">Ledger</span><span class="logo-outline">AI</span>
-  </a>
-  <a href="{{ url_for('index') }}" class="btn btn-login">&larr; Back</a>
+  <div class="page-topbar-left">
+    <a href="{{ url_for('index') }}" class="page-topbar-brand" title="Ledger AI">
+      <span class="brand-main">Ledger</span><span class="brand-sub">AI</span>
+    </a>
+  </div>
+  <div class="topbar-nav">
+    <a href="{{ url_for('help_page') }}" class="nav-link">Guide</a>
+    <button id="themeToggleBtn" class="theme-toggle-landing-btn" title="Toggle Theme" aria-label="Toggle Theme">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary-nav">&larr; Back to Home</a>
+  </div>
 </nav>
 
 <main class="login-page">
@@ -31,11 +41,15 @@
     {% endif %}
 
     <form method="POST" action="{{ url_for('login') }}" class="login-form">
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" placeholder="demo" autocomplete="username" required>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="demo" autocomplete="username" required>
+      </div>
 
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" required>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
 
       <button type="submit" class="btn btn-primary login-submit">
         Login

@@ -120,22 +120,26 @@ def append_resolved_exceptions_to_training_data(
         print("No feature vectors generated from resolved exceptions.")
         return 0
 
-    new_df = pd.DataFrame(new_examples)
+    from ml.feature_schema import FEATURE_COLUMNS
 
-    # Dynamic One-Hot Encoding for source_type and channel
-    if "source_type" in new_df.columns and "channel" in new_df.columns:
-        new_df = pd.get_dummies(new_df, columns=["source_type", "channel"], prefix=["source_type", "channel"], dtype=int)
+    new_df = pd.DataFrame(new_examples)
+    ordered_cols = ["settlement_id", "bank_transaction_id"] + FEATURE_COLUMNS + ["label"]
+
 
     if train_path.exists():
         existing_df = pd.read_csv(train_path)
         combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-        # Ensure all columns present across both datasets align smoothly
-        combined_df = combined_df.fillna(0)
         # Drop duplicates on key IDs keeping the latest human-resolved entry
         if "settlement_id" in combined_df.columns and "bank_transaction_id" in combined_df.columns:
             combined_df = combined_df.drop_duplicates(subset=["settlement_id", "bank_transaction_id"], keep="last")
     else:
-        combined_df = new_df.fillna(0)
+        combined_df = new_df
+
+    for col in ordered_cols:
+        if col not in combined_df.columns:
+            combined_df[col] = 0
+    combined_df = combined_df[ordered_cols].fillna(0)
+
 
     train_path.parent.mkdir(parents=True, exist_ok=True)
     combined_df.to_csv(train_path, index=False)
@@ -152,5 +156,56 @@ def append_resolved_exceptions_to_training_data(
     return appended_count
 
 
+def log_human_feedback(settlement_id, bank_transaction_id=None, human_decision="match", confidence=1.0, reason=""):
+    """
+    Direct endpoint hook (called by routes.py) to record human reviewer feedback.
+    Appends a new entry to the Exception Ledger with resolution status and triggers feedback loop.
+    """
+    exc_path = EXCEPTION_LEDGER_PATH
+    exceptions = load_exception_ledger(exc_path)
+    
+    bid = bank_transaction_id or settlement_id
+    res_status = "resolved" if human_decision in ("match", "approved", "confirmed") else "rejected"
+    res_outcome = "confirmed_match" if human_decision in ("match", "approved", "confirmed") else "confirmed_non_match"
+    
+    new_row = {
+        "exception_id": f"EXC-{len(exceptions) + 1:04d}",
+        "created_at": pd.Timestamp.now().isoformat(),
+        "settlement_id": str(settlement_id),
+        "bank_transaction_id": str(bid),
+        "description": reason or "Human Reviewer Override",
+        "amount": 0.0,
+        "source": "reviewer",
+        "stage": "override",
+        "decision": "match" if res_status == "resolved" else "non_match",
+        "confidence": float(confidence),
+        "exception_type": "manual_review",
+        "priority": "low",
+        "reason": str(reason),
+        "resolution_status": res_status,
+        "resolved_outcome": res_outcome,
+        "resolved_by": "reviewer"
+    }
+    
+    if not exceptions.empty:
+        # Check if already present, update or append
+        mask = (exceptions["settlement_id"].astype(str) == str(settlement_id)) & (exceptions["bank_transaction_id"].astype(str) == str(bid))
+        if mask.any():
+            exceptions.loc[mask, "resolution_status"] = res_status
+            exceptions.loc[mask, "resolved_outcome"] = res_outcome
+            exceptions.loc[mask, "resolved_by"] = "reviewer"
+            updated_df = exceptions
+        else:
+            updated_df = pd.concat([exceptions, pd.DataFrame([new_row])], ignore_index=True)
+    else:
+        updated_df = pd.DataFrame([new_row])
+        
+    exc_path.parent.mkdir(parents=True, exist_ok=True)
+    updated_df.to_csv(exc_path, index=False)
+    
+    return append_resolved_exceptions_to_training_data(exc_path)
+
+
 if __name__ == "__main__":
     append_resolved_exceptions_to_training_data()
+

@@ -69,25 +69,34 @@ const LedgerApi = {
   getStatements() {
     return getJson("/statements");
   },
-  importStatement(file, name, sourceType, color, statementTypeLabel, rules) {
+  importStatement(files, name, isPrimary, color, rules, useLlm = false) {
     const formData = new FormData();
-    formData.append("file", file);
+    const fileList = Array.isArray(files) ? files : [files];
+    fileList.forEach(f => formData.append("file", f));
     formData.append("name", name || "");
-    formData.append("source_type", sourceType || "bank");
+    formData.append("is_primary", isPrimary ? "true" : "false");
     formData.append("color", color || "");
-    formData.append("statement_type_label", statementTypeLabel || "");
     formData.append("rules", rules || "");
+    formData.append("use_llm", useLlm ? "true" : "false");
     return fetch(`${API_BASE}/statements/import`, {
       method: "POST",
       body: formData,
     }).then(handleResponse);
   },
+
   getStatementDetail(statementId) {
     return getJson(`/statements/${encodeURIComponent(statementId)}`);
+  },
+  setPrimaryStatement(statementId) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/set-primary`);
   },
   renameStatement(statementId, name) {
     return postJson(`/statements/${encodeURIComponent(statementId)}/rename`, { name });
   },
+  updateStatementColor(statementId, color) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/color`, { color });
+  },
+
   deleteStatement(statementId) {
     return fetch(`${API_BASE}/statements/${encodeURIComponent(statementId)}`, {
       method: "DELETE",
@@ -100,6 +109,28 @@ const LedgerApi = {
       method: "POST",
       body: formData,
     }).then(handleResponse);
+  },
+  updateStatementRows(statementId, rows) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/update-rows`, { rows });
+  },
+  deleteStatementColumns(statementId, columns) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/delete-columns`, { columns });
+  },
+  realignStatementColumnsLLM(statementId) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/realign-columns-llm`);
+  },
+  getSimilarPayments(primaryId, sourceType, amount, date, utr, description, sourceName, statementId) {
+    const params = new URLSearchParams({
+      primary_id: primaryId || "",
+      source_type: sourceType || "",
+      source_name: sourceName || "",
+      statement_id: statementId || "",
+      amount: amount != null ? amount : "",
+      date: date || "",
+      utr: utr || "",
+      description: description || "",
+    });
+    return getJson(`/similar-payments?${params.toString()}`);
   },
 
   // --- Uploads -----------------------------------------------------------
@@ -161,6 +192,27 @@ const LedgerApi = {
       settlement_id: settlementId,
       bank_transaction_id: bankTransactionId,
       amount,
+    });
+  },
+
+  llmSmartMatch(exceptionId, settlementId, amount, date, description, sourceType, sourceName, statementId) {
+    return postJson("/transactions/llm-smart-match", {
+      exception_id: exceptionId,
+      settlement_id: settlementId,
+      amount,
+      date,
+      description,
+      source_type: sourceType,
+      source_name: sourceName,
+      statement_id: statementId,
+    });
+  },
+
+  overrideStatus(settlementId, bankTransactionId, targetStatus) {
+    return postJson("/transactions/override-status", {
+      settlement_id: settlementId,
+      bank_transaction_id: bankTransactionId,
+      target_status: targetStatus,
     });
   },
 
