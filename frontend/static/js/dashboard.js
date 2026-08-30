@@ -1307,6 +1307,9 @@
     }
 
     document.querySelectorAll("#btnClearAllData, #btnClearAllDataSidebar, .btn-dustbin-expand").forEach((clearBtn) => {
+      if (clearBtn.dataset.hasClearListener) return;
+      clearBtn.dataset.hasClearListener = "true";
+
       clearBtn.addEventListener("click", async () => {
         const confirmed = confirm(
           "Are you sure you want to clear ALL imported statement data and reconciliation results?\n\nThis action cannot be undone."
@@ -1318,13 +1321,13 @@
         clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Clearing...</span>';
 
         try {
-          const res = await fetch("/api/data/clear", { method: "POST" });
+          const res = await fetch("/api/clear_all_data", { method: "POST" });
           const data = await res.json();
-          if (data.ok) {
-            alert("All data cleared successfully.");
+          if (data.success || data.ok) {
+            window.location.href = "/?tab=sub-upload-bank";
             window.location.reload();
           } else {
-            alert(data.error || "Failed to clear data.");
+            alert(data.message || data.error || "Failed to clear data.");
           }
         } catch (err) {
           alert("Error clearing data: " + err.message);
@@ -4429,34 +4432,7 @@
     });
   }
 
-  function initClearAllDataButton() {
-    const btn = document.getElementById("btnClearAllData");
-    if (!btn) return;
-    btn.addEventListener("click", async () => {
-      if (!confirm("Are you sure you want to wipe out all statement data, reset reconciliation results, and clear the store?")) {
-        return;
-      }
-      try {
-        btn.disabled = true;
-        const res = await fetch("/api/clear_all_data", { method: "POST" });
-        const data = await res.json();
-        if (data.success) {
-          window.location.href = "/?tab=sub-upload-bank";
-          window.location.reload();
-        } else {
-          alert(data.message || "Could not clear data.");
-          btn.disabled = false;
-        }
-      } catch (err) {
-        console.error("Clear data error:", err);
-        alert("Error clearing data: " + err.message);
-        btn.disabled = false;
-      }
-    });
-  }
-
   document.addEventListener("DOMContentLoaded", async () => {
-    initClearAllDataButton();
     initSubTabs();
     initSidebarToggle();
     initSidebarResizer();
