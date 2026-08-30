@@ -2,12 +2,12 @@ services:
   - type: web
     name: ledger-ai
     env: python
-    region: oregon
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
-    healthCheckPath: /
+    plan: free
+    autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: GROQ_API_KEY
-        sync: false
+      - key: FLASK_ENV
+        value: production
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
