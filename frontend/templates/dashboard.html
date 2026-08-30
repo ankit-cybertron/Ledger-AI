@@ -102,36 +102,36 @@
                 </div>
                 
                 <div class="test-data-buttons-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                  <button type="button" class="btn btn-test-load" data-testcase="Test1" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                  <button type="button" class="btn btn-test-load test-case-1" data-testcase="Test1">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <span>Test Case 1</span>
                     </div>
-                    <span style="font-size: 0.72rem; background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 2px 8px; border-radius: 12px; font-weight: 600;">14 files</span>
+                    <span class="test-file-badge">14 files</span>
                   </button>
                   
-                  <button type="button" class="btn btn-test-load" data-testcase="Test2" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                  <button type="button" class="btn btn-test-load test-case-2" data-testcase="Test2">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <span>Test Case 2</span>
                     </div>
-                    <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                    <span class="test-file-badge">5 files</span>
                   </button>
 
-                  <button type="button" class="btn btn-test-load" data-testcase="Test3" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                  <button type="button" class="btn btn-test-load test-case-3" data-testcase="Test3">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <span>Test Case 3</span>
                     </div>
-                    <span style="font-size: 0.72rem; background: rgba(168, 85, 247, 0.2); color: #e9d5ff; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                    <span class="test-file-badge">5 files</span>
                   </button>
 
-                  <button type="button" class="btn btn-test-load" data-testcase="Test4" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                  <button type="button" class="btn btn-test-load test-case-4" data-testcase="Test4">
                     <div style="display: flex; align-items: center; gap: 8px;">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       <span>Test Case 4</span>
                     </div>
-                    <span style="font-size: 0.72rem; background: rgba(245, 158, 11, 0.2); color: #fde68a; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                    <span class="test-file-badge">5 files</span>
                   </button>
                 </div>
               </div>
@@ -203,12 +203,6 @@
                     placeholder="Search entries by description, UTR, or amount…">
                 </div>
                 <div class="stmt-toolbar-actions">
-                  <button type="button" class="btn-stmt-action btn-realign-llm" id="btnRealignColumnsLLM" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(124, 58, 237, 0.15)); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; font-weight: 600;" title="Organize Table & Align Columns via AI">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="realign-icon">
-                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                    </svg>
-                    <span id="btnRealignColumnsLLMText">Organize Table by AI</span>
-                  </button>
                   <button type="button" class="btn-stmt-action btn-edit-entries" id="btnEditStmtEntries">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
@@ -247,7 +241,7 @@
               <h2>Run Reconciliation</h2>
               <p>Match uploaded bank, Razorpay, and order data automatically — rules first, ML second, LLM only for
                 genuine ambiguity.</p>
-              <button class="btn btn-primary" id="runReconcileBtn">
+              <button class="btn-topbar-automatch" id="runReconcileBtn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
@@ -783,38 +777,42 @@
           </section>
 
           <!-- ============================================================ -->
-          <!-- PANEL: Reports (loads from /api/report-html on activate)     -->
+          <!-- PANEL: Closed Audit Vault & Reports                          -->
           <!-- ============================================================ -->
           <section class="panel" id="sub-reports" style="padding:0; overflow-y:auto;">
             <div style="padding:20px 28px; max-width:1200px; margin:0 auto;">
               <div
-                style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border);">
+                style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); flex-wrap: wrap; gap: 12px;">
                 <div>
-                  <h2 style="font-size:var(--text-lg); font-weight:600; color:var(--text-primary); margin:0 0 2px;">
-                    Audit Reports</h2>
-                  <p style="font-size:var(--text-sm); color:var(--text-muted); margin:0;">Generated after each
-                    reconciliation run</p>
+                  <h2 style="font-size:var(--text-lg); font-weight:700; color:var(--text-primary); margin:0 0 2px; display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Closed Audit Vault & Reports
+                  </h2>
+                  <p style="font-size:var(--text-sm); color:var(--text-muted); margin:0;">
+                    Permanent server archives of closed period reconciliation runs, audit PDFs, and Excel (.xlsx) workbooks.
+                  </p>
                 </div>
-                <button type="button" id="reportsRefreshBtn"
-                  style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-secondary); font-size:var(--text-sm); cursor:pointer; font-family:var(--font-ui);">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="23 4 23 10 17 10" />
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                  </svg>
-                  Refresh
-                </button>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <button type="button" id="btnClearPastRecords"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid rgba(239, 68, 68, 0.4); border-radius:var(--radius-md); background:rgba(239, 68, 68, 0.1); color:#f87171; font-size:var(--text-sm); font-weight:600; cursor:pointer; font-family:var(--font-ui); transition: all 0.2s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Clear Past Records
+                  </button>
+                  <button type="button" id="reportsRefreshBtn"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-secondary); font-size:var(--text-sm); cursor:pointer; font-family:var(--font-ui);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10" />
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
+                    Refresh Vault
+                  </button>
+                </div>
               </div>
               <div id="reportsContent">
                 <div style="text-align:center; padding:60px 0; color:var(--text-muted);">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                    style="margin:0 auto 12px; display:block; color:var(--border);">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <div style="font-size:var(--text-base); color:var(--text-secondary); margin-bottom:4px;">No report yet
-                  </div>
-                  <div style="font-size:var(--text-sm);">Run reconciliation to generate a report.</div>
+                  <div style="font-size:var(--text-base); color:var(--text-secondary); margin-bottom:4px;">Loading Closed Audit Vault…</div>
                 </div>
               </div>
             </div>

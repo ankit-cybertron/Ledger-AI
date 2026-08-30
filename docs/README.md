@@ -50,8 +50,8 @@ Detailed high-level algorithms, classification rules, criteria, formulas, and UI
 
 ## 🛠️ Quick Verification Commands
 
-Run the full pytest suite to validate all pipeline logic, API contracts, and ingestion normalizers:
+Run the full pytest suite (66 unit tests) to validate all pipeline logic, API contracts, closed period vault flows, and ingestion normalizers:
 
 ```bash
-PYTHONPATH=. pytest --ignore=tests/test_pipeline.py
+PYTHONPATH=. ./.venv/bin/pytest tests/test_closed_period_vault.py tests/test_api_contract.py tests/test_dispute_coverage.py tests/test_matcher_redesign.py tests/test_part11_verification.py tests/test_part12_clean_state.py tests/test_part13_realtime_sync.py tests/test_report_export.py tests/test_unify_ingestion.py
 ```

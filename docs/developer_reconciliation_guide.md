@@ -129,13 +129,15 @@ function extractSharedKeywords(str1, str2) {
 
 ---
 
-## 6. Development Checklist for Modifying Matching Logic
+## 6. Development Checklist & System Rules
 
-When introducing new matching rules or statement types:
+When introducing new matching rules, UI components, or statement types:
 1. **Adding Column Aliases**: Update `config/column_aliases.json` under appropriate canonical key.
 2. **Adding Reference Regex**: Add regex pattern to `config/normalization_rules.json` under `identifier_patterns`.
 3. **Tuning Score Weights**: Adjust parameters in `config/matching_config.py`.
-4. **Validating Pipeline**: Run the test suite:
+4. **UI Design Tokens**: Use CSS variables from `frontend/static/css/tokens.css`. Use `.btn-topbar-automatch` for topbar/dashboard auto-match triggers and `background: transparent !important;` on inner main layout containers to expose `.bg-grid`.
+5. **Period Closure Protocol**: Confirm period closure via `/api/close_period`, trigger report file downloads, and perform safe state resets (`for (const k in _panelLoaded) delete _panelLoaded[k];`).
+6. **Validating Pipeline**: Run the full 66 unit test suite:
    ```bash
-   PYTHONPATH=. pytest --ignore=tests/test_pipeline.py
+   PYTHONPATH=. ./.venv/bin/pytest tests/test_closed_period_vault.py tests/test_api_contract.py tests/test_dispute_coverage.py tests/test_matcher_redesign.py tests/test_part11_verification.py tests/test_part12_clean_state.py tests/test_part13_realtime_sync.py tests/test_report_export.py tests/test_unify_ingestion.py
    ```

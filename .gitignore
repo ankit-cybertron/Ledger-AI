@@ -30,6 +30,8 @@ data/ml/*
 !data/ml/.gitkeep
 data/logs/*
 !data/logs/.gitkeep
+data/closed_periods/*
+!data/closed_periods/.gitkeep
 data/statements_db.json
 frontend/uploads/*
 !frontend/uploads/.gitkeep

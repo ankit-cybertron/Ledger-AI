@@ -189,22 +189,196 @@
 
   window.stateManager = stateManager;
 
-  function _loadReportsPanel(force) {
+  function _loadReportsPanel(force, expandVault = false) {
     if (_panelLoaded.reports && !force) return;
     const el = document.getElementById("reportsContent");
     if (!el) return;
-    el.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);font-size:var(--text-sm);"><svg class="spin-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><br><br>Generating audit report & export configuration…</div>';
+    el.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);font-size:var(--text-sm);"><div class="spinner" style="margin:0 auto 12px; display:inline-block;"></div> Loading Closed Audit Vault & Report Archives…</div>';
 
     Promise.all([
+      fetch("/api/closed_periods").then(r => r.json()).catch(() => ({ periods: [] })),
       fetch("/api/report-html").then(r => r.json()).catch(() => ({})),
       fetch("/api/statements").then(r => r.json()).catch(() => ({ statements: [] }))
-    ]).then(([reportRes, stData]) => {
+    ]).then(([closedRes, reportRes, stData]) => {
       _panelLoaded.reports = true;
+      const closedPeriods = closedRes.periods || [];
       const reportData = reportRes.data || {};
       const summary = reportData.summary || {};
       const transactions = reportData.transactions || [];
       const exceptions = reportData.exceptions || [];
       const integrity = reportData.integrity || {};
+
+      let vaultContentInner = "";
+
+      // 1. Spotlight Card for Latest Closed Period
+      if (closedPeriods.length > 0) {
+        const latest = closedPeriods[0];
+        const matchPct = (latest.percent_reconciled || 0).toFixed(1);
+        const varAmt = (latest.variance || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+        const excCount = latest.unmatched_count || 0;
+        const settledCount = latest.settled_count || 0;
+        const matchedCount = latest.matched_count || 0;
+        const totalTxns = latest.total_transactions || 0;
+
+        vaultContentInner += `
+          <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px 28px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--border);">
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                  <span style="padding:4px 10px; background:#10b981; color:#fff; border-radius:var(--radius-full); font-size:0.75rem; font-weight:700; letter-spacing:0.04em;">PERIOD CLOSED & LOCKED ✓</span>
+                  <h3 style="font-size:1.25rem; font-weight:700; color:var(--text-primary); margin:0;">Period ${latest.period_label || 'Audit Run'}</h3>
+                </div>
+                <div style="font-size:0.83rem; color:var(--text-muted);">
+                  Closed on <b>${latest.closed_at}</b> by <b>${latest.closed_by || 'admin'}</b> &nbsp;|&nbsp; Server Vault ID: <code style="font-family:var(--font-mono); font-size:0.78rem;">${latest.period_id}</code>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                ${latest.pdf_available ? `<a href="${latest.pdf_url}" download style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:var(--accent-blue); color:#fff; text-decoration:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:600; box-shadow:0 2px 6px rgba(37,99,235,0.25);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  <span>Download PDF Report</span>
+                </a>` : ''}
+                ${latest.xlsx_available ? `<a href="${latest.xlsx_url}" download style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#10b981; color:#fff; text-decoration:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:600; box-shadow:0 2px 6px rgba(16,185,129,0.25);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                  <span>Download Excel (.xlsx)</span>
+                </a>` : ''}
+              </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:14px;">
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Total Txns</div>
+                <div style="font-size:1.4rem; font-weight:700; color:var(--text-primary); margin-top:2px;">${totalTxns.toLocaleString()}</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Locked State</div>
+              </div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Reconciled %</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#10b981; margin-top:2px;">${matchPct}%</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Zero-Variance Parity</div>
+              </div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Settled Count</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#15803d; margin-top:2px;">${settledCount}</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Automated Settlement</div>
+              </div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Matched Count</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#2563eb; margin-top:2px;">${matchedCount}</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Rule Engine Matches</div>
+              </div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Open Exceptions</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#ef4444; margin-top:2px;">${excCount}</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Unmatched Exceptions</div>
+              </div>
+              <div style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 16px;">
+                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Net Variance</div>
+                <div style="font-size:1.4rem; font-weight:700; color:#3b82f6; margin-top:2px;">${varAmt}</div>
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:2px;">Deposits vs Payments</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. Archived Closed Periods History Table
+      if (closedPeriods.length > 0) {
+        vaultContentInner += `
+          <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 24px; box-shadow:var(--shadow-sm);">
+            <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 14px; display:flex; align-items:center; gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              <span>Archived Closed Audit Periods (${closedPeriods.length})</span>
+            </h3>
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
+                <thead>
+                  <tr style="background:var(--bg-elevated); border-bottom:1px solid var(--border); text-align:left; color:var(--text-muted); font-size:0.78rem; text-transform:uppercase;">
+                    <th style="padding:10px 14px;">Period Label</th>
+                    <th style="padding:10px 14px;">Closed Date & Time</th>
+                    <th style="padding:10px 14px;">Status</th>
+                    <th style="padding:10px 14px; text-align:right;">Txns</th>
+                    <th style="padding:10px 14px; text-align:right;">Reconciled %</th>
+                    <th style="padding:10px 14px; text-align:right;">Net Variance</th>
+                    <th style="padding:10px 14px; text-align:center;">Archived Exports</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+
+        closedPeriods.forEach(p => {
+          const varFmt = (p.variance || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+          vaultContentInner += `
+            <tr style="border-bottom:1px solid var(--border); color:var(--text-secondary); transition:background 0.15s ease;">
+              <td style="padding:12px 14px; font-weight:600; color:var(--text-primary);">${p.period_label || 'Period Run'}</td>
+              <td style="padding:12px 14px;">${p.closed_at}</td>
+              <td style="padding:12px 14px;"><span style="padding:3px 8px; background:rgba(37,99,235,0.12); color:var(--accent-blue); border-radius:var(--radius-sm); font-size:0.72rem; font-weight:700;">LOCKED & ARCHIVED</span></td>
+              <td style="padding:12px 14px; text-align:right; font-weight:600; color:var(--text-primary);">${(p.total_transactions || 0).toLocaleString()}</td>
+              <td style="padding:12px 14px; text-align:right; font-weight:700; color:#10b981;">${(p.percent_reconciled || 0).toFixed(1)}%</td>
+              <td style="padding:12px 14px; text-align:right; font-weight:600; color:var(--text-primary);">${varFmt}</td>
+              <td style="padding:12px 14px; text-align:center;">
+                <div style="display:inline-flex; gap:6px;">
+                  <a href="${p.pdf_url}" download title="Download PDF" style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:var(--accent-blue); color:#fff; border-radius:var(--radius-sm); text-decoration:none; font-size:0.75rem; font-weight:600;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>PDF</span>
+                  </a>
+                  <a href="${p.xlsx_url}" download title="Download Excel" style="display:inline-flex; align-items:center; gap:5px; padding:5px 12px; background:#10b981; color:#fff; border-radius:var(--radius-sm); text-decoration:none; font-size:0.75rem; font-weight:600;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                    <span>Excel</span>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        vaultContentInner += `
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } else {
+        vaultContentInner += `
+          <div style="background:var(--bg-surface); border:1px dashed var(--border); border-radius:var(--radius-lg); padding:40px 30px; text-align:center;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin:0 auto 12px; display:block;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <h4 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 6px;">No Closed Audit Periods Archived Yet</h4>
+            <p style="font-size:0.85rem; color:var(--text-muted); max-width:500px; margin:0 auto;">
+              Import statement files, run auto match, and click <b>Close Period</b> on the dashboard to lock period records and archive permanent audit reports.
+            </p>
+          </div>
+        `;
+      }
+
+      // Collapsible Vault Wrapper Container (Collapsed by default!)
+      const isExpandedInitially = !!expandVault;
+      let vaultHtml = `
+        <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin-bottom:28px; box-shadow:var(--shadow-sm); overflow:hidden;">
+          <div id="vaultAccordionHeader" style="display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:var(--bg-elevated); cursor:pointer; user-select:none;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:var(--radius-md); background:rgba(37,99,235,0.1); color:var(--accent-blue);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </span>
+              <div>
+                <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); margin:0 0 2px; display:flex; align-items:center; gap:8px;">
+                  <span>Closed Audit Vault & Report Archives</span>
+                  <span style="padding:2px 8px; background:rgba(37,99,235,0.1); color:var(--accent-blue); border-radius:var(--radius-full); font-size:0.75rem; font-weight:700;">${closedPeriods.length} Archived</span>
+                </h3>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">
+                  ${closedPeriods.length > 0 ? `Latest: Period ${closedPeriods[0].period_label || ''} closed on ${closedPeriods[0].closed_at}. Click to toggle archives.` : 'Click to view server-archived closed periods.'}
+                </p>
+              </div>
+            </div>
+            <button type="button" style="padding:6px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-md); font-size:0.8rem; font-weight:600; color:var(--text-secondary); cursor:pointer; font-family:var(--font-ui); pointer-events:none;">
+              <span id="vaultToggleText">${isExpandedInitially ? 'Collapse Vault ▲' : 'Expand Vault ▼'}</span>
+            </button>
+          </div>
+          <div id="vaultAccordionBody" style="display: ${isExpandedInitially ? 'block' : 'none'}; padding:22px 24px; border-top:1px solid var(--border);">
+            ${vaultContentInner}
+          </div>
+        </div>
+      `;
 
       // Populate statements dropdown
       const stList = stData.statements || [];
@@ -514,12 +688,59 @@
         </div>
       `;
 
-      el.innerHTML = exportOptionsUI + reportExecUI;
+      el.innerHTML = vaultHtml + (summary.total_transactions > 0 ? (exportOptionsUI + reportExecUI) : '');
+      initVaultHeaderListeners();
       _bindExportPreviewEvents();
     }).catch(err => {
       console.error(err);
       el.innerHTML = '<div style="color:var(--color-danger);padding:20px;text-align:center;">Failed to load audit report. Check server connection.</div>';
     });
+  }
+
+  function initVaultHeaderListeners() {
+    const clearPastBtn = document.getElementById("btnClearPastRecords");
+    if (clearPastBtn && !clearPastBtn.dataset.hasVaultListener) {
+      clearPastBtn.dataset.hasVaultListener = "true";
+      clearPastBtn.addEventListener("click", async () => {
+        const confirmClear = confirm(
+          "Are you sure you want to permanently delete all archived closed period reports and Excel workbooks from the server?\n\nThis action cannot be undone."
+        );
+        if (!confirmClear) return;
+
+        try {
+          const res = await fetch("/api/closed_periods/clear_all", { method: "POST" });
+          const data = await res.json();
+          if (data.ok) {
+            alert("All past archived records have been permanently cleared from the server.");
+            _loadReportsPanel(true, false);
+          } else {
+            alert(data.error || "Failed to clear archived records.");
+          }
+        } catch (err) {
+          alert("Error clearing records: " + err);
+        }
+      });
+    }
+
+    const refreshBtn = document.getElementById("reportsRefreshBtn");
+    if (refreshBtn && !refreshBtn.dataset.hasVaultListener) {
+      refreshBtn.dataset.hasVaultListener = "true";
+      refreshBtn.addEventListener("click", () => _loadReportsPanel(true, true));
+    }
+
+    const accordionHeader = document.getElementById("vaultAccordionHeader");
+    const accordionBody = document.getElementById("vaultAccordionBody");
+    const toggleText = document.getElementById("vaultToggleText");
+    if (accordionHeader && accordionBody && !accordionHeader.dataset.hasVaultListener) {
+      accordionHeader.dataset.hasVaultListener = "true";
+      accordionHeader.addEventListener("click", () => {
+        const isHidden = accordionBody.style.display === "none";
+        accordionBody.style.display = isHidden ? "block" : "none";
+        if (toggleText) {
+          toggleText.textContent = isHidden ? "Collapse Vault ▲" : "Expand Vault ▼";
+        }
+      });
+    }
   }
 
   function _bindExportPreviewEvents() {
@@ -1808,16 +2029,16 @@
     results.forEach((res) => {
       const row = document.createElement("div");
       const isSuccess = res.status === "success";
-      row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; font-size: 13px; background: ${isSuccess ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)"}; border: 1px solid ${isSuccess ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}; color: #e2e8f0;`;
+      row.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; font-size: 13px; background: ${isSuccess ? "var(--color-success-subtle, rgba(34, 197, 94, 0.12))" : "var(--color-danger-subtle, rgba(239, 68, 68, 0.12))"}; border: 1px solid ${isSuccess ? "var(--color-success-border, rgba(34, 197, 94, 0.35))" : "var(--color-danger-border, rgba(239, 68, 68, 0.35))"}; color: var(--text-primary);`;
 
       row.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-weight: 600; color: ${isSuccess ? "#4ade80" : "#f87171"};">${isSuccess ? "Success" : "Failed"}</span>
-          <span style="font-family: monospace;">${escapeHtml(res.filename)}</span>
+          <span style="font-weight: 700; color: ${isSuccess ? "#16a34a" : "#dc2626"};">${isSuccess ? "Success" : "Failed"}</span>
+          <span style="font-family: var(--font-mono); font-weight: 600; color: var(--text-primary);">${escapeHtml(res.filename)}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-          ${isSuccess ? `<span style="opacity: 0.8;">${res.row_count} rows detected</span>` : `<span style="color: #f87171;">${escapeHtml(res.error_message || "Parse failed")}</span>`}
-          ${isSuccess && res.statement_id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="openStatementView('${res.statement_id}')">View</button>` : ""}
+          ${isSuccess ? `<span style="font-weight: 500; color: var(--text-secondary);">${res.row_count} rows detected</span>` : `<span style="color: #dc2626; font-weight: 600;">${escapeHtml(res.error_message || "Parse failed")}</span>`}
+          ${isSuccess && res.statement_id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="openStatementView('${res.statement_id}')" style="padding: 3px 10px; font-size: 0.78rem; font-weight: 600;">View</button>` : ""}
         </div>
       `;
       container.appendChild(row);
@@ -4358,11 +4579,48 @@
 
     closeBtn.addEventListener("click", async () => {
       if (!currentRunId) return;
+      const confirmClose = confirm("Are you sure you want to Close & Lock this Audit Period?\n\nThis will lock all current reconciliation results, archive permanent PDF & Excel reports to the Vault, and reset active workspace imports for the next period.");
+      if (!confirmClose) return;
+
       closeBtn.disabled = true;
       try {
         const result = await window.LedgerApi.closePeriod(currentRunId);
+        
+        // Invalidate state and reset current run pointer and panel cache
         stateManager.invalidate();
-        renderSummary(result.run);
+        currentRunId = null;
+        for (const k in _panelLoaded) delete _panelLoaded[k];
+        
+        // Trigger direct file downloads for PDF & Excel without blank tabs
+        const triggerDownload = (url) => {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        };
+
+        if (result.pdf_url) triggerDownload(result.pdf_url);
+        if (result.xlsx_url) setTimeout(() => triggerDownload(result.xlsx_url), 400);
+
+        // Switch active tab view to Reports & Exports
+        if (typeof window.activateSub === "function") {
+          window.activateSub("sub-reports");
+        } else {
+          const reportsBtn = document.getElementById("topbarReportsBtn");
+          if (reportsBtn) reportsBtn.click();
+        }
+        
+        // Force refresh reports panel and auto-expand vault section
+        _loadReportsPanel(true, true);
+
+        // Refresh topbar data sources dropdown to reflect cleared active statements
+        if (typeof renderTopbarSources === "function") {
+          renderTopbarSources();
+        }
+
+        alert(`Period successfully closed & locked!\n\nVault Period ID: ${result.period_id}\nPDF & Excel audit reports have been downloaded and archived to the server vault.`);
       } catch (err) {
         const detail = (err && err.message) ? err.message : String(err || "Could not close period.");
         alert(`Close Period Error:\n\n${detail}`);

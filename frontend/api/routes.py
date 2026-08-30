@@ -22,7 +22,7 @@ import time
 from datetime import datetime
 from typing import Any, Optional, Dict, List
 
-from flask import Blueprint, current_app, jsonify, request, Response
+from flask import Blueprint, current_app, jsonify, request, Response, send_file, session
 from werkzeug.utils import secure_filename
 import re
 import pandas as pd
@@ -1420,12 +1420,185 @@ def get_reconciliation(run_id):
     return jsonify({"ok": True, "run": run})
 
 
+CLOSED_PERIODS_DIR = os.path.join(LEDGER_ROOT, "data", "closed_periods")
+os.makedirs(CLOSED_PERIODS_DIR, exist_ok=True)
+CLOSED_INDEX_FILE = os.path.join(CLOSED_PERIODS_DIR, "index.json")
+
+
+def _get_closed_periods_index():
+    if os.path.exists(CLOSED_INDEX_FILE):
+        try:
+            with open(CLOSED_INDEX_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+
+def _save_closed_periods_index(periods):
+    with open(CLOSED_INDEX_FILE, "w", encoding="utf-8") as f:
+        json.dump(periods, f, indent=2)
+
+
 @api_bp.route("/reconciliation/<run_id>/close", methods=["POST"])
-def close_period(run_id):
-    run = _get_or_build_run(run_id)
+@api_bp.route("/close_period", methods=["POST"])
+def close_period(run_id=None):
+    """
+    Closes current reconciliation period:
+    1. Locks run state (read-only) & gathers full metrics.
+    2. Generates PDF Audit Report & Excel (.xlsx) Reconciliation Report.
+    3. Archives reports & JSON metadata permanently to server vault (data/closed_periods/).
+    4. Clears active imported statement store so user can start next period fresh.
+    5. Returns period summary & download URLs.
+    """
+    payload = request.get_json(silent=True) or {}
+    target_run_id = run_id or payload.get("run_id")
+    if not target_run_id and _RUNS:
+        target_run_id = list(_RUNS.keys())[-1]
+
+    run = _get_or_build_run(target_run_id)
     run["closed"] = True
     run["status"] = "closed"
-    return jsonify({"ok": True, "run": run})
+
+    period_id = f"period_{target_run_id}_{int(time.time())}"
+    period_folder = os.path.join(CLOSED_PERIODS_DIR, period_id)
+    os.makedirs(period_folder, exist_ok=True)
+
+    # Gather report data
+    try:
+        from reports.report_builder import build_filtered_report_data
+        report_data = build_filtered_report_data()
+    except Exception:
+        report_data = {}
+    summary = report_data.get("summary", {})
+
+    # Generate PDF and XLSX reports
+    pdf_path = os.path.join(period_folder, "audit_report.pdf")
+    xlsx_path = os.path.join(period_folder, "reconciliation_report.xlsx")
+
+    try:
+        from reports.pdf_generator import generate_pdf_report
+        pdf_bytes = generate_pdf_report(report_data)
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+    except Exception as exc:
+        current_app.logger.error(f"Error generating PDF report for closed period: {exc}")
+
+    try:
+        from reports.excel_generator import generate_excel_report
+        xlsx_bytes = generate_excel_report(report_data)
+        with open(xlsx_path, "wb") as f:
+            f.write(xlsx_bytes)
+    except Exception as exc:
+        current_app.logger.error(f"Error generating Excel report for closed period: {exc}")
+
+    period_label = run.get("period_label")
+    if not period_label or period_label == "N/A":
+        period_label = _format_ddmmyyyy(datetime.utcnow().isoformat())
+
+    # Build permanent vault record
+    period_record = {
+        "period_id": period_id,
+        "run_id": target_run_id,
+        "period_label": period_label,
+        "closed_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M:%S UTC"),
+        "closed_by": session.get("username", "admin"),
+        "status": "LOCKED",
+        "total_transactions": summary.get("total_transactions", 0),
+        "settled_count": summary.get("settled_count", 0),
+        "matched_count": summary.get("matched_count", 0),
+        "similar_count": summary.get("similar_count", 0),
+        "unmatched_count": summary.get("unmatched_count", 0),
+        "percent_reconciled": round(float(summary.get("percent_reconciled", 0.0)), 1),
+        "variance": round(float(summary.get("variance", 0.0)), 2),
+        "pdf_available": os.path.exists(pdf_path),
+        "xlsx_available": os.path.exists(xlsx_path),
+        "pdf_url": f"/api/closed_periods/{period_id}/download/pdf",
+        "xlsx_url": f"/api/closed_periods/{period_id}/download/xlsx"
+    }
+
+    # Save metadata JSON
+    with open(os.path.join(period_folder, "summary.json"), "w", encoding="utf-8") as f:
+        json.dump(period_record, f, indent=2)
+
+    # Save to index
+    index_list = _get_closed_periods_index()
+    index_list.insert(0, period_record)
+    _save_closed_periods_index(index_list)
+
+    # Clear active workspace for next period
+    try:
+        statement_store.clear_all_statements()
+        invalidate_dashboard_cache()
+        _RUNS.clear()
+        _RUN_LOG.clear()
+    except Exception as exc:
+        current_app.logger.warning(f"Note on workspace clear during period close: {exc}")
+
+    return jsonify({
+        "ok": True,
+        "success": True,
+        "run": run,
+        "period": period_record,
+        "period_id": period_id,
+        "pdf_url": f"/api/closed_periods/{period_id}/download/pdf",
+        "xlsx_url": f"/api/closed_periods/{period_id}/download/xlsx",
+        "message": "Period successfully closed, locked, archived to server vault, and workspace reset."
+    })
+
+
+@api_bp.route("/closed_periods", methods=["GET"])
+def list_closed_periods():
+    """List all permanently archived closed periods from server vault."""
+    index_list = _get_closed_periods_index()
+    return jsonify({"ok": True, "periods": index_list})
+
+
+@api_bp.route("/closed_periods/<period_id>/download/<file_type>", methods=["GET"])
+def download_closed_period_file(period_id, file_type):
+    """Serve PDF or XLSX audit report for an archived period."""
+    period_folder = os.path.join(CLOSED_PERIODS_DIR, period_id)
+    if not os.path.exists(period_folder):
+        return _error("Archived period record not found.", 404)
+
+    if file_type.lower() == "pdf":
+        fpath = os.path.join(period_folder, "audit_report.pdf")
+        mimetype = "application/pdf"
+        filename = f"Ledger_Audit_Report_{period_id}.pdf"
+    elif file_type.lower() in ("xlsx", "excel"):
+        fpath = os.path.join(period_folder, "reconciliation_report.xlsx")
+        mimetype = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        filename = f"Ledger_Reconciliation_Report_{period_id}.xlsx"
+    else:
+        return _error("Invalid file type requested.", 400)
+
+    if not os.path.exists(fpath):
+        return _error(f"Requested {file_type.upper()} report file not found on server.", 404)
+
+    return send_file(
+        fpath,
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@api_bp.route("/closed_periods/clear_all", methods=["POST"])
+def clear_all_closed_periods():
+    """Permanently deletes all archived period reports and files from server vault."""
+    try:
+        if os.path.exists(CLOSED_PERIODS_DIR):
+            for item in os.listdir(CLOSED_PERIODS_DIR):
+                item_path = os.path.join(CLOSED_PERIODS_DIR, item)
+                if os.path.isdir(item_path):
+                    shutil.rmtree(item_path, ignore_errors=True)
+                elif os.path.isfile(item_path):
+                    os.remove(item_path)
+        _save_closed_periods_index([])
+        return jsonify({"ok": True, "message": "All past archived period records have been permanently cleared from server."})
+    except Exception as exc:
+        return _error(f"Failed to clear archived records: {str(exc)}")
+
 
 
 @api_bp.route("/similar-payments", methods=["GET"])
