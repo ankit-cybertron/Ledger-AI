@@ -16,9 +16,14 @@ import sys
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-import matplotlib
-matplotlib.use("Agg")  # Non-interactive backend
-import matplotlib.pyplot as plt
+try:
+    import matplotlib
+    matplotlib.use("Agg")  # Non-interactive backend
+    import matplotlib.pyplot as plt
+    HAS_MATPLOTLIB = True
+except ImportError:
+    HAS_MATPLOTLIB = False
+    plt = None
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -194,6 +199,8 @@ def format_engine_decision(t: Dict[str, Any]) -> str:
 
 def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     """Render high-DPI corporate visualizations to in-memory PNG images using Matplotlib."""
+    if not HAS_MATPLOTLIB or plt is None:
+        return {}
     plt.style.use("default")
     images = {}
 
@@ -532,30 +539,31 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
 
     # 3. Analytics Visualizations Section
     if "charts" in sections and charts_data:
-        story.append(Paragraph("Reconciliation Analytics Visualizations", h1_style))
         img_bufs = render_chart_images(charts_data)
+        if img_bufs and "status_breakdown" in img_bufs:
+            story.append(Paragraph("Reconciliation Analytics Visualizations", h1_style))
+            c1 = Image(img_bufs["status_breakdown"], width=3.6 * inch, height=2.4 * inch)
+            c2 = Image(img_bufs["funnel"], width=3.6 * inch, height=2.4 * inch)
+            c3 = Image(img_bufs["source_contribution"], width=3.6 * inch, height=2.4 * inch)
+            c4 = Image(img_bufs["confidence_dist"], width=3.6 * inch, height=2.4 * inch)
+            c5 = Image(img_bufs["exception_aging"], width=3.6 * inch, height=2.4 * inch)
+            c6 = Image(img_bufs["trend_line"], width=3.6 * inch, height=2.4 * inch)
 
-        c1 = Image(img_bufs["status_breakdown"], width=3.6 * inch, height=2.4 * inch)
-        c2 = Image(img_bufs["funnel"], width=3.6 * inch, height=2.4 * inch)
-        c3 = Image(img_bufs["source_contribution"], width=3.6 * inch, height=2.4 * inch)
-        c4 = Image(img_bufs["confidence_dist"], width=3.6 * inch, height=2.4 * inch)
-        c5 = Image(img_bufs["exception_aging"], width=3.6 * inch, height=2.4 * inch)
-        c6 = Image(img_bufs["trend_line"], width=3.6 * inch, height=2.4 * inch)
+            grid1 = Table([[c1, c2]], colWidths=[3.75 * inch, 3.75 * inch])
+            grid1.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
 
-        grid1 = Table([[c1, c2]], colWidths=[3.75 * inch, 3.75 * inch])
-        grid1.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            grid2 = Table([[c3, c4]], colWidths=[3.75 * inch, 3.75 * inch])
+            grid2.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
 
-        grid2 = Table([[c3, c4]], colWidths=[3.75 * inch, 3.75 * inch])
-        grid2.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+            grid3 = Table([[c5, c6]], colWidths=[3.75 * inch, 3.75 * inch])
+            grid3.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
 
-        grid3 = Table([[c5, c6]], colWidths=[3.75 * inch, 3.75 * inch])
-        grid3.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (-1, -1), "CENTER")]))
-
-        story.append(grid1)
-        story.append(Spacer(1, 6))
-        story.append(grid2)
-        story.append(Spacer(1, 6))
-        story.append(grid3)
+            story.append(grid1)
+            story.append(Spacer(1, 6))
+            story.append(grid2)
+            story.append(Spacer(1, 6))
+            story.append(grid3)
+            story.append(Spacer(1, 12))
         story.append(Spacer(1, 12))
 
     # 4. Exception Audit Section

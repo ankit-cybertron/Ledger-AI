@@ -1127,6 +1127,90 @@ def clear_all_data_endpoint():
         return _error(f"Failed to clear data: {str(e)}")
 
 
+@api_bp.route("/load_test_case", methods=["POST"])
+def load_test_case_endpoint():
+    """
+    Imports test files from test_cases/<test_case> into statement_store
+    and executes the automated reconciliation pipeline.
+    """
+    payload = request.get_json(silent=True) or {}
+    test_case_name = str(payload.get("test_case", "Test1")).strip()
+    if test_case_name in ("1", "test1", "case1"):
+        test_case_name = "Test1"
+    elif test_case_name in ("2", "test2", "case2"):
+        test_case_name = "Test2"
+    elif test_case_name in ("3", "test3", "case3"):
+        test_case_name = "Test3"
+    elif test_case_name in ("4", "test4", "case4"):
+        test_case_name = "Test4"
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    test_cases_dir = os.path.join(base_dir, "test_cases", test_case_name)
+
+    if not os.path.exists(test_cases_dir):
+        return _error(f"Test case directory '{test_case_name}' not found at {test_cases_dir}", 404)
+
+    try:
+        import pandas as pd
+        statement_store.clear_all_statements()
+        invalidate_dashboard_cache()
+        _RUNS.clear()
+        _RUN_LOG.clear()
+
+        file_list = sorted([
+            f for f in os.listdir(test_cases_dir)
+            if not f.startswith(".") and f.lower().endswith((".csv", ".xlsx", ".pdf"))
+        ])
+
+        if not file_list:
+            return _error(f"No valid statement files found in {test_case_name}", 404)
+
+        imported_count = 0
+        for idx, fname in enumerate(file_list):
+            fpath = os.path.join(test_cases_dir, fname)
+            fname_lower = fname.lower()
+
+            if fname_lower.endswith(".csv"):
+                df = pd.read_csv(fpath)
+            elif fname_lower.endswith(".xlsx"):
+                df = pd.read_excel(fpath)
+            elif fname_lower.endswith(".pdf"):
+                df = statement_store.parse_pdf_statement(fpath)
+            else:
+                continue
+
+            if df is None or df.empty:
+                continue
+
+            is_pri = any(k in fname_lower for k in ("bank", "primary", "hdfc", "sbi", "icici"))
+            if not is_pri and idx == 0 and not any("bank" in f.lower() for f in file_list):
+                is_pri = True
+
+            clean_title = fname.rsplit(".", 1)[0].replace("_", " ").replace("-", " ").title()
+            statement_store.save_imported_statement(
+                name=clean_title,
+                filename=fname,
+                df=df,
+                is_primary=is_pri
+            )
+            imported_count += 1
+
+        _run_backend_pipeline()
+        invalidate_dashboard_cache()
+        run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+        _RUNS[run["run_id"]] = run
+
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "test_case": test_case_name,
+            "imported_count": imported_count,
+            "message": f"Successfully loaded {test_case_name} ({imported_count} statements imported)."
+        })
+    except Exception as exc:
+        current_app.logger.error(f"Error loading test case {test_case_name}: {exc}")
+        return _error(f"Failed to load test case: {str(exc)}", 500)
+
 
 @api_bp.route("/statements/<statement_id>/append", methods=["POST"])
 def append_statement_endpoint(statement_id):

@@ -90,6 +90,51 @@
                   Smart AI Import
                 </button>
               </div>
+
+              <!-- Quick Load Benchmark Test Data -->
+              <div class="test-data-loader-container" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary);">Load Pre-configured Test Benchmark Data</span>
+                  </div>
+                  <span class="hint" style="font-size: 0.78rem;">Click any test case to import datasets directly from <code>test_cases/</code> repository</span>
+                </div>
+                
+                <div class="test-data-buttons-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                  <button type="button" class="btn btn-test-load" data-testcase="Test1" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span>Test Case 1</span>
+                    </div>
+                    <span style="font-size: 0.72rem; background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 2px 8px; border-radius: 12px; font-weight: 600;">14 files</span>
+                  </button>
+                  
+                  <button type="button" class="btn btn-test-load" data-testcase="Test2" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span>Test Case 2</span>
+                    </div>
+                    <span style="font-size: 0.72rem; background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                  </button>
+
+                  <button type="button" class="btn btn-test-load" data-testcase="Test3" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span>Test Case 3</span>
+                    </div>
+                    <span style="font-size: 0.72rem; background: rgba(168, 85, 247, 0.2); color: #e9d5ff; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                  </button>
+
+                  <button type="button" class="btn btn-test-load" data-testcase="Test4" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 8px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <span>Test Case 4</span>
+                    </div>
+                    <span style="font-size: 0.72rem; background: rgba(245, 158, 11, 0.2); color: #fde68a; padding: 2px 8px; border-radius: 12px; font-weight: 600;">5 files</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- Statements Management Table -->

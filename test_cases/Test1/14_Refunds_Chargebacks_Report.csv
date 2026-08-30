@@ -1,0 +1,11 @@
+Source Type,Refund ID,Original Reference,Refund Date,Refund Amount,Reason,Adjustment Type
+UPI,RFND6001,20305519951312,2026-07-07,-28102.9,Customer requested cancellation,REFUND
+UPI,RFND6002,41598737437558,2026-08-22,-20493.25,Customer requested cancellation,REFUND
+PAYPAL,RFND6003,PP3864059081,2026-08-07,-813.06,Customer requested cancellation,REFUND
+PAYPAL,RFND6004,PP6329323383,2026-08-14,-145.94,Product returned,REFUND
+UPI,RFND6005,72176519237216,2026-07-26,-2921.72,Customer requested cancellation,REFUND
+UPI,RFND6006,18834219825197,2026-07-11,-25028.19,Payment dispute resolved in customer favor,REFUND
+UPI,RFND6007,76310230327999,2026-07-25,-42273.31,Customer requested cancellation,REFUND
+UPI,RFND6008,68390853813771,2026-08-27,-30820.02,Duplicate charge,REFUND
+UPI,RFND6009,99941301014309,2026-07-12,-10047.03,Customer requested cancellation,REFUND
+UPI,RFND6010,43458110524275,2026-07-12,-30905.57,Payment dispute resolved in customer favor,REFUND

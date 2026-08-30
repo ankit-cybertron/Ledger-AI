@@ -4432,7 +4432,61 @@
     });
   }
 
+  async function checkAndClearDataOnReload() {
+    const navEntry = performance.getEntriesByType("navigation")[0];
+    const isReload = (navEntry && navEntry.type === "reload") || (performance.navigation && performance.navigation.type === 1);
+    if (isReload) {
+      try {
+        await fetch("/api/clear_all_data", { method: "POST" });
+        sessionStorage.removeItem("ledger_data_loaded");
+      } catch (err) {
+        console.warn("Auto clear data on reload error:", err);
+      }
+    }
+  }
+
+  function initTestCaseLoaders() {
+    document.querySelectorAll(".btn-test-load").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const testcase = btn.dataset.testcase;
+        if (!testcase) return;
+
+        const origHtml = btn.innerHTML;
+        const allBtns = document.querySelectorAll(".btn-test-load");
+        allBtns.forEach((b) => (b.disabled = true));
+        btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Loading ${testcase}...`;
+
+        try {
+          const res = await fetch("/api/load_test_case", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ test_case: testcase }),
+          });
+          const data = await res.json();
+
+          if (data.ok || data.success) {
+            sessionStorage.setItem("ledger_data_loaded", "true");
+            await loadSidebarSources();
+            await loadStatementsTable();
+            await hydrateExistingRun();
+            const overviewTab = document.querySelector('[data-tab="sub-overview"]');
+            if (overviewTab) overviewTab.click();
+          } else {
+            alert(data.error || "Failed to load test case.");
+          }
+        } catch (err) {
+          console.error("Test load error:", err);
+          alert("Error loading test case: " + err.message);
+        } finally {
+          btn.innerHTML = origHtml;
+          allBtns.forEach((b) => (b.disabled = false));
+        }
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
+    await checkAndClearDataOnReload();
     initSubTabs();
     initSidebarToggle();
     initSidebarResizer();
@@ -4444,6 +4498,7 @@
     initFilterInputs();
     initReconcile();
     initCompareModal();
+    initTestCaseLoaders();
 
     let hasData = false;
     try {
