@@ -142,11 +142,18 @@ def build_filtered_report_data(filters: Optional[Dict[str, Any]] = None) -> Dict
     # 5. Compute updated Part 9 charts for filtered dataset
     filtered_charts = compute_overview_charts(filtered_txns, filtered_exceptions, period_settled, match_pct)
 
-    # 6. Integrity check calculation
+    # 6. Integrity check calculation & taxonomy breakdown (T22.9, T22.10)
     settled_count = len([t for t in filtered_txns if t["taxonomy_status"] == "SETTLED"])
     matched_count = len([t for t in filtered_txns if t["taxonomy_status"] == "MATCHED"])
     similar_count = len([t for t in filtered_txns if t["taxonomy_status"] == "SIMILAR"])
     unmatched_count = len([t for t in filtered_txns if t["taxonomy_status"] == "UNMATCHED"])
+
+    reconciled_cnt = settled_count + matched_count
+    match_pct = round((reconciled_cnt / total_cnt * 100), 1) if total_cnt > 0 else 0.0
+
+    # Net Variance is sum of UNMATCHED amounts (T22.9)
+    unmatched_amount_sum = sum(abs(float(t.get("amount") or 0.0)) for t in filtered_txns if t["taxonomy_status"] == "UNMATCHED")
+
     accounted_for = settled_count + matched_count + similar_count + unmatched_count
     integrity_pass = (accounted_for == total_cnt)
 
@@ -163,7 +170,7 @@ def build_filtered_report_data(filters: Optional[Dict[str, Any]] = None) -> Dict
         "percent_reconciled": match_pct,
         "deposits_total": deposits_sum,
         "payments_total": payments_sum,
-        "variance": deposits_sum - payments_sum,
+        "variance": round(unmatched_amount_sum, 2),
         "period_settled": period_settled,
     }
 

@@ -534,6 +534,12 @@ def delete_statement(statement_id):
 def clear_all_statements():
     """Wipe all statements, uploaded raw files, generated CSVs, ML predictions, and reconciliation results (T12.2)."""
     _save_db({"statements": []})
+    try:
+        from frontend.api.routes import _RUNS, invalidate_dashboard_cache
+        _RUNS.clear()
+        invalidate_dashboard_cache()
+    except Exception:
+        pass
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     data_uploads_dir = os.path.join(base_dir, "data", "uploads")

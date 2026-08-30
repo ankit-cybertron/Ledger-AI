@@ -31,6 +31,8 @@ data/ml/*
 data/logs/*
 !data/logs/.gitkeep
 data/statements_db.json
+frontend/uploads/*
+!frontend/uploads/.gitkeep
 
 # Input Files
 Input/

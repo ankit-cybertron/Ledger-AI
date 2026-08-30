@@ -7,13 +7,14 @@ Computes expected net settlement amount from canonical fields:
 Falls back cleanly to net_amount or raw amount if explicit fee breakdown is unpopulated.
 """
 
-from typing import Optional
+from typing import Optional, Any
 from schema import CanonicalTransaction
 
 
-def expected_net(tx: CanonicalTransaction) -> float:
+def expected_net(tx: CanonicalTransaction, cfg: Optional[Any] = None) -> float:
     """
-    Computes expected net settlement value considering fees, taxes, refunds, and adjustments.
+    Computes expected net settlement value considering fees, taxes, refunds, adjustments,
+    and channel-specific MDR fee rates (T22.1).
     """
     if tx is None:
         return 0.0
@@ -33,10 +34,26 @@ def expected_net(tx: CanonicalTransaction) -> float:
 
         return round(gross - fee - tax - refund + adj, 2)
 
-    # Fallback: return net_amount or gross_amount
+    # Fallback: return net_amount if present
     if tx.net_amount is not None:
         return round(float(tx.net_amount), 2)
+
+    # If gross_amount is present, compute expected net via channel fee rate if available (T22.1)
     if tx.gross_amount is not None:
-        return round(float(tx.gross_amount), 2)
+        gross = float(tx.gross_amount)
+        if cfg is not None:
+            source_hint = f"{tx.source_file or ''} {tx.channel or ''} {tx.description or ''}".lower()
+            if "razorpay" in source_hint:
+                rzp_fee = gross * getattr(cfg, "razorpay_fee_rate", 0.018)
+                rzp_tax = rzp_fee * getattr(cfg, "razorpay_gst_rate", 0.18)
+                return round(gross - rzp_fee - rzp_tax, 2)
+            elif "paypal" in source_hint:
+                pypl_fee = gross * getattr(cfg, "paypal_fee_rate", 0.034)
+                return round(gross - pypl_fee, 2)
+            elif "card" in source_hint:
+                card_fee = gross * getattr(cfg, "card_fee_rate", 0.019)
+                return round(gross - card_fee, 2)
+
+        return round(gross, 2)
 
     return 0.0

@@ -44,6 +44,12 @@ class MatchingConfig:
     fee_aware_matching: bool = True
     business_day_aware: bool = False
 
+    # Channel MDR & Fee Rates (T22.1)
+    card_fee_rate: float = 0.019        # ~1.9%
+    razorpay_fee_rate: float = 0.018    # 1.8%
+    razorpay_gst_rate: float = 0.18     # 18% GST on MDR
+    paypal_fee_rate: float = 0.034      # 3.4% + FX
+
     # Trust & Mapping Floors
     source_confidence_auto_accept: float = 0.85
     source_confidence_needs_confirmation: float = 0.60

@@ -180,7 +180,7 @@ def tolerance_match(
     tie_exceptions = []
 
     for tx_p in unresolved_pri:
-        p_amt = expected_net(tx_p)
+        p_amt = expected_net(tx_p, cfg)
         eff_tol = get_effective_tolerance(p_amt, cfg)
 
         candidates = []
@@ -188,10 +188,15 @@ def tolerance_match(
             if not candidates_compatible(tx_p, tx_c):
                 continue
 
-            c_amt = expected_net(tx_c)
+            c_amt = expected_net(tx_c, cfg)
             amt_diff = abs(p_amt - c_amt)
             if amt_diff > eff_tol:
-                continue
+                # Also check gross vs expected net if fee_aware_matching is enabled (T22.1)
+                if cfg.fee_aware_matching and tx_c.gross_amount is not None:
+                    c_exp_net = expected_net(tx_c, cfg)
+                    amt_diff = abs(p_amt - c_exp_net)
+                if amt_diff > eff_tol:
+                    continue
 
             ddiff = get_date_diff(tx_p.transaction_date, tx_c.transaction_date, cfg)
             if ddiff > cfg.date_tolerance_days:
