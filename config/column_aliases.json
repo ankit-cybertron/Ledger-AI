@@ -119,7 +119,8 @@
     "expected_settlement_date",
     "Value Post Date",
     "Settlement Date",
-    "Value Date"
+    "Value Date",
+    "Expected Settlement Date"
   ],
   "utr": [
     "utr",

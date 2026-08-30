@@ -231,7 +231,7 @@
                       <path d="M9 15l2 2 4-4" />
                     </svg>
                     <span>Exception Ledger</span>
-                    <span class="subnav-badge hdr-manual-badge" id="hdrManualBadge" style="display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; border-radius:50%; background:#f5b942; color:#0b0d0f; font-weight:700; font-size:11px; margin-left:6px; padding:0 4px;">0</span>
+                    <span class="subnav-badge hdr-manual-badge" id="hdrManualBadge">0</span>
                   </button>
                   <button class="btn btn-login btn-close-period" id="closePeriodBtn">Close Period</button>
                 </div>
@@ -239,10 +239,8 @@
 
               <div class="progress-row">
                 <span class="progress-label" id="progressLabel">0% Reconciled</span>
-                <div class="progress-track">
+                <div class="progress-track" title="Overall Reconciliation Progress">
                   <div class="progress-seg seg-auto" id="segAuto" style="width:0%"></div>
-                  <div class="progress-seg seg-manual" id="segManual" style="width:0%"></div>
-                  <div class="progress-seg seg-unreconciled" id="segUnreconciled" style="width:0%"></div>
                 </div>
                 <span class="progress-fraction" id="progressFraction">0/0</span>
               </div>
@@ -318,6 +316,7 @@
                         <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
                         <th class="sort-header">FEATURE FLAGS</th>
                         <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
+                        <th class="sort-header">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody id="transactionsBody"></tbody>
@@ -341,7 +340,7 @@
                 <div class="cp-title-group">
                   <div class="title-with-badge" style="display: flex; align-items: center; gap: 12px;">
                     <h2>Exception Ledger</h2>
-                    <span class="period-badge badge-warning" id="excBadgeCount">0 items pending</span>
+                    <span class="badge-count-pill badge-danger-glow" id="excBadgeCount"><strong>0</strong> Exceptions Pending</span>
                   </div>
                   <p class="cp-subtitle">All unmatched &amp; flagged transactions requiring manual resolution, candidate
                     matching, and ML feedback.</p>
@@ -379,10 +378,12 @@
                       <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
                       <th class="sort-header">FEATURE FLAGS</th>
                       <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
+                      <th class="sort-header">ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody id="exceptionsBody"></tbody>
                 </table>
+
               </div>
 
               <div id="exceptionsEmpty" class="empty-state"

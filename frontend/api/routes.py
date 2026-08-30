@@ -18,6 +18,7 @@ import shutil
 import sys
 import threading
 import uuid
+import time
 from datetime import datetime
 from typing import Any, Optional, Dict, List
 
@@ -364,11 +365,48 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
     }
 
 
+_DASHBOARD_CACHE = {"timestamp": 0, "period_label": None, "data": None}
+CACHE_TTL = 3.0  # seconds caching for fast UI interactions
+
+
+def invalidate_dashboard_cache():
+    _DASHBOARD_CACHE["data"] = None
+
+
+def _get_or_build_run(run_id: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Robust run retriever for Cloud Run & multi-instance serverless deployments.
+    Prevents 'Run not found' 404 errors by building or reusing active run states.
+    """
+    stmts = statement_store.list_statements()
+    if not stmts:
+        _RUNS.clear()
+        invalidate_dashboard_cache()
+        return _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+
+    if run_id and run_id in _RUNS:
+        return _RUNS[run_id]
+
+    if _RUNS and (not run_id or run_id == "latest"):
+        return list(_RUNS.values())[-1]
+
+    run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+    _RUNS[run["run_id"]] = run
+    if run_id:
+        _RUNS[run_id] = run
+    return run
+
+
 def _build_dashboard_run(period_label="Current Period"):
     """
     Constructs an authoritative reconciliation run dictionary from disk CSVs.
     Used by /api/reconciliation and overview page (T9.1, T12.3).
     """
+    now = time.time()
+    if _DASHBOARD_CACHE["data"] is not None and (now - _DASHBOARD_CACHE["timestamp"]) < CACHE_TTL:
+        if _DASHBOARD_CACHE["period_label"] == period_label:
+            return _DASHBOARD_CACHE["data"]
+
     db_data = statement_store._load_db()
     all_statements = db_data.get("statements", [])
 
@@ -710,11 +748,20 @@ def _build_dashboard_run(period_label="Current Period"):
 
     transactions = raw_transactions
 
+    def _format_ddmmyyyy(d_str):
+        if not d_str:
+            return ""
+        d_s = str(d_str).split("T")[0].split(" ")[0].strip()
+        parts = d_s.split("-")
+        if len(parts) == 3 and len(parts[0]) == 4:
+            return f"{parts[2]}/{parts[1]}/{parts[0]}"
+        return d_s
+
     # Calculate real min and max transaction date range
     valid_dates = [t["date"] for t in raw_transactions if t.get("date") and str(t["date"]).strip() not in ("", "None", "nan", "—")]
     if valid_dates:
         sorted_dates = sorted(valid_dates)
-        min_d, max_d = sorted_dates[0], sorted_dates[-1]
+        min_d, max_d = _format_ddmmyyyy(sorted_dates[0]), _format_ddmmyyyy(sorted_dates[-1])
         period_label = f"{min_d} to {max_d}" if min_d != max_d else min_d
     else:
         period_label = "No Data"
@@ -727,7 +774,8 @@ def _build_dashboard_run(period_label="Current Period"):
     exceptions_count = len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched"}])
     unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() == "unreconciled"])
 
-    reconciled_count = settled_count + matched_count + llm_count + similar_count
+    # Reconciled count & percentage (T22.10: SIMILAR is excluded from reconciled count/percentage)
+    reconciled_count = settled_count + matched_count + llm_count
     percent = round((reconciled_count / total * 100), 1) if total > 0 else 0.0
 
     pos_amounts = [t["amount"] for t in transactions if t["amount"] > 0]
@@ -738,7 +786,9 @@ def _build_dashboard_run(period_label="Current Period"):
     if deposits_total == 0.0 and payments_total == 0.0:
         deposits_total = float(sum(t["amount"] for t in transactions))
 
-    variance = deposits_total - payments_total
+    # Net Variance is sum of UNMATCHED/exception amounts (T22.9)
+    unmatched_amount_sum = sum(abs(float(t.get("amount") or 0.0)) for t in transactions if (t.get("status") or "").lower() in {"exception", "unmatched", "unreconciled"})
+    variance = round(unmatched_amount_sum, 2)
     period_settled = bool(total > 0 and exceptions_count == 0 and unreconciled_count == 0)
 
     run_id = uuid.uuid4().hex
@@ -788,6 +838,9 @@ def _build_dashboard_run(period_label="Current Period"):
         if len(_RUN_LOG) > 10:
             _RUN_LOG.pop()
 
+    _DASHBOARD_CACHE["timestamp"] = time.time()
+    _DASHBOARD_CACHE["period_label"] = period_label
+    _DASHBOARD_CACHE["data"] = run_dict
     return run_dict
 
 
@@ -870,6 +923,7 @@ def get_statements_list():
 
 @api_bp.route("/statements/import", methods=["POST"])
 def import_statement():
+    invalidate_dashboard_cache()
     from frontend.api import pipeline_tracker
     pipeline_tracker.start_pipeline("Reading & Ingesting Uploaded File...")
 
@@ -1040,6 +1094,7 @@ def update_statement_color_endpoint(statement_id):
 
 @api_bp.route("/statements/<statement_id>", methods=["DELETE"])
 def delete_statement_endpoint(statement_id):
+    invalidate_dashboard_cache()
     success = statement_store.delete_statement(statement_id)
     if not success:
         return _error("Statement not found.", 404)
@@ -1064,6 +1119,7 @@ def clear_all_data_endpoint():
     """Clear all statements, generated CSVs, and reconciliation runs (T6.3, T12.2)."""
     try:
         statement_store.clear_all_statements()
+        invalidate_dashboard_cache()
         _RUNS.clear()
         _RUN_LOG.clear()
         return jsonify({"ok": True, "message": "All statement data and reconciliation results have been cleared."})
@@ -1246,6 +1302,7 @@ def _handle_upload(source):
 
 @api_bp.route("/reconcile", methods=["POST"])
 def trigger_reconciliation():
+    invalidate_dashboard_cache()
     payload = request.get_json(silent=True) or {}
     period_label = payload.get("period_label", datetime.utcnow().strftime("%B %Y"))
 
@@ -1269,29 +1326,19 @@ def trigger_reconciliation():
 
 @api_bp.route("/reconciliation", methods=["GET"])
 def latest_reconciliation():
-    try:
-        run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
-        _RUNS[run["run_id"]] = run
-        return jsonify({"ok": True, "run": run})
-    except Exception:
-        if _RUNS:
-            return jsonify({"ok": True, "run": list(_RUNS.values())[-1]})
-        return jsonify({"ok": True, "run": None})
+    run = _get_or_build_run()
+    return jsonify({"ok": True, "run": run})
 
 
 @api_bp.route("/reconciliation/<run_id>", methods=["GET"])
 def get_reconciliation(run_id):
-    run = _RUNS.get(run_id)
-    if not run:
-        return _error("Run not found.", 404)
+    run = _get_or_build_run(run_id)
     return jsonify({"ok": True, "run": run})
 
 
 @api_bp.route("/reconciliation/<run_id>/close", methods=["POST"])
 def close_period(run_id):
-    run = _RUNS.get(run_id)
-    if not run:
-        return _error("Run not found.", 404)
+    run = _get_or_build_run(run_id)
     run["closed"] = True
     run["status"] = "closed"
     return jsonify({"ok": True, "run": run})
@@ -1407,10 +1454,8 @@ def latest_exceptions():
 
 @api_bp.route("/exceptions/<run_id>", methods=["GET"])
 def get_exceptions(run_id):
-    run = _RUNS.get(run_id)
-    if not run:
-        return _error("Run not found.", 404)
-    return jsonify({"ok": True, "run_id": run_id, "exceptions": run["exceptions"]})
+    run = _get_or_build_run(run_id)
+    return jsonify({"ok": True, "run_id": run["run_id"], "exceptions": run["exceptions"]})
 
 
 def _apply_manual_status_override(settlement_id, bank_transaction_id=None, target_status="matched", reason=None, resolved_by="reviewer"):
@@ -1587,7 +1632,7 @@ def resolve_exception(exception_id):
 @api_bp.route("/dashboard/summary", methods=["GET"])
 def dashboard_summary():
     run_id = request.args.get("run_id")
-    run = _RUNS.get(run_id) if run_id else (list(_RUNS.values())[-1] if _RUNS else None)
+    run = _get_or_build_run(run_id)
 
     if not run:
         return jsonify({

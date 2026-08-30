@@ -8,6 +8,48 @@
 (function () {
   "use strict";
 
+  // Helper: Format any date into DD/MM/YYYY
+  window.formatDateDDMMYYYY = function formatDateDDMMYYYY(dateStr) {
+    if (!dateStr || dateStr === "—" || dateStr === "Today") return dateStr || "—";
+    const str = String(dateStr).trim();
+    const isoMatch = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (isoMatch) {
+      const year = isoMatch[1];
+      const month = isoMatch[2].padStart(2, "0");
+      const day = isoMatch[3].padStart(2, "0");
+      return `${day}/${month}/${year}`;
+    }
+    return str;
+  };
+
+  // Helper: Format period label date ranges to DD/MM/YYYY
+  window.formatPeriodLabel = function formatPeriodLabel(str) {
+    if (!str || str === "—") return "No Data";
+    return String(str).replace(/\b(\d{4})-(\d{2})-(\d{2})(?:[T\s]\d{2}:\d{2}:\d{2}(?:\.\d+)?)?\b/g, (match, y, m, d) => {
+      return `${d}/${m}/${y}`;
+    });
+  };
+
+  // Helper: Derive accurate source category badge label
+  function getSourceTypeBadgeLabel(stmt) {
+    if (!stmt) return "DATA SOURCE";
+    const typeStr = (stmt.source_type || stmt.type || "").toLowerCase();
+    const nameStr = (stmt.name || stmt.filename || "").toLowerCase();
+    if (typeStr.includes("razorpay") || nameStr.includes("razorpay") || nameStr.includes("settlement")) {
+      return "RAZORPAY SETTLEMENT";
+    }
+    if (typeStr.includes("internal") || nameStr.includes("internal") || nameStr.includes("order") || nameStr.includes("v2")) {
+      return "INTERNAL ORDERS";
+    }
+    if (typeStr.includes("cash") || nameStr.includes("cash")) {
+      return "CASH BOOK";
+    }
+    if (typeStr.includes("bank") || nameStr.includes("bank") || nameStr.includes("hdfc") || nameStr.includes("icici")) {
+      return "BANK STATEMENT";
+    }
+    return (stmt.source_type || "STATEMENT SOURCE").replace(/_/g, " ").toUpperCase();
+  }
+
   let currentRunId = null;
   let activeStatementId = null;
 
@@ -2102,7 +2144,7 @@
         const color = stmt.color || "#6f89ff";
         const isPrimary = Boolean(stmt.is_primary);
         const rows = stmt.row_count || 0;
-        const created = stmt.created_at ? String(stmt.created_at).slice(0, 10) : "Today";
+        const created = formatDateDDMMYYYY(stmt.created_at || "Today");
 
         const displayName = stmt.name || (stmt.filename ? stmt.filename.replace(/\.[^/.]+$/, "").replace(/_/g, " ").replace(/-/g, " ").toUpperCase() : "Statement");
 
@@ -2111,7 +2153,7 @@
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="stmt-name-text" style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary, #f8fafc); cursor: pointer;" title="Click to edit name">${escapeHtml(displayName)}</span>
               <input type="text" class="form-input stmt-name-input" value="${escapeHtml(displayName)}" style="display: none; background: var(--bg-surface, #12161f); border: 1px solid var(--border-color, #272f3e); color: var(--text-primary, #f8fafc); padding: 4px 8px; font-size: 0.85rem; font-weight: 600; border-radius: 6px; width: 100%; min-width: 140px;">
-              ${isPrimary ? '<span style="color:#eab308; font-size:0.7rem; font-weight:700; border:1px solid #eab308; padding:1px 4px; border-radius:3px;" title="Primary Source">PRIMARY</span>' : ''}
+              ${isPrimary ? '<span style="color:#facc15; font-size:0.7rem; font-weight:700; border:1px solid #facc15; background:rgba(234,179,8,0.15); padding:2px 6px; border-radius:4px;" title="Primary Source">PRIMARY</span>' : ''}
             </div>
           </td>
           <td>
@@ -2121,12 +2163,12 @@
             </div>
           </td>
           <td class="font-mono">${rows.toLocaleString()}</td>
-          <td class="font-mono text-muted" style="font-size: 0.8rem;">${created}</td>
+          <td class="font-mono text-muted" style="font-size: 0.82rem;">${created}</td>
           <td>
-            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.84rem; padding: 4px 10px; border-radius: 999px; background: ${isPrimary ? "rgba(56, 189, 248, 0.15)" : "transparent"}; border: 1px solid ${isPrimary ? "rgba(56, 189, 248, 0.4)" : "rgba(255, 255, 255, 0.1)"};">
-              <input type="checkbox" value="${stmt.id}" ${isPrimary ? "checked" : ""} class="stmt-primary-checkbox" style="accent-color: var(--accent-blue);">
-              <span style="font-weight: ${isPrimary ? "700" : "500"}; color: ${isPrimary ? "#38bdf8" : "var(--text-secondary)"};">${isPrimary ? "Primary Source" : "Set as Primary"}</span>
-            </label>
+            <button type="button" class="btn-primary-toggle ${isPrimary ? "is-primary" : ""}" data-id="${stmt.id}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; background: ${isPrimary ? "rgba(234, 179, 8, 0.18)" : "rgba(255, 255, 255, 0.05)"}; color: ${isPrimary ? "#facc15" : "var(--text-secondary)"}; border: 1px solid ${isPrimary ? "rgba(234, 179, 8, 0.45)" : "rgba(255, 255, 255, 0.15)"}; cursor: pointer; transition: all 0.15s ease;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="${isPrimary ? "#facc15" : "none"}" stroke="${isPrimary ? "#facc15" : "currentColor"}" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span>${isPrimary ? "Primary Source" : "Set as Primary"}</span>
+            </button>
           </td>
           <td class="text-right">
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
@@ -2190,10 +2232,11 @@
           });
         }
 
-        const checkbox = tr.querySelector(".stmt-primary-checkbox");
-        if (checkbox) {
-          checkbox.addEventListener("change", async () => {
-            await handleSetPrimaryStatement(stmt.id);
+        const primaryBtn = tr.querySelector(".btn-primary-toggle");
+        if (primaryBtn) {
+          primaryBtn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            await handleSetPrimaryStatement(stmt.id, primaryBtn);
           });
         }
 
@@ -2244,7 +2287,29 @@
           activeStatementLoadedRows = stmt.rows || [];
 
           document.getElementById("stmtViewTitle").textContent = stmt.name;
-          document.getElementById("stmtViewTypeBadge").textContent = (stmt.source_type || "bank").toUpperCase();
+          const typeBadge = document.getElementById("stmtViewTypeBadge");
+          if (typeBadge) {
+            const badgeLabel = getSourceTypeBadgeLabel(stmt);
+            typeBadge.textContent = badgeLabel;
+            if (badgeLabel.includes("RAZORPAY")) {
+              typeBadge.style.background = "rgba(168, 85, 247, 0.18)";
+              typeBadge.style.color = "#c084fc";
+              typeBadge.style.border = "1px solid rgba(168, 85, 247, 0.4)";
+            } else if (badgeLabel.includes("INTERNAL")) {
+              typeBadge.style.background = "rgba(16, 185, 129, 0.18)";
+              typeBadge.style.color = "#34d399";
+              typeBadge.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+            } else if (badgeLabel.includes("CASH")) {
+              typeBadge.style.background = "rgba(245, 158, 11, 0.18)";
+              typeBadge.style.color = "#fbbf24";
+              typeBadge.style.border = "1px solid rgba(245, 158, 11, 0.4)";
+            } else {
+              typeBadge.style.background = "rgba(59, 130, 246, 0.18)";
+              typeBadge.style.color = "#60a5fa";
+              typeBadge.style.border = "1px solid rgba(59, 130, 246, 0.4)";
+            }
+          }
+
           document.getElementById("stmtViewCountBadge").textContent = `${stmt.row_count} rows`;
 
           const btnSetPrimary = document.getElementById("btnStmtHeaderSetPrimary");
@@ -2252,10 +2317,14 @@
           if (btnSetPrimary && btnSetPrimaryText) {
             const isPrimary = Boolean(stmt.is_primary);
             btnSetPrimaryText.textContent = isPrimary ? "Primary Source" : "Set as Primary";
-            btnSetPrimary.style.borderColor = isPrimary ? "#38bdf8" : "var(--accent-blue)";
-            btnSetPrimary.style.color = isPrimary ? "#38bdf8" : "var(--accent-blue)";
-            btnSetPrimary.onclick = async () => {
-              await handleSetPrimaryStatement(statementId);
+            if (isPrimary) {
+              btnSetPrimary.classList.add("is-primary");
+            } else {
+              btnSetPrimary.classList.remove("is-primary");
+            }
+            btnSetPrimary.onclick = async (e) => {
+              e.stopPropagation();
+              await handleSetPrimaryStatement(statementId, btnSetPrimary);
             };
           }
 
@@ -2474,24 +2543,35 @@
       document.body.appendChild(toast);
     }
 
+    let iconSvg = "";
+
     if (type === "success") {
       toast.style.background = "#15803d";
       toast.style.color = "#ffffff";
       toast.style.border = "1px solid #22c55e";
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+    } else if (type === "info" || type === "loading") {
+      toast.style.background = "#1e3a8a";
+      toast.style.color = "#ffffff";
+      toast.style.border = "1px solid #3b82f6";
+      iconSvg = '<span class="spinner" style="width:16px; height:16px; border-width:2px; border-color:#ffffff #ffffff transparent transparent; margin-right:4px;"></span>';
     } else {
       toast.style.background = "#dc2626";
       toast.style.color = "#ffffff";
       toast.style.border = "1px solid #ef4444";
+      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
     }
 
-    toast.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ${msg}`;
+    toast.innerHTML = `${iconSvg} <span>${msg}</span>`;
     toast.style.opacity = "1";
     toast.style.transform = "translateY(0)";
 
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(10px)";
-    }, 3500);
+    if (type !== "loading") {
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(10px)";
+      }, 3500);
+    }
   }
 
   function initStatementToolbarButtons() {
@@ -3223,8 +3303,9 @@
     const manual = s.manual_matched || 0;
     const unreconciled = s.unreconciled || 0;
     const percent = s.percent_reconciled != null ? s.percent_reconciled : 0;
+    const formattedPeriod = formatPeriodLabel(run.period_label);
 
-    document.getElementById("periodBadge").textContent = run.period_label || "No Data";
+    document.getElementById("periodBadge").textContent = formattedPeriod || "No Data";
     document.getElementById("periodBadge").classList.toggle("badge-closed", !!run.closed);
     document.getElementById("closePeriodBtn").textContent = run.closed ? "Period Closed ✓" : "Close Period";
     document.getElementById("closePeriodBtn").disabled = !!run.closed;
@@ -3241,14 +3322,34 @@
       cpCloseBtn.disabled = !!run.closed;
     }
 
-    document.getElementById("progressLabel").textContent = `${percent.toFixed ? percent.toFixed(1) : percent}% Reconciled`;
-    const reconciledFraction = total - unreconciled;
-    document.getElementById("progressFraction").textContent = `${reconciledFraction}/${total}`;
+    const reconciledCount = settled + auto + llmCount;
+    const calculatedPercent = total > 0 ? ((reconciledCount / total) * 100).toFixed(1) : "0.0";
+
+    const labelEl = document.getElementById("progressLabel");
+    if (labelEl) labelEl.textContent = `${calculatedPercent}% Reconciled`;
+
+    const fracEl = document.getElementById("progressFraction");
+    if (fracEl) fracEl.textContent = `${reconciledCount}/${total}`;
 
     const pct = (n) => (total > 0 ? (n / total) * 100 : 0);
-    document.getElementById("segAuto").style.width = `${pct(settled + auto)}%`;
-    document.getElementById("segManual").style.width = `${pct(exceptionsCount)}%`;
-    document.getElementById("segUnreconciled").style.width = `${pct(unreconciled)}%`;
+    const segAutoEl = document.getElementById("segAuto");
+    if (segAutoEl) {
+      segAutoEl.style.width = `${pct(reconciledCount)}%`;
+      segAutoEl.style.display = "block";
+      segAutoEl.title = `Reconciled: ${reconciledCount} / ${total} (${calculatedPercent}%)`;
+    }
+
+    const segManualEl = document.getElementById("segManual");
+    if (segManualEl) {
+      segManualEl.style.width = "0%";
+      segManualEl.style.display = "none";
+    }
+
+    const segUnreconciledEl = document.getElementById("segUnreconciled");
+    if (segUnreconciledEl) {
+      segUnreconciledEl.style.width = "0%";
+      segUnreconciledEl.style.display = "none";
+    }
 
     document.getElementById("statBeginning").textContent = formatMoney(s.beginning_balance, false);
 
@@ -3291,9 +3392,9 @@
 
     // Executive Overview (Current Period) Updates
     const cpSubtitle = document.getElementById("cpSubtitle");
-    if (cpSubtitle) cpSubtitle.textContent = `Bank reconciliation for ${run.period_label || "July 2026"}`;
+    if (cpSubtitle) cpSubtitle.textContent = `Bank reconciliation for ${formattedPeriod}`;
     const cpPeriodBadge = document.getElementById("cpPeriodBadge");
-    if (cpPeriodBadge) cpPeriodBadge.textContent = run.period_label || "Jul 2026";
+    if (cpPeriodBadge) cpPeriodBadge.textContent = formattedPeriod;
 
     const cpStatTotal = document.getElementById("cpStatTotal");
     if (cpStatTotal) cpStatTotal.textContent = total.toLocaleString();
@@ -3486,7 +3587,7 @@
     document.getElementById("cmpSettlementSource").textContent = primarySrcName;
     document.getElementById("cmpSettlementUtr").textContent = tx.utr || tx.settlement_id || "—";
     document.getElementById("cmpSettlementPaymentId").textContent = tx.order_id || tx.payment_id || tx.settlement_id || "—";
-    document.getElementById("cmpSettlementDate").textContent = tx.date || "—";
+    document.getElementById("cmpSettlementDate").textContent = formatDateDDMMYYYY(tx.date);
     document.getElementById("cmpSettlementAmount").textContent = formatMoney(tx.amount);
     document.getElementById("cmpSettlementStatus").textContent = (tx.status || "unmatched").toUpperCase();
 
@@ -3519,7 +3620,7 @@
       document.getElementById("cmpBankSource").textContent = counterSrcLabel;
       document.getElementById("cmpBankUtr").textContent = counterpart.id || "—";
       document.getElementById("cmpBankTxId").textContent = counterpart.id || "—";
-      document.getElementById("cmpBankDate").textContent = tx.date || "—";
+      document.getElementById("cmpBankDate").textContent = formatDateDDMMYYYY(counterpart.date || tx.date);
       document.getElementById("cmpBankAmount").textContent = formatMoney(tx.amount);
       document.getElementById("cmpBankDesc").textContent = tx.bank_description || tx.reason || "Matched Record";
 
@@ -3966,15 +4067,32 @@
 
       tr.innerHTML = `
         <td><code class="font-mono text-sm" style="color:var(--accent-blue, #60a5fa); font-weight:600;">${escapeHtml(primaryTxId)}</code></td>
-        <td>${tx.date ?? "—"}</td>
+        <td>${formatDateDDMMYYYY(tx.date)}</td>
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
         <td class="${amountClass}">${formatMoney(tx.amount)}</td>
         <td>${flagsHTML}</td>
         <td><span class="status-pill ${statusPillClass(tx)}" ${titleReason}>${pillLabel}</span></td>
+        <td>
+          <button type="button" class="btn-ask-ai-row" title="Ask Ledger AI Agent about this transaction">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>Ask AI</span>
+          </button>
+        </td>
       `;
 
-      tr.addEventListener("click", () => {
+      const askBtn = tr.querySelector(".btn-ask-ai-row");
+      if (askBtn) {
+        askBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+        askBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId);
+        });
+      }
+
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-ask-ai-row")) return;
         openRecordComparisonModal(tx);
       });
 
@@ -3989,7 +4107,10 @@
     if (!body) return;
     body.innerHTML = "";
 
-    if (badge) badge.textContent = `${exceptions.length} items`;
+    if (badge) {
+      const cnt = (exceptions || []).length;
+      badge.innerHTML = `<strong>${cnt}</strong> Exception${cnt === 1 ? "" : "s"} Pending`;
+    }
 
     if (!exceptions || exceptions.length === 0) {
       empty.style.display = "block";
@@ -4014,15 +4135,32 @@
 
       tr.innerHTML = `
         <td><code class="font-mono text-sm" style="color:var(--accent-blue, #60a5fa); font-weight:600;">${escapeHtml(primaryTxId)}</code></td>
-        <td>${ex.date ?? "—"}</td>
+        <td>${formatDateDDMMYYYY(ex.date)}</td>
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
         <td class="${amountClass}">${formatMoney(ex.amount)}</td>
         <td>${flagsHTML}</td>
         <td><span class="status-pill status-unmatched">UNMATCHED</span></td>
+        <td>
+          <button type="button" class="btn-ask-ai-row" title="Ask Ledger AI Agent about this transaction">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>Ask AI</span>
+          </button>
+        </td>
       `;
 
-      tr.addEventListener("click", () => {
+      const excAskBtn = tr.querySelector(".btn-ask-ai-row");
+      if (excAskBtn) {
+        excAskBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+        excAskBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId);
+        });
+      }
+
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest(".btn-ask-ai-row")) return;
         openRecordComparisonModal(ex);
       });
 
@@ -4141,15 +4279,44 @@
     }
   }
 
-  async function handleSetPrimaryStatement(statementId) {
+  async function handleSetPrimaryStatement(statementId, triggeringEl = null) {
+    if (!statementId) return;
+
+    showNotificationToast("Setting primary statement & re-syncing pipeline...", "loading");
+
+    const btnSetPrimary = document.getElementById("btnStmtHeaderSetPrimary");
+    const btnSetPrimaryText = document.getElementById("btnStmtHeaderSetPrimaryText");
+    let origText = "";
+    if (btnSetPrimaryText) {
+      origText = btnSetPrimaryText.textContent;
+      btnSetPrimaryText.textContent = "Setting Primary...";
+      btnSetPrimary?.classList.add("btn-primary-loading");
+    }
+
+    if (triggeringEl) {
+      triggeringEl.classList.add("btn-primary-loading");
+      if (triggeringEl.tagName === "BUTTON") triggeringEl.disabled = true;
+    }
+
     try {
       await window.LedgerApi.setPrimaryStatement(statementId);
       await loadSidebarSources();
       await loadStatementsTable();
       if (activeStatementId) await openStatementView(activeStatementId);
       await triggerAutoMatch();
+      showNotificationToast("Primary statement set & reconciliation updated!", "success");
     } catch (err) {
       console.error("Error setting primary statement:", err);
+      showNotificationToast("Failed to update primary statement. Please try again.", "error");
+    } finally {
+      if (btnSetPrimaryText) {
+        btnSetPrimaryText.textContent = origText || "Primary Source";
+        btnSetPrimary?.classList.remove("btn-primary-loading");
+      }
+      if (triggeringEl) {
+        triggeringEl.classList.remove("btn-primary-loading");
+        if (triggeringEl.tagName === "BUTTON") triggeringEl.disabled = false;
+      }
     }
   }
 
@@ -4262,7 +4429,34 @@
     });
   }
 
+  function initClearAllDataButton() {
+    const btn = document.getElementById("btnClearAllData");
+    if (!btn) return;
+    btn.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to wipe out all statement data, reset reconciliation results, and clear the store?")) {
+        return;
+      }
+      try {
+        btn.disabled = true;
+        const res = await fetch("/api/clear_all_data", { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = "/?tab=sub-upload-bank";
+          window.location.reload();
+        } else {
+          alert(data.message || "Could not clear data.");
+          btn.disabled = false;
+        }
+      } catch (err) {
+        console.error("Clear data error:", err);
+        alert("Error clearing data: " + err.message);
+        btn.disabled = false;
+      }
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
+    initClearAllDataButton();
     initSubTabs();
     initSidebarToggle();
     initSidebarResizer();

@@ -108,16 +108,24 @@ def _is_valid_id(val: Any) -> bool:
 
 
 def _generate_clean_fallback_tx_id(src_file: Optional[str], row_num: Any) -> str:
+    # If row_num itself is an existing synthetic or reference ID with an existing prefix pattern, return it unchanged (T22.11)
+    if isinstance(row_num, str):
+        s_val = row_num.strip()
+        if re.match(r"^(RTGS|NEFT|UPI|SETL|BNK|ORD|CARD|CASH|TXN)-", s_val, re.IGNORECASE):
+            # Strip accidental double prefixes if present (e.g., RTGS-RTGS123 -> RTGS123 or RTGS-123)
+            cleaned = re.sub(r"^(RTGS|NEFT|UPI|SETL|BNK|ORD|CARD|CASH|TXN)-\1-?", r"\1-", s_val, flags=re.IGNORECASE)
+            return cleaned
+
     num = int(row_num) if isinstance(row_num, (int, str)) and str(row_num).isdigit() else 1
     if not src_file:
         return f"TXN-{num:04d}"
-    
+
     stem = Path(str(src_file)).stem.lower()
     # Clean up prefixes like rw_, raw_, input_, data_, stmt_
     stem = re.sub(r"^(rw_\d*|raw_\d*|input_\d*|data_\d*|stmt_\d*)", "", stem).strip("_")
     # Clean up leading digits e.g. 01_
     stem = re.sub(r"^\d+_", "", stem).strip("_")
-    
+
     if "bank" in stem:
         prefix = "BNK"
     elif "order" in stem:
@@ -133,7 +141,7 @@ def _generate_clean_fallback_tx_id(src_file: Optional[str], row_num: Any) -> str
     else:
         clean_tokens = [t.upper() for t in re.findall(r"[a-zA-Z0-9]+", stem) if t]
         prefix = clean_tokens[0][:6] if clean_tokens else "TXN"
-    
+
     return f"{prefix}-TXN-{num:04d}"
 
 
@@ -232,8 +240,16 @@ def normalize_row(
     auth_val = auth_val if _is_valid_id(auth_val) else None
     rrn_val = rrn_val if _is_valid_id(rrn_val) else None
 
-    # 5. Currency Inference
+    # 5. Currency Inference (T22.5)
     currency_val = str(mapped_vals.get("currency")).strip() if mapped_vals.get("currency") else None
+    if not currency_val and desc_val:
+        if re.search(r"\(USD|\bUSD\b", desc_val, re.IGNORECASE):
+            currency_val = "USD"
+        elif re.search(r"\(EUR|\bEUR\b", desc_val, re.IGNORECASE):
+            currency_val = "EUR"
+        elif re.search(r"\(GBP|\bGBP\b", desc_val, re.IGNORECASE):
+            currency_val = "GBP"
+
     if not currency_val:
         currency_val = _infer_currency_from_headers(source_headers, default_curr)
 
