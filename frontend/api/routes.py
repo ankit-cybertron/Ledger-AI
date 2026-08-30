@@ -870,8 +870,12 @@ def get_statements_list():
 
 @api_bp.route("/statements/import", methods=["POST"])
 def import_statement():
+    from frontend.api import pipeline_tracker
+    pipeline_tracker.start_pipeline("Reading & Ingesting Uploaded File...")
+
     files = request.files.getlist("file") or request.files.getlist("files")
     if not files or all(f.filename == "" for f in files):
+        pipeline_tracker.finish_pipeline(success=False, error_msg="No file selected.")
         return _error("No file selected.")
 
     raw_is_pri = request.form.get("is_primary", "false")
@@ -891,7 +895,8 @@ def import_statement():
     results = []
     successful_imports = 0
 
-    for file_storage in files:
+    total_files = len([f for f in files if f and f.filename != ""])
+    for idx, file_storage in enumerate(files):
         if not file_storage or file_storage.filename == "":
             continue
 
@@ -899,6 +904,13 @@ def import_statement():
         original_name = secure_filename(raw_filename)
         if not original_name or "." not in original_name:
             original_name = raw_filename
+
+        pipeline_tracker.update_progress(
+            15 + int((idx / max(1, total_files)) * 10),
+            f"Reading File: {original_name}...",
+            f"📥 Ingesting statement file ({idx + 1}/{total_files}): {original_name}",
+            level="INFO"
+        )
 
         if not _allowed_file(original_name):
             results.append({
@@ -916,6 +928,13 @@ def import_statement():
             stored_path = os.path.join(source_dir, stored_name)
             file_storage.save(stored_path)
 
+            pipeline_tracker.update_progress(
+                25,
+                f"Extracting & Parsing {ext.upper()} Data...",
+                f"Parsing {original_name} records...",
+                level="INFO"
+            )
+
             if ext == "csv":
                 df = pd.read_csv(stored_path)
             elif ext == "pdf":
@@ -926,6 +945,13 @@ def import_statement():
                 df = pd.read_excel(stored_path)
 
             stmt_name = custom_name if (custom_name and len(files) == 1) else original_name.rsplit(".", 1)[0].replace("_", " ").title()
+
+            pipeline_tracker.update_progress(
+                28,
+                f"Normalizing Schema: {stmt_name}...",
+                f"Mapping column headers and canonical schema for {stmt_name}...",
+                level="INFO"
+            )
 
             stmt = statement_store.save_imported_statement(
                 stmt_name,
@@ -958,6 +984,12 @@ def import_statement():
 
     if successful_imports > 0:
         try:
+            pipeline_tracker.update_progress(
+                30,
+                "Synchronizing Database & Initializing Pipeline...",
+                "Syncing statement database and starting multi-pass reconciliation engine...",
+                level="INFO"
+            )
             _run_backend_pipeline()
             run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
             _RUNS[run["run_id"]] = run

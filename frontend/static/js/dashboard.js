@@ -1923,7 +1923,13 @@
       const res = await window.LedgerApi.getPipelineStatus();
       if (!res || !res.ok) return;
 
-      if (stageEl && res.stage) stageEl.textContent = res.stage;
+      if (stageEl && res.stage) {
+        let displayStage = res.stage;
+        if (displayStage && displayStage !== "Idle" && !displayStage.endsWith("...") && !displayStage.startsWith("Pipeline ")) {
+          displayStage += "...";
+        }
+        stageEl.textContent = displayStage;
+      }
       if (percentEl && res.progress !== undefined) percentEl.textContent = `${res.progress}%`;
       if (fillEl && res.progress !== undefined) fillEl.style.width = `${res.progress}%`;
 
@@ -1956,7 +1962,7 @@
     const terminalBody = document.getElementById("importTerminalBody");
 
     if (container) container.style.display = "block";
-    if (stageEl) stageEl.textContent = "Initializing Pipeline Engine...";
+    if (stageEl) stageEl.textContent = "Reading & Ingesting Uploaded File...";
     if (percentEl) percentEl.textContent = "5%";
     if (fillEl) fillEl.style.width = "5%";
 
