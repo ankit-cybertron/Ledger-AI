@@ -512,6 +512,33 @@ def update_statement_color(statement_id, new_color):
     return False
 
 
+def add_single_transaction(statement_id, new_row_dict):
+    """
+    Appends a single newly added transaction to a statement store and rebuilds generated CSV.
+    """
+    db = _load_db()
+    for stmt in db.get("statements", []):
+        if stmt["id"] == statement_id:
+            rows = stmt.get("rows", [])
+            serial_code = stmt.get("serial_code") or "TX"
+            idx = len(rows) + 1
+            new_row_dict["serial_no"] = f"{serial_code}-{idx}"
+            new_row_dict["serial_code"] = serial_code
+            new_row_dict["statement_id"] = statement_id
+            new_row_dict["source_name"] = stmt.get("name")
+            new_row_dict["source_color"] = stmt.get("color", "#3b82f6")
+            new_row_dict["is_primary"] = bool(stmt.get("is_primary"))
+
+            rows.append(new_row_dict)
+            stmt["rows"] = rows
+            stmt["row_count"] = len(rows)
+            stmt["updated_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            _save_db(db)
+            rebuild_generated_csv()
+            return new_row_dict
+    return None
+
+
 
 def delete_statement(statement_id):
     """Delete a statement from the store and rebuild generated CSVs."""

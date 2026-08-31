@@ -202,7 +202,14 @@
                   <input type="text" id="stmtSearchInput" class="form-input search-input"
                     placeholder="Search entries by description, UTR, or amount…">
                 </div>
-                <div class="stmt-toolbar-actions">
+                <div class="stmt-toolbar-actions" style="display: flex; gap: 8px; align-items: center;">
+                  <button type="button" class="btn-stmt-action btn-add-transaction" id="btnAddStmtTransaction" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; font-weight: 600; font-size: 0.82rem; cursor: pointer;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>+ Add New Transaction</span>
+                  </button>
                   <button type="button" class="btn-stmt-action btn-edit-entries" id="btnEditStmtEntries">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
@@ -285,10 +292,10 @@
               </div>
 
               <div class="stat-row">
-                <span id="btnStatBeginning" onclick="filterByAmountType('all')" style="cursor: pointer;" title="Reset filter — Show All Transactions">Beginning: <strong id="statBeginning">₹0.00</strong></span>
-                <span id="btnStatPayments" onclick="filterByAmountType('payments')" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: all 0.2s ease;" title="Click to filter table for Payments only (Outflows / Debits)">Payments: <strong id="statPayments" style="color: #ef4444; font-weight: 600;">-₹0.00</strong></span>
-                <span id="btnStatDeposits" onclick="filterByAmountType('deposits')" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: all 0.2s ease;" title="Click to filter table for Deposits only (Inflows / Credits)">Deposits: <strong id="statDeposits" style="color: #10b981; font-weight: 600;">+₹0.00</strong></span>
-                <span id="btnStatVariance" onclick="filterByAmountType('all')" style="cursor: pointer;" title="Net Discrepancy Variance">Variance: <strong id="statVariance" style="color: #10b981; font-weight: 600;">+₹0.00</strong></span>
+                <span id="btnStatBeginning" onclick="filterByAmountType('all')" style="cursor: pointer;" title="Reset filter — Show All Transactions">Beginning: <strong id="statBeginning">0.00</strong></span>
+                <span id="btnStatPayments" onclick="filterByAmountType('payments')" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: all 0.2s ease;" title="Click to filter table for Payments only (Outflows / Debits)">Payments: <strong id="statPayments" style="color: #ef4444; font-weight: 600;">-0.00</strong></span>
+                <span id="btnStatDeposits" onclick="filterByAmountType('deposits')" style="cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: all 0.2s ease;" title="Click to filter table for Deposits only (Inflows / Credits)">Deposits: <strong id="statDeposits" style="color: #10b981; font-weight: 600;">+0.00</strong></span>
+                <span id="btnStatVariance" onclick="filterByAmountType('all')" style="cursor: pointer;" title="Net Discrepancy Variance">Variance: <strong id="statVariance" style="color: #10b981; font-weight: 600;">+0.00</strong></span>
               </div>
 
               <div class="count-cards" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
@@ -352,6 +359,7 @@
                             class="sort-arrow">↕</span></th>
                         <th data-sort-key="matched_source_type_label" class="sort-header">MATCHED WITH <span
                             class="sort-arrow">↕</span></th>
+                        <th data-sort-key="currency" class="sort-header">CURRENCY <span class="sort-arrow">↕</span></th>
                         <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
                         <th class="sort-header">FEATURE FLAGS</th>
                         <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
@@ -414,6 +422,7 @@
                       </th>
                       <th data-sort-key="matched_source_type_label" class="sort-header">MATCHED WITH <span
                           class="sort-arrow">↕</span></th>
+                      <th data-sort-key="currency" class="sort-header">CURRENCY <span class="sort-arrow">↕</span></th>
                       <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
                       <th data-sort-key="priority" class="sort-header">PRIORITY <span class="sort-arrow">↕</span></th>
                       <th class="sort-header">FEATURE FLAGS</th>
@@ -566,8 +575,10 @@
                           class="cmp-val font-mono" id="cmpSettlementPaymentId">—</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
                           id="cmpSettlementDate">—</span></div>
+                      <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
+                          class="cmp-val font-mono" id="cmpSettlementCurrency">INR</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
-                          class="cmp-val font-mono val-amount" id="cmpSettlementAmount">₹0.00</span></div>
+                          class="cmp-val font-mono val-amount" id="cmpSettlementAmount">0.00</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Status:</span><span class="cmp-val"
                           id="cmpSettlementStatus">—</span></div>
                     </div>
@@ -603,8 +614,10 @@
                           class="cmp-val font-mono" id="cmpBankTxId">—</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
                           id="cmpBankDate">—</span></div>
+                      <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
+                          class="cmp-val font-mono" id="cmpBankCurrency">INR</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
-                          class="cmp-val font-mono val-amount" id="cmpBankAmount">₹0.00</span></div>
+                          class="cmp-val font-mono val-amount" id="cmpBankAmount">0.00</span></div>
                       <div class="cmp-param-item"><span class="cmp-label">Description:</span><span
                           class="cmp-val text-muted" id="cmpBankDesc">—</span></div>
                     </div>
@@ -898,6 +911,79 @@
           Delete Selected Columns
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------ -->
+  <!-- Add New Transaction Modal Pop-Up -->
+  <!-- ------------------------------------------------------------ -->
+  <div class="compare-modal-backdrop" id="addTransactionModalBackdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
+    <div class="compare-modal-card" style="width:100%; max-width:520px; background:var(--bg-surface-elevated, #111827); border:1px solid var(--border, #374151); border-radius:12px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.4);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border, #374151);">
+        <h3 style="margin:0; font-size:1.15rem; font-weight:700; color:var(--text-primary, #f9fafb); display:flex; align-items:center; gap:8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add New Transaction Entry
+        </h3>
+        <button type="button" id="closeAddTxModalBtn" style="background:transparent; border:none; color:var(--text-muted, #9ca3af); cursor:pointer; font-size:1.2rem;">✕</button>
+      </div>
+
+      <form id="addTxForm" onsubmit="return false;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom:14px;">
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Date *</label>
+            <input type="date" id="addTxDate" class="cell-edit-input" style="width:100%; box-sizing:border-box;" required>
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Net Amount *</label>
+            <input type="number" step="0.01" id="addTxAmount" class="cell-edit-input" placeholder="0.00" style="width:100%; box-sizing:border-box;" required>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Description / Narration *</label>
+          <input type="text" id="addTxDescription" class="cell-edit-input" placeholder="e.g. Payment for Order #10082" style="width:100%; box-sizing:border-box;" required>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom:14px;">
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">UTR / Reference ID</label>
+            <input type="text" id="addTxUtr" class="cell-edit-input" placeholder="e.g. UTR9988223" style="width:100%; box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Order ID</label>
+            <input type="text" id="addTxOrderId" class="cell-edit-input" placeholder="e.g. ORD-4081" style="width:100%; box-sizing:border-box;">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom:20px;">
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Currency</label>
+            <select id="addTxCurrency" class="cell-edit-input" style="width:100%; box-sizing:border-box;">
+              <option value="INR" selected>INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-secondary, #d1d5db); text-transform:uppercase; margin-bottom:4px;">Transaction Mode</label>
+            <select id="addTxChannel" class="cell-edit-input" style="width:100%; box-sizing:border-box;">
+              <option value="CREDIT" selected>CREDIT / Deposit</option>
+              <option value="DEBIT">DEBIT / Payment</option>
+              <option value="UPI">UPI</option>
+              <option value="BANK_TRANSFER">Bank Transfer</option>
+              <option value="CARD">Card</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px; border-top:1px solid var(--border, #374151); padding-top:16px;">
+          <button type="button" id="cancelAddTxBtn" style="padding:8px 16px; border-radius:6px; border:1px solid var(--border, #4b5563); background:transparent; color:var(--text-secondary, #9ca3af); font-weight:600; cursor:pointer;">Cancel</button>
+          <button type="submit" id="submitAddTxBtn" style="padding:8px 20px; border-radius:6px; border:none; background:#2563eb; color:#ffffff; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <span>Save &amp; Reconcile</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 

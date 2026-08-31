@@ -241,7 +241,15 @@ def normalize_row(
     rrn_val = rrn_val if _is_valid_id(rrn_val) else None
 
     # 5. Currency Inference (T22.5)
-    currency_val = str(mapped_vals.get("currency")).strip() if mapped_vals.get("currency") else None
+    currency_val = str(mapped_vals.get("currency")).strip() if mapped_vals.get("currency") and str(mapped_vals.get("currency")).strip().lower() not in ("nan", "none", "null") else None
+    if not currency_val:
+        for k, v in raw_row.items():
+            if k and str(k).strip().lower() in ("currency", "curr", "currency_code", "currency (iso)", "txn_currency") and v:
+                v_str = str(v).strip()
+                if v_str and v_str.lower() not in ("nan", "none", "null"):
+                    currency_val = v_str.upper()
+                    break
+
     if not currency_val and desc_val:
         if re.search(r"\(USD|\bUSD\b", desc_val, re.IGNORECASE):
             currency_val = "USD"

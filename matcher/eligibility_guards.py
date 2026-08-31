@@ -39,9 +39,10 @@ def candidates_compatible(
             return False
 
     # 1. Currency Gate
-    if a.currency and b.currency:
-        if a.currency.upper().strip() != b.currency.upper().strip():
-            return False
+    curr_a = str(a.currency).upper().strip() if a.currency and str(a.currency).strip().lower() not in ("none", "nan", "") else ""
+    curr_b = str(b.currency).upper().strip() if b.currency and str(b.currency).strip().lower() not in ("none", "nan", "") else ""
+    if curr_a and curr_b and curr_a != curr_b:
+        return False
 
     # 2. Status Eligibility Gate
     ineligible_statuses = {"FAILED", "DECLINED", "CANCELLED", "PENDING", "REJECTED"}

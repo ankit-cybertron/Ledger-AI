@@ -119,6 +119,9 @@ const LedgerApi = {
   realignStatementColumnsLLM(statementId) {
     return postJson(`/statements/${encodeURIComponent(statementId)}/realign-columns-llm`);
   },
+  addStatementTransaction(statementId, payload) {
+    return postJson(`/statements/${encodeURIComponent(statementId)}/add-transaction`, payload);
+  },
   getSimilarPayments(primaryId, sourceType, amount, date, utr, description, sourceName, statementId) {
     const params = new URLSearchParams({
       primary_id: primaryId || "",

@@ -244,5 +244,14 @@
     "card_network",
     "card_type",
     "scheme"
+  ],
+  "currency": [
+    "currency",
+    "currency_code",
+    "curr",
+    "txn_currency",
+    "Currency",
+    "Currency Code",
+    "Currency (ISO)"
   ]
 }

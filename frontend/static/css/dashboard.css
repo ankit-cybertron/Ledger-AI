@@ -631,6 +631,37 @@ body {
   font-weight: 500 !important;
 }
 
+/* ── Table Cell Edit Mode Input Styling (Dark & Light Theme) ───────────────── */
+.cell-edit-input {
+  background: var(--bg-surface-elevated, #181d28) !important;
+  color: var(--text-primary, #f1f5f9) !important;
+  border: 1px solid var(--border-hover, #334155) !important;
+  border-radius: 6px !important;
+  padding: 5px 8px !important;
+  font-size: 0.82rem !important;
+  font-family: var(--font-mono, monospace) !important;
+  outline: none !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.cell-edit-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="light"] .cell-edit-input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .cell-edit-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
+}
+
 [data-theme="light"] input[type="text"]::placeholder,
 [data-theme="light"] input[type="search"]::placeholder,
 [data-theme="light"] textarea::placeholder,

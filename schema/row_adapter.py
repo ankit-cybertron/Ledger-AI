@@ -63,7 +63,7 @@ def row_to_canonical(row: Any, fallback_id_key: str = "tx_id") -> CanonicalTrans
     adj_amt = round(float(pd.to_numeric(d.get("adjustment_amount"), errors="coerce") or 0.0), 2) if d.get("adjustment_amount") is not None else None
 
     is_pri = bool(d.get("is_primary", False))
-    curr = _clean_str(d.get("currency")) or "INR"
+    curr = _clean_str(d.get("currency")) or None
     status = _extract_field(d, ["status", "order_status", "txn_status"]) or None
 
     return CanonicalTransaction(
