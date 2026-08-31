@@ -53,8 +53,8 @@ def start_pipeline(stage_name="Starting Import & Reconciliation Pipeline..."):
         _STATE["stage"] = stage_name
         _STATE["logs"] = []
         _STATE["last_updated"] = time.time()
-    add_log("🚀 Pipeline execution started...", level="SYSTEM")
-    add_log("📥 Receiving and storing uploaded statement file...", level="INFO")
+    add_log("Pipeline execution started...", level="SYSTEM")
+    add_log("Receiving and storing uploaded statement file...", level="INFO")
 
 def update_progress(percent, stage_name, log_msg=None, level="INFO"):
     """Updates progress percentage, stage name, and optionally appends a log entry."""

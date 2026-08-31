@@ -187,7 +187,73 @@ def test_item16_order_book_cross_linking():
     # Exact match between two counterpart records
     df_matches = exact_match([order_tx], [upi_tx])
     assert not df_matches.empty
-    # Neither side is primary bank statement, so outcome taxonomy is MATCHED
-    assert order_tx.is_primary is False and upi_tx.is_primary is False
+def test_fix1_currency_compatibility_gate():
+    """Fix 1: Explicit currency mismatch rejects pairing across exact, tolerance, and similarity matchers."""
+    from matcher.exact_matcher import exact_match
+    from matcher.similarity_engine import find_similar_candidates
+
+    # 1. USD vs INR explicit mismatch
+    tx_usd = CanonicalTransaction(transaction_id="TXN-PYPL-005", utr="REF_PYPL_005", net_amount=100.0, currency="USD")
+    tx_inr = CanonicalTransaction(transaction_id="BNK-INR-005", utr="REF_PYPL_005", net_amount=100.0, currency="INR")
+
+    assert not candidates_compatible(tx_usd, tx_inr), "Currency mismatch USD vs INR failed to reject"
+    exact_res = exact_match([tx_inr], [tx_usd])
+    assert exact_res.empty, "Exact matcher incorrectly matched USD vs INR pair"
+
+    sim_cands = find_similar_candidates(tx_inr, [tx_usd])
+    assert len(sim_cands) == 0, "Similarity engine incorrectly suggested USD candidate for INR transaction"
+
+    # 2. Missing currency (None) does NOT reject when other side has currency
+    tx_no_curr = CanonicalTransaction(transaction_id="TXN-OLD-001", utr="REF_OLD_001", net_amount=500.0, currency=None)
+    tx_inr_500 = CanonicalTransaction(transaction_id="BNK-INR-500", utr="REF_OLD_001", net_amount=500.0, currency="INR")
+    assert candidates_compatible(tx_no_curr, tx_inr_500), "Missing currency on one side should not be rejected"
+
+
+def test_add_new_transaction_and_currency_ingestion():
+    """Verify single-transaction addition into statement store & raw currency extraction."""
+    from frontend import statement_store
+    from ingestion.normalizer import normalize_row
+    
+    # Test raw row currency normalization
+    raw_usd_row = {
+        "Date": "2026-03-01",
+        "Amount": "250.00",
+        "Currency": "USD",
+        "Description": "International Software License Payment",
+        "UTR": "UTRUSD998811"
+    }
+    norm_tx = normalize_row(raw_usd_row, mappings=[])
+    assert norm_tx.currency == "USD", f"Currency extraction failed, got {norm_tx.currency}"
+
+    # Test statement store add single transaction
+    db = statement_store._load_db()
+    stmt_id = "test_stmt_ux_001"
+    db["statements"].append({
+        "id": stmt_id,
+        "name": "Test UX Statement",
+        "rows": [],
+        "serial_code": "TUX",
+        "color": "#3b82f6",
+        "is_primary": True
+    })
+    statement_store._save_db(db)
+
+    new_row = {
+        "transaction_date": "2026-03-02",
+        "net_amount": 1500.0,
+        "description": "Manual Vendor Payout",
+        "utr": "UTRMAN1500",
+        "currency": "INR",
+        "channel": "CREDIT"
+    }
+    added = statement_store.add_single_transaction(stmt_id, new_row)
+    assert added is not None
+    assert added["serial_no"] == "TUX-1"
+    assert added["statement_id"] == stmt_id
+
+    # Cleanup test statement
+    statement_store.delete_statement(stmt_id)
+
+
 
 

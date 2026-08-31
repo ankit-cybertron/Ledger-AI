@@ -43,33 +43,33 @@ def run_full_pipeline(cfg: MatchingConfig = None) -> dict:
     print("=" * 60)
 
     # 1. Exact Matching
-    pipeline_tracker.update_progress(35, "Executing Pass 1: Clean Exact UTR Matcher...", "🔍 Running Clean Exact Matcher...", level="RULE")
-    print("\n[Pipeline Step 1/6] Running Exact Matching...")
+    pipeline_tracker.update_progress(35, "[Pipeline Step 2/6] Running Clean Exact Matcher...", "Running Clean Exact Matcher...", level="RULE")
+    print("\n[Pipeline Step 2/6] Running Exact Matching...")
     exact_matcher.main()
 
     # 2. Tolerance Matching
-    pipeline_tracker.update_progress(55, "Executing Pass 2: Settlement Lag & Fee Solver...", "⏳ Running Settlement Lag & MDR Fee Solver...", level="RULE")
-    print("\n[Pipeline Step 2/6] Running Tolerance & Split Matching...")
+    pipeline_tracker.update_progress(55, "[Pipeline Step 3/6] Running Settlement Lag & MDR Fee Solver...", "Running Settlement Lag & MDR Fee Solver...", level="RULE")
+    print("\n[Pipeline Step 3/6] Running Tolerance & Split Matching...")
     tolerance_matcher.main()
 
     # 3. ML Feature Building & Confidence Evaluation
-    pipeline_tracker.update_progress(75, "Evaluating ML Confidence Matrix...", "🤖 Evaluating ML Feature Schema & Confidence Scores...", level="ML")
-    print("\n[Pipeline Step 3/6] Building ML Feature Vectors & Evaluating Model...")
+    pipeline_tracker.update_progress(75, "[Pipeline Step 4/6] Evaluating ML Feature Schema & Model...", "Evaluating ML Feature Schema & Confidence Scores...", level="ML")
+    print("\n[Pipeline Step 4/6] Building ML Feature Vectors & Evaluating Model...")
     build_training_data.main()
     evaluate_confidence_model.main()
 
     # 4. Reconciliation Aggregator (No automatic LLM invocation per T5.3)
-    pipeline_tracker.update_progress(85, "Aggregating Reconciliation Outcomes...", "📊 Aggregating Pipeline Outcomes...", level="RECON")
-    print("\n[Pipeline Step 4/6] Aggregating Reconciliation Outcomes...")
+    pipeline_tracker.update_progress(85, "[Pipeline Step 5/6] Aggregating Outcomes & Building Exception Ledger...", "Aggregating Pipeline Outcomes...", level="RECON")
+    print("\n[Pipeline Step 5/6] Aggregating Reconciliation Outcomes & Building Exception Ledger...")
     reconcile_df = reconcile.reconcile(cfg=cfg)
 
     # 5. Exception Ledger
-    pipeline_tracker.update_progress(90, "Building Exception Ledger...", "⚠️ Compiling Exception Ledger...", level="RECON")
+    pipeline_tracker.update_progress(90, "[Pipeline Step 5/6] Aggregating Outcomes & Building Exception Ledger...", "Compiling Exception Ledger...", level="RECON")
     print("\n[Pipeline Step 5/6] Building Exception Ledger...")
     exception_ledger.main()
 
     # 6. Report Generation
-    pipeline_tracker.update_progress(95, "Generating Audit Reports & Finalizing Dashboard...", "📄 Building PDF & Excel Audit Reports...", level="SUCCESS")
+    pipeline_tracker.update_progress(95, "[Pipeline Step 6/6] Generating Reconciliation Audit Report...", "Building PDF & Excel Audit Reports...", level="SUCCESS")
     print("\n[Pipeline Step 6/6] Generating Reconciliation Report...")
     generate_report.main()
 

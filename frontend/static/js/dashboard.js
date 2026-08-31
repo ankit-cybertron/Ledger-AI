@@ -62,11 +62,11 @@
   function formatMoney(value, includePlus = true) {
     const n = Number(value) || 0;
     if (n > 0) {
-      return `${includePlus ? "+" : ""}₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${includePlus ? "+" : ""}${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     } else if (n < 0) {
-      return `-₹${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `-${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-    return `₹${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
 
@@ -594,7 +594,7 @@
                     <th style="padding:10px 14px; font-weight:600;">Primary ID</th>
                     <th style="padding:10px 14px; font-weight:600;">Description</th>
                     <th style="padding:10px 14px; font-weight:600;">Source</th>
-                    <th style="padding:10px 14px; font-weight:600; text-align:right;">Amount (₹)</th>
+                    <th style="padding:10px 14px; font-weight:600; text-align:right;">Amount</th>
                     <th style="padding:10px 14px; font-weight:600;">Taxonomy</th>
                     <th style="padding:10px 14px; font-weight:600;">Engine Rule</th>
                   </tr>
@@ -615,7 +615,7 @@
                           <td style="padding:8px 14px; font-family:var(--font-mono); font-size:0.78rem;">${t.settlement_id || t.id || 'N/A'}</td>
                           <td style="padding:8px 14px; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${t.description || ''}</td>
                           <td style="padding:8px 14px;">${t.source_name || t.source_type || 'Statement'}</td>
-                          <td style="padding:8px 14px; text-align:right; font-weight:600; color:var(--text-primary);">₹${amtStr}</td>
+                          <td style="padding:8px 14px; text-align:right; font-weight:600; color:var(--text-primary);">${amtStr}</td>
                           <td style="padding:8px 14px;"><span style="padding:3px 8px; border-radius:10px; background:${badgeBg}; color:${badgeColor}; font-size:0.72rem; font-weight:700;">${st}</span></td>
                           <td style="padding:8px 14px; font-size:0.78rem; color:var(--text-muted);">${t.reason || t.stage || 'Pipeline Engine'}</td>
                         </tr>
@@ -884,7 +884,7 @@
           const pct = parseFloat(v);
           return isNaN(pct) ? v : (pct <= 1 ? (pct * 100).toFixed(2) + "%" : v);
         }
-        if (k.includes("tolerance") || k.includes("cap")) return "₹" + parseFloat(v).toFixed(2);
+        if (k.includes("tolerance") || k.includes("cap")) return parseFloat(v).toFixed(2);
         if (k.includes("days")) return v + " days";
         return v;
       };
@@ -1310,12 +1310,12 @@
       const erm = chartsData.exception_risk_matrix || {};
       const matrix = erm.matrix || [];
       const ageTiers = erm.age_tiers || ["0–2 Days", "3–7 Days", "8–14 Days", "15+ Days"];
-      const amountTiers = erm.amount_tiers || ["< ₹1k", "₹1k–₹10k", "₹10k–₹100k", "₹100k+"];
+      const amountTiers = erm.amount_tiers || ["< 1k", "1k–10k", "10k–100k", "100k+"];
       const totalExp = erm.total_exposure || 0;
 
       const badge = document.getElementById("riskMatrixTotalBadge");
       if (badge) {
-        badge.textContent = totalExp > 0 ? `Exposure: ₹${totalExp.toLocaleString()}` : "Zero Open Exposure";
+        badge.textContent = totalExp > 0 ? `Exposure: ${totalExp.toLocaleString()}` : "Zero Open Exposure";
         badge.style.color = totalExp > 0 ? "#ef4444" : "var(--color-success)";
         badge.style.background = totalExp > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)";
         badge.style.borderColor = totalExp > 0 ? "rgba(239, 68, 68, 0.25)" : "rgba(16, 185, 129, 0.25)";
@@ -1369,7 +1369,7 @@
                 <div style="font-weight: 700; font-family: var(--font-mono); color: ${cnt > 0 ? textColorCell : 'var(--text-muted)'}; font-size: 0.85rem;">
                   ${cnt ? cnt + ' items' : '—'}
                 </div>
-                ${amt > 0 ? `<div style="font-size: 0.7rem; color: var(--text-primary); margin-top: 2px;">₹${amt.toLocaleString()}</div>` : ''}
+                ${amt > 0 ? `<div style="font-size: 0.7rem; color: var(--text-primary); margin-top: 2px;">${amt.toLocaleString()}</div>` : ''}
               </td>
             `;
           });
@@ -1410,7 +1410,7 @@
               },
               {
                 type: "line",
-                label: "MDR Fee Leakage (₹)",
+                label: "MDR Fee Leakage",
                 data: gp.fee_variances || [0],
                 borderColor: "#ef4444",
                 backgroundColor: "rgba(239, 68, 68, 0.15)",
@@ -1433,7 +1433,7 @@
                     if (ctx.dataset.yAxisID === "yMatch") {
                       return `Match Rate: ${ctx.raw}%`;
                     }
-                    return `MDR Discrepancy: ₹${(ctx.raw || 0).toLocaleString()}`;
+                    return `MDR Discrepancy: ${(ctx.raw || 0).toLocaleString()}`;
                   }
                 }
               }
@@ -1453,8 +1453,8 @@
                 type: "linear",
                 position: "right",
                 grid: { display: false },
-                ticks: { color: "#ef4444", callback: v => "₹" + v.toLocaleString() },
-                title: { display: true, text: "Fee Variance (₹)", color: "#ef4444", font: { size: 10 } }
+                ticks: { color: "#ef4444", callback: v => v.toLocaleString() },
+                title: { display: true, text: "Fee Variance", color: "#ef4444", font: { size: 10 } }
               }
             }
           }
@@ -1544,7 +1544,7 @@
                 callbacks: {
                   label: function (ctx) {
                     const item = ctx.raw.raw || {};
-                    return `[${(item.status || 'TXN').toUpperCase()}] ${item.source}: ₹${(item.y || 0).toLocaleString()} (${item.date})`;
+                    return `[${(item.status || 'TXN').toUpperCase()}] ${item.source}: ${(item.y || 0).toLocaleString()} (${item.date})`;
                   }
                 }
               }
@@ -1563,7 +1563,7 @@
               },
               y: {
                 grid: { color: gridColor },
-                ticks: { color: textColor, callback: v => '₹' + v.toLocaleString() }
+                ticks: { color: textColor, callback: v => v.toLocaleString() }
               }
             }
           }
@@ -2932,6 +2932,38 @@
     }
   }
 
+  let pipelinePollerInterval = null;
+
+  function startPipelineProgressPoller(prefix = "Processing Reconciliation", onComplete = null) {
+    if (pipelinePollerInterval) clearInterval(pipelinePollerInterval);
+
+    showNotificationToast(`[Pipeline Step 1/6] Ingesting & Normalizing Statements...`, "loading");
+
+    pipelinePollerInterval = setInterval(async () => {
+      try {
+        const res = await window.LedgerApi.getPipelineStatus();
+        if (res && res.ok) {
+          const stage = res.stage || "Running Pipeline...";
+          const pct = res.progress || 0;
+          const isRunning = res.is_running;
+
+          if (isRunning) {
+            showNotificationToast(`${stage} (${pct}%)`, "loading");
+          } else {
+            clearInterval(pipelinePollerInterval);
+            pipelinePollerInterval = null;
+            showNotificationToast("Reconciliation pipeline completed successfully!", "success");
+            if (typeof onComplete === "function") {
+              onComplete();
+            }
+          }
+        }
+      } catch (err) {
+        // ignore network error during polling
+      }
+    }, 250);
+  }
+
   function showNotificationToast(msg, type = "success") {
     let toast = document.getElementById("ledgerGlobalToast");
     if (!toast) {
@@ -2990,6 +3022,72 @@
     const deleteColBtn = document.getElementById("btnDeleteStmtColumns");
     const realignLlmBtn = document.getElementById("btnRealignColumnsLLM");
     const realignLlmText = document.getElementById("btnRealignColumnsLLMText");
+
+    const addTxBtn = document.getElementById("btnAddStmtTransaction");
+    const addModal = document.getElementById("addTransactionModalBackdrop");
+    const closeAddModalBtn = document.getElementById("closeAddTxModalBtn");
+    const cancelAddModalBtn = document.getElementById("cancelAddTxBtn");
+    const addForm = document.getElementById("addTxForm");
+
+    if (addTxBtn) {
+      addTxBtn.addEventListener("click", () => {
+        if (!activeStatementId) {
+          alert("Please select a statement first.");
+          return;
+        }
+        const dateInp = document.getElementById("addTxDate");
+        if (dateInp && !dateInp.value) {
+          dateInp.value = new Date().toISOString().split("T")[0];
+        }
+        if (addModal) addModal.style.display = "flex";
+      });
+    }
+
+    const closeAddModal = () => {
+      if (addModal) addModal.style.display = "none";
+    };
+
+    if (closeAddModalBtn) closeAddModalBtn.addEventListener("click", closeAddModal);
+    if (cancelAddModalBtn) cancelAddModalBtn.addEventListener("click", closeAddModal);
+
+    if (addForm) {
+      addForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!activeStatementId) return;
+
+        const payload = {
+          date: document.getElementById("addTxDate")?.value || "",
+          amount: parseFloat(document.getElementById("addTxAmount")?.value || 0),
+          description: document.getElementById("addTxDescription")?.value || "",
+          utr: document.getElementById("addTxUtr")?.value || "",
+          order_id: document.getElementById("addTxOrderId")?.value || "",
+          currency: document.getElementById("addTxCurrency")?.value || "INR",
+          channel: document.getElementById("addTxChannel")?.value || "CREDIT",
+        };
+
+        const submitBtn = document.getElementById("submitAddTxBtn");
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner" style="width:14px; height:14px; border-width:2px; margin-right:4px;"></span> Saving…';
+        }
+
+        try {
+          await window.LedgerApi.addStatementTransaction(activeStatementId, payload);
+          closeAddModal();
+          addForm.reset();
+          startPipelineProgressPoller("Re-syncing Reconciliation...", async () => {
+            if (activeStatementId) await openStatementView(activeStatementId);
+          });
+        } catch (err) {
+          alert(err.message || "Failed to add transaction.");
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Save &amp; Reconcile</span>';
+          }
+        }
+      });
+    }
 
     if (realignLlmBtn) {
       realignLlmBtn.addEventListener("click", async () => {
@@ -3772,21 +3870,21 @@
 
     const payEl = document.getElementById("statPayments");
     if (payEl) {
-      payEl.textContent = `-₹${Math.abs(s.payments_total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      payEl.textContent = `-${Math.abs(s.payments_total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       payEl.style.color = "#ef4444";
       payEl.style.fontWeight = "600";
     }
 
     const depEl = document.getElementById("statDeposits");
     if (depEl) {
-      depEl.textContent = `+₹${Math.abs(s.deposits_total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      depEl.textContent = `+${Math.abs(s.deposits_total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       depEl.style.color = "#10b981";
       depEl.style.fontWeight = "600";
     }
 
     const varianceEl = document.getElementById("statVariance");
     const varVal = s.variance || 0;
-    varianceEl.textContent = `${varVal >= 0 ? "+" : "-"}₹${Math.abs(varVal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    varianceEl.textContent = `${varVal >= 0 ? "+" : "-"}${Math.abs(varVal).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     varianceEl.style.color = varVal < 0 ? "#ef4444" : "#10b981";
     varianceEl.style.fontWeight = "600";
 
@@ -4005,6 +4103,8 @@
     document.getElementById("cmpSettlementUtr").textContent = tx.utr || tx.settlement_id || "—";
     document.getElementById("cmpSettlementPaymentId").textContent = tx.order_id || tx.payment_id || tx.settlement_id || "—";
     document.getElementById("cmpSettlementDate").textContent = formatDateDDMMYYYY(tx.date);
+    const primaryCurrEl = document.getElementById("cmpSettlementCurrency");
+    if (primaryCurrEl) primaryCurrEl.textContent = tx.currency || "INR";
     document.getElementById("cmpSettlementAmount").textContent = formatMoney(tx.amount);
     document.getElementById("cmpSettlementStatus").textContent = (tx.status || "unmatched").toUpperCase();
 
@@ -4038,6 +4138,8 @@
       document.getElementById("cmpBankUtr").textContent = counterpart.utr || counterpart.id || "—";
       document.getElementById("cmpBankTxId").textContent = counterpart.id || "—";
       document.getElementById("cmpBankDate").textContent = formatDateDDMMYYYY(counterpart.date || tx.date);
+      const counterpartCurrEl = document.getElementById("cmpBankCurrency");
+      if (counterpartCurrEl) counterpartCurrEl.textContent = counterpart.currency || tx.currency || "INR";
       const cpAmt = counterpart.amount !== undefined && counterpart.amount !== null ? counterpart.amount : (tx.counterpart_amount !== undefined ? tx.counterpart_amount : tx.amount);
       document.getElementById("cmpBankAmount").textContent = formatMoney(cpAmt);
       document.getElementById("cmpBankDesc").textContent = counterpart.description || tx.bank_description || tx.reason || "Similar / Matched Record";
@@ -4067,7 +4169,7 @@
       // Populate Parameter Match Matrix Table Body
       const ev = tx.evidence || {};
       const amtDiff = ev.amount_difference !== undefined ? Math.abs(ev.amount_difference) : 0;
-      const amtStatus = amtDiff === 0 ? '<span class="status-pill status-exact">Exact Match</span>' : `<span class="status-pill status-tolerance">Variance: ₹${amtDiff.toFixed(2)}</span>`;
+      const amtStatus = amtDiff === 0 ? '<span class="status-pill status-exact">Exact Match</span>' : `<span class="status-pill status-tolerance">Variance: ${amtDiff.toFixed(2)}</span>`;
       const dateGap = ev.date_difference_days !== undefined ? ev.date_difference_days : 0;
       const dateStatus = dateGap === 0 ? '<span class="status-pill status-exact">Same Date</span>' : `<span class="status-pill status-tolerance">${dateGap} day gap</span>`;
 
@@ -4097,6 +4199,10 @@
         `;
       }
 
+      const pCurr = tx.currency || "INR";
+      const cCurr = counterpart.currency || tx.currency || "INR";
+      const currMatchStatus = pCurr === cCurr ? '<span class="status-pill status-exact">Currency Match</span>' : `<span class="status-pill status-tolerance">Mismatch (${pCurr} vs ${cCurr})</span>`;
+
       tbody.innerHTML = `
         ${multiSourceRowHTML}
         <tr>
@@ -4104,6 +4210,12 @@
           <td><span class="flag-chip flag-primary">${primarySrcName}</span></td>
           <td><span class="flag-chip flag-secondary">${counterSrcLabel}</span></td>
           <td><span class="status-pill status-exact">Different Sources (Passed)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Currency</strong></td>
+          <td><span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">${escapeHtml(pCurr)}</span></td>
+          <td><span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">${escapeHtml(cCurr)}</span></td>
+          <td>${currMatchStatus}</td>
         </tr>
         <tr>
           <td><strong>UTR / Reference ID</strong></td>
@@ -4347,6 +4459,8 @@
     document.getElementById("cmpBankUtr").textContent = cand.utr || cand.id;
     document.getElementById("cmpBankTxId").textContent = cand.id;
     document.getElementById("cmpBankDate").textContent = cand.date;
+    const candCurrEl = document.getElementById("cmpBankCurrency");
+    if (candCurrEl) candCurrEl.textContent = cand.currency || primaryTx.currency || "INR";
     document.getElementById("cmpBankAmount").textContent = formatMoney(cand.amount);
     document.getElementById("cmpBankDesc").textContent = cand.description;
 
@@ -4363,7 +4477,7 @@
     const candSrcLabel = cand.statement_name || cand.source_label || "Candidate Source";
 
     const amtDiff = Math.abs(Math.abs(primaryTx.amount || 0) - Math.abs(cand.amount || 0));
-    const amtStatus = amtDiff < 0.01 ? '<span class="status-pill status-exact">Exact Amount Match</span>' : `<span class="status-pill status-tolerance">Variance: ₹${amtDiff.toFixed(2)}</span>`;
+    const amtStatus = amtDiff < 0.01 ? '<span class="status-pill status-exact">Exact Amount Match</span>' : `<span class="status-pill status-tolerance">Variance: ${amtDiff.toFixed(2)}</span>`;
 
     const pDescCand = primaryTx.bank_description || primaryTx.description || primaryTx.primary_id || "";
     const cDescCand = cand.description || cand.bank_description || cand.id || "";
@@ -4382,12 +4496,22 @@
       </tr>
     `;
 
+    const pCurrCand = primaryTx.currency || "INR";
+    const cCurrCand = cand.currency || primaryTx.currency || "INR";
+    const currMatchCand = pCurrCand === cCurrCand ? '<span class="status-pill status-exact">Currency Match</span>' : `<span class="status-pill status-tolerance">Mismatch (${pCurrCand} vs ${cCurrCand})</span>`;
+
     tbody.innerHTML = `
       <tr>
         <td><strong>Source Type</strong></td>
         <td><span class="flag-chip flag-primary">${primarySrcLabel}</span></td>
         <td><span class="flag-chip flag-secondary">${candSrcLabel}</span></td>
         <td><span class="status-pill status-exact">Different Sources (Passed)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Currency</strong></td>
+        <td><span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">${escapeHtml(pCurrCand)}</span></td>
+        <td><span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600;">${escapeHtml(cCurrCand)}</span></td>
+        <td>${currMatchCand}</td>
       </tr>
       <tr>
         <td><strong>UTR / Reference ID</strong></td>
@@ -4483,11 +4607,14 @@
         }
       }
 
+      const currPill = `<span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600; padding:2px 7px; border-radius:4px; font-size:0.75rem;">${escapeHtml(tx.currency || 'INR')}</span>`;
+
       tr.innerHTML = `
         <td><code class="font-mono text-sm" style="color:var(--accent-blue, #60a5fa); font-weight:600;">${escapeHtml(primaryTxId)}</code></td>
         <td>${formatDateDDMMYYYY(tx.date)}</td>
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
+        <td>${currPill}</td>
         <td class="${amountClass}">${formatMoney(tx.amount)}</td>
         <td>${flagsHTML}</td>
         <td><span class="status-pill ${statusPillClass(tx)}" ${titleReason}>${pillLabel}</span></td>
@@ -4569,12 +4696,14 @@
 
       const exStatus = String(ex.status || "UNMATCHED").toUpperCase();
       const statusPillCls = exStatus === "SIMILAR" ? "status-similar" : "status-unmatched";
+      const exCurrPill = `<span class="flag-chip" style="background:rgba(241,245,249,0.1); color:var(--text-primary); font-family:var(--font-mono); font-weight:600; padding:2px 7px; border-radius:4px; font-size:0.75rem;">${escapeHtml(ex.currency || 'INR')}</span>`;
 
       tr.innerHTML = `
         <td><code class="font-mono text-sm" style="color:var(--accent-blue, #60a5fa); font-weight:600;">${escapeHtml(primaryTxId)}</code></td>
         <td>${formatDateDDMMYYYY(ex.date)}</td>
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
+        <td>${exCurrPill}</td>
         <td class="${amountClass}">${formatMoney(ex.amount)}</td>
         <td>${priorityPill}</td>
         <td>${flagsHTML}</td>
@@ -4720,8 +4849,6 @@
   async function handleSetPrimaryStatement(statementId, triggeringEl = null) {
     if (!statementId) return;
 
-    showNotificationToast("Setting primary statement & re-syncing pipeline...", "loading");
-
     const btnSetPrimary = document.getElementById("btnStmtHeaderSetPrimary");
     const btnSetPrimaryText = document.getElementById("btnStmtHeaderSetPrimaryText");
     let origText = "";
@@ -4737,12 +4864,14 @@
     }
 
     try {
+      startPipelineProgressPoller("Setting Primary Statement...", async () => {
+        await loadSidebarSources();
+        await loadStatementsTable();
+        if (activeStatementId) await openStatementView(activeStatementId);
+        await triggerAutoMatch();
+      });
+
       await window.LedgerApi.setPrimaryStatement(statementId);
-      await loadSidebarSources();
-      await loadStatementsTable();
-      if (activeStatementId) await openStatementView(activeStatementId);
-      await triggerAutoMatch();
-      showNotificationToast("Primary statement set & reconciliation updated!", "success");
     } catch (err) {
       console.error("Error setting primary statement:", err);
       showNotificationToast("Failed to update primary statement. Please try again.", "error");

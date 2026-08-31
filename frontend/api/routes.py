@@ -1604,12 +1604,15 @@ def set_primary_statement_endpoint(statement_id):
     is_primary = req_data.get("is_primary")
     success = statement_store.set_primary_statement(statement_id, is_primary=is_primary)
     if success:
-        try:
-            _run_backend_pipeline()
-            run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
-            _RUNS[run["run_id"]] = run
-        except Exception as exc:
-            current_app.logger.warning(f"Auto pipeline run on set-primary note: {exc}")
+        def _async_worker():
+            try:
+                _run_backend_pipeline()
+                run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+                _RUNS[run["run_id"]] = run
+            except Exception as exc:
+                current_app.logger.warning(f"Auto pipeline run on set-primary note: {exc}")
+
+        threading.Thread(target=_async_worker, daemon=True).start()
         return jsonify({"ok": True, "message": "Primary status updated.", "statement_id": statement_id})
     return _error("Statement not found.", 404)
 
@@ -1636,6 +1639,61 @@ def update_statement_rows_endpoint(statement_id):
 
     threading.Thread(target=_async_worker, daemon=True).start()
     return jsonify({"ok": True, "message": "Statement entries updated successfully."})
+
+
+@api_bp.route("/statements/<statement_id>/add-transaction", methods=["POST"])
+def add_statement_transaction_endpoint(statement_id):
+    """
+    Appends a new transaction to a statement and executes incremental reconciliation.
+    """
+    payload = request.get_json(silent=True) or {}
+    tx_date = (payload.get("transaction_date") or payload.get("date") or datetime.utcnow().strftime("%Y-%m-%d")).strip()
+    net_amt = payload.get("net_amount") or payload.get("amount") or 0.0
+    try:
+        net_amt = float(net_amt)
+    except Exception:
+        net_amt = 0.0
+
+    desc = (payload.get("description") or "").strip()
+    utr_val = (payload.get("utr") or "").strip()
+    order_val = (payload.get("order_id") or "").strip()
+    curr_val = (payload.get("currency") or "INR").strip().upper()
+    channel_val = (payload.get("channel") or payload.get("mode") or "CREDIT").strip().upper()
+    status_val = (payload.get("status") or "SETTLED").strip().upper()
+
+    row_dict = {
+        "transaction_date": tx_date,
+        "net_amount": net_amt,
+        "gross_amount": payload.get("gross_amount", net_amt),
+        "description": desc,
+        "utr": utr_val,
+        "order_id": order_val,
+        "currency": curr_val,
+        "channel": channel_val,
+        "status": status_val,
+        "customer_name": (payload.get("customer_name") or "").strip(),
+    }
+
+    added_tx = statement_store.add_single_transaction(statement_id, row_dict)
+    if not added_tx:
+        return _error("Statement not found.", 404)
+
+    # Launch background reconciliation sync
+    def _async_incremental():
+        try:
+            _run_backend_pipeline()
+            run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+            _RUNS[run["run_id"]] = run
+        except Exception as exc:
+            pass
+
+    threading.Thread(target=_async_incremental, daemon=True).start()
+
+    return jsonify({
+        "ok": True,
+        "message": "New transaction added successfully! Re-syncing reconciliation.",
+        "transaction": added_tx
+    })
 
 
 @api_bp.route("/statements/<statement_id>/delete-columns", methods=["POST"])
