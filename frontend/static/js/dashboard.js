@@ -22,6 +22,23 @@
     return str;
   };
 
+  window.createSleekLoadingHTML = function createSleekLoadingHTML(message = "Loading...", subtext = "Synchronizing data engine & audit logs...") {
+    return `
+      <div class="sleek-loading-wrapper" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:70px 20px; text-align:center; min-height: 320px;">
+        <div class="sleek-loading-card" style="background: var(--bg-surface, #111418); border: 1px solid var(--border, #252A31); backdrop-filter: blur(16px); padding: 36px 48px; border-radius: 16px; box-shadow: var(--shadow-xl, 0 20px 50px rgba(0, 0, 0, 0.5)); display: flex; flex-direction: column; align-items: center; gap: 18px; max-width: 440px; width: 100%;">
+          <div class="sleek-spinner-glow" style="position: relative; width: 48px; height: 48px;">
+            <div class="spinner" style="width: 48px; height: 48px; border-width: 3.5px; border-color: rgba(76, 141, 255, 0.2); border-top-color: var(--accent-blue, #4C8DFF); animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; border-radius: 50%;"></div>
+            <div style="position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(circle, rgba(76, 141, 255, 0.25) 0%, transparent 70%); filter: blur(8px); pointer-events: none;"></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <h4 style="margin: 0; color: var(--text-primary, #F1F3F5); font-size: 1.08rem; font-weight: 600; letter-spacing: -0.01em;">${message}</h4>
+            <p style="margin: 0; color: var(--text-muted, #5F6670); font-size: 0.83rem; font-weight: 400;">${subtext}</p>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
   // Helper: Format period label date ranges to DD/MM/YYYY
   window.formatPeriodLabel = function formatPeriodLabel(str) {
     if (!str || str === "—") return "No Data";
@@ -59,14 +76,29 @@
     return template.content.firstChild;
   }
 
-  function formatMoney(value, includePlus = true) {
+  function formatMoney(value, includePlus = true, currency = 'INR') {
     const n = Number(value) || 0;
-    if (n > 0) {
-      return `${includePlus ? "+" : ""}${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    } else if (n < 0) {
-      return `-${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const currStr = String(currency || 'INR').toUpperCase();
+    let symbol = "₹";
+    let loc = "en-IN";
+    if (currStr === "USD" || currStr === "$") {
+      symbol = "$";
+      loc = "en-US";
+    } else if (currStr === "EUR" || currStr === "€") {
+      symbol = "€";
+      loc = "de-DE";
+    } else if (currStr === "GBP" || currStr === "£") {
+      symbol = "£";
+      loc = "en-GB";
     }
-    return `${Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const numFormatted = Math.abs(n).toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n > 0) {
+      return `${includePlus ? "+" : ""}${symbol}${numFormatted}`;
+    } else if (n < 0) {
+      return `-${symbol}${numFormatted}`;
+    }
+    return `${symbol}${numFormatted}`;
   }
 
 
@@ -130,24 +162,29 @@
     });
 
     // ── Real-time tab data refresh on activate (T13.1) ─────────────────
-    if (subId === "sub-overview") {
-      _loadOverviewPanel(true);
-    } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
-      if (currentRunId) {
-        loadRun(currentRunId);
-      } else {
-        hydrateExistingRun();
+    try {
+      if (subId === "sub-overview") {
+        _loadOverviewPanel(true).catch(() => {});
+      } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
+        if (currentRunId) {
+          loadRun(currentRunId).catch(() => {});
+        } else {
+          hydrateExistingRun().catch(() => {});
+        }
+      } else if (subId === "sub-current-period" || subId === "sub-upload-bank") {
+        loadSidebarSources().catch(() => {});
+        loadStatementsTable().catch(() => {});
+      } else if (subId === "sub-reports") {
+        _loadReportsPanel(true).catch(() => {});
+      } else if (subId === "sub-config") {
+        _loadConfigPanel(true).catch(() => {});
+      } else if (subId === "sub-forecast") {
+        if (typeof window.loadForecastTab === "function") {
+          const res = window.loadForecastTab(true);
+          if (res && typeof res.catch === "function") res.catch(() => {});
+        }
       }
-    } else if (subId === "sub-current-period" || subId === "sub-upload-bank") {
-      loadSidebarSources();
-      loadStatementsTable();
-    } else if (subId === "sub-reports") {
-      _loadReportsPanel(true);
-    } else if (subId === "sub-config") {
-      _loadConfigPanel(true);
-    } else if (subId === "sub-forecast") {
-      window.loadForecastTab(true);
-    }
+    } catch (_) {}
   }
 
   // ── Shared Reconciliation & System State Manager (T13.3) ────────────────
@@ -198,7 +235,7 @@
     if (_panelLoaded.reports && !force) return;
     const el = document.getElementById("reportsContent");
     if (!el) return;
-    el.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);font-size:var(--text-sm);"><div class="spinner" style="margin:0 auto 12px; display:inline-block;"></div> Loading Closed Audit Vault & Report Archives…</div>';
+    el.innerHTML = createSleekLoadingHTML("Loading Closed Audit Vault & Report Archives", "Retrieving server archives, audit PDFs, and closed period snapshots...");
 
     Promise.all([
       fetch("/api/closed_periods").then(r => r.json()).catch(() => ({ periods: [] })),
@@ -214,6 +251,25 @@
       const exceptions = reportData.exceptions || [];
       const integrity = reportData.integrity || {};
       const fSum = forecastRes.summary || {};
+      const latestClosed = closedPeriods.length > 0 ? closedPeriods[0] : null;
+
+      // Extract display metrics with fallback to latest closed period snapshot when active statements were cleared
+      const activeHasData = (fSum.current_balance || 0) > 0 || (fSum.forecast_30d_projected || 0) > 0;
+      const displayCurrentBal = activeHasData
+        ? (fSum.current_balance || 0)
+        : (latestClosed ? (latestClosed.current_balance || (latestClosed.forecast_summary && latestClosed.forecast_summary.current_balance) || latestClosed.variance || 0) : 0);
+      
+      const displayProjected = activeHasData
+        ? (fSum.forecast_30d_projected || 0)
+        : (latestClosed ? (latestClosed.forecast_30d_projected || (latestClosed.forecast_summary && latestClosed.forecast_summary.forecast_30d_projected) || displayCurrentBal) : 0);
+
+      const displayPendingCount = activeHasData
+        ? (fSum.pending_count || 0)
+        : (latestClosed ? (latestClosed.pending_count || (latestClosed.forecast_summary && latestClosed.forecast_summary.pending_count) || 0) : 0);
+
+      const displayPatternsCount = activeHasData
+        ? (fSum.detected_patterns || 0)
+        : (latestClosed ? (latestClosed.detected_patterns || (latestClosed.forecast_summary && latestClosed.forecast_summary.detected_patterns) || 0) : 0);
 
       let vaultContentInner = `
         <!-- Cash Forecast Audit Card in Reports -->
@@ -224,7 +280,10 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin:0;">Forward Cash Flow Forecast Report</h3>
               </div>
-              <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0;">30-Day moving average, recurring flow detection, and pending settlement lag analysis.</p>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0;">
+                30-Day moving average, recurring flow detection, and pending settlement lag analysis. 
+                ${!activeHasData && latestClosed ? `<span style="color:var(--accent-blue); font-weight:600;">(Snapshot from Locked Period ${latestClosed.period_label || ''})</span>` : ''}
+              </p>
             </div>
             <button type="button" onclick="activateSub('sub-forecast')" style="padding:7px 14px; background:#8b5cf6; color:#fff; border:none; border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
               View Forecast Module &rarr;
@@ -233,19 +292,19 @@
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Current Settled Balance</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#10b981; margin-top:2px;">${(fSum.current_balance || 0).toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#10b981; margin-top:2px;">${displayCurrentBal.toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
             </div>
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">30D Projected Ending Cash</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#8b5cf6; margin-top:2px;">${(fSum.forecast_30d_projected || 0).toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#8b5cf6; margin-top:2px;">${displayProjected.toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
             </div>
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Pending Settlement Batches</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#f59e0b; margin-top:2px;">${fSum.pending_count || 0} Batches</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#f59e0b; margin-top:2px;">${displayPendingCount} Batches</div>
             </div>
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Recurring Flow Patterns</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#3b82f6; margin-top:2px;">${fSum.detected_patterns || 0} Patterns</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#3b82f6; margin-top:2px;">${displayPatternsCount} Patterns</div>
             </div>
           </div>
         </div>
@@ -990,9 +1049,12 @@
       const s = run.summary || {};
       const total = s.total_transactions || 0;
       const autoMatched = s.auto_matched || 0;
+      const settledCount = s.settled_count || 0;
+      const matchedCount = s.matched_count || 0;
       const manualMatched = s.manual_matched || 0;
-      const totalMatched = autoMatched + manualMatched;
-      const unmatched = s.unreconciled || 0;
+      const totalMatched = s.settled_count !== undefined ? (settledCount + matchedCount + (s.llm_matched || 0)) : (autoMatched + manualMatched);
+      const excCount = s.unmatched_count !== undefined ? s.unmatched_count : (s.exceptions_count || (run.exceptions ? run.exceptions.length : 0));
+      const unmatched = excCount > 0 ? excCount : Math.max(0, total - totalMatched);
       const pct = s.percent_reconciled !== undefined ? s.percent_reconciled.toFixed(1) : (total ? ((totalMatched / total) * 100).toFixed(1) : "0.0");
       const variance = s.variance !== undefined ? s.variance : 0;
       const deposits = s.deposits_total || 0;
@@ -1789,6 +1851,7 @@
         if (!confirmed) return;
 
         clearBtn.disabled = true;
+        clearBtn.classList.add("btn-clearing");
         const originalHtml = clearBtn.innerHTML;
         clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Clearing...</span>';
 
@@ -1805,6 +1868,7 @@
           alert("Error clearing data: " + err.message);
         } finally {
           clearBtn.disabled = false;
+          clearBtn.classList.remove("btn-clearing");
           clearBtn.innerHTML = originalHtml;
         }
       });
@@ -2445,6 +2509,9 @@
       .replace(/'/g, "&#039;");
   }
 
+  let pipelineMonitoringStartedAt = 0;
+  let pipelineHasSeenRunning = false;
+
   async function pollPipelineStatus() {
     const stageEl = document.getElementById("importStageText");
     const percentEl = document.getElementById("importProgressPercent");
@@ -2454,6 +2521,17 @@
     try {
       const res = await window.LedgerApi.getPipelineStatus();
       if (!res || !res.ok) return;
+
+      const elapsed = Date.now() - pipelineMonitoringStartedAt;
+
+      // Ignore stale completion status from a previous pipeline run
+      if (!res.is_running && res.progress >= 100 && !pipelineHasSeenRunning && elapsed < 3000) {
+        return;
+      }
+
+      if (res.is_running) {
+        pipelineHasSeenRunning = true;
+      }
 
       if (stageEl && res.stage) {
         let displayStage = res.stage;
@@ -2478,7 +2556,7 @@
         terminalBody.scrollTop = terminalBody.scrollHeight;
       }
 
-      if (!res.is_running && res.progress >= 100) {
+      if (!res.is_running && res.progress >= 100 && (pipelineHasSeenRunning || elapsed >= 3000)) {
         stopPipelineMonitoring();
       }
     } catch (err) {
@@ -2499,6 +2577,9 @@
     if (fillEl) fillEl.style.width = "5%";
 
     seenLogsCount = 0;
+    pipelineMonitoringStartedAt = Date.now();
+    pipelineHasSeenRunning = false;
+
     if (terminalBody) {
       terminalBody.innerHTML = `<div class="term-line term-dim">[SYSTEM] Pipeline tracker activated. Starting live output...</div>`;
     }
@@ -2512,6 +2593,14 @@
     if (pipelinePollInterval) {
       clearInterval(pipelinePollInterval);
       pipelinePollInterval = null;
+    }
+    const stageEl = document.getElementById("importStageText");
+    const percentEl = document.getElementById("importProgressPercent");
+    const fillEl = document.getElementById("importProgressFill");
+    if (percentEl) percentEl.textContent = "100%";
+    if (fillEl) fillEl.style.width = "100%";
+    if (stageEl && !stageEl.textContent.includes("Complete")) {
+      stageEl.textContent = "Pipeline Execution Complete ✓";
     }
   }
 
@@ -2761,7 +2850,7 @@
     activateSub("sub-unified-sources");
     const bodyEl = document.getElementById("unifiedMasterTableBody");
     if (bodyEl) {
-      bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);"><div class="spinner" style="margin:0 auto 10px; display:block;"></div> Loading Unified Master Source Table…</td></tr>';
+      bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px 10px; border:none; background:transparent;">${createSleekLoadingHTML("Loading Unified Master Source Table", "Compiling multi-statement raw transaction entries...")}</td></tr>`;
     }
 
     try {
@@ -3189,6 +3278,8 @@
     if (pipelinePollerInterval) clearInterval(pipelinePollerInterval);
 
     showNotificationToast(`[Pipeline Step 1/6] Ingesting & Normalizing Statements...`, "loading");
+    let hasSeenRunning = false;
+    const startTime = Date.now();
 
     pipelinePollerInterval = setInterval(async () => {
       try {
@@ -3199,8 +3290,9 @@
           const isRunning = res.is_running;
 
           if (isRunning) {
+            hasSeenRunning = true;
             showNotificationToast(`${stage} (${pct}%)`, "loading");
-          } else {
+          } else if (hasSeenRunning || (Date.now() - startTime > 3000)) {
             clearInterval(pipelinePollerInterval);
             pipelinePollerInterval = null;
             showNotificationToast("Reconciliation pipeline completed successfully!", "success");
@@ -3711,9 +3803,16 @@
       tags.push("split_txn");
     }
 
-    if (tx.fee_aware || (tx.reason && tx.reason.toLowerCase().includes("fee"))) {
-      tags.push("fee_aware");
-    }
+    const flags = (tx.feature_flags && Array.isArray(tx.feature_flags)) ? tx.feature_flags : [];
+    if (flags.includes("International Txn") || tx.currency === "USD" || tx.currency === "EUR" || tx.currency === "GBP") tags.push("intl_txn");
+    if (flags.includes("Internal Transfer")) tags.push("internal_transfer");
+    if (flags.includes("Manual Override")) tags.push("manual_override");
+    if (flags.includes("Exact UTR Match")) tags.push("exact_utr");
+    if (flags.includes("Unmatched UTR")) tags.push("unmatched_utr");
+    if (flags.includes("Batch MDR Payout")) tags.push("batch_mdr");
+    if (flags.includes("Groq LLM Assisted")) tags.push("groq_llm");
+    if (flags.includes("Digit Transposition")) tags.push("digit_transposition");
+    if (flags.includes("Duplicate Discrepancy")) tags.push("duplicate_discrepancy");
 
     return tags;
   }
@@ -3725,14 +3824,23 @@
     similar: { label: "Similar", priority: 4 },
     exception: { label: "Exception", priority: 5 },
     unreconciled: { label: "Unreconciled", priority: 6 },
-    llm: { label: "LLM", priority: 7 },
-    ml: { label: "ML", priority: 8 },
-    utr_mismatch: { label: "UTR Mismatch", priority: 9 },
-    utr_match: { label: "UTR Match", priority: 10 },
-    date_gap: { label: "Date Gap", priority: 11 },
-    amt_diff: { label: "Amt Diff", priority: 12 },
-    split_txn: { label: "Split Txn", priority: 13 },
-    fee_aware: { label: "Fee Aware", priority: 14 },
+    intl_txn: { label: "International Txn", priority: 7 },
+    internal_transfer: { label: "Internal Transfer", priority: 8 },
+    manual_override: { label: "Manual Override", priority: 9 },
+    exact_utr: { label: "Exact UTR Match", priority: 10 },
+    unmatched_utr: { label: "Unmatched UTR", priority: 11 },
+    batch_mdr: { label: "Batch MDR Payout", priority: 12 },
+    groq_llm: { label: "Groq LLM Assisted", priority: 13 },
+    digit_transposition: { label: "Digit Transposition", priority: 14 },
+    duplicate_discrepancy: { label: "Duplicate Discrepancy", priority: 15 },
+    llm: { label: "LLM", priority: 16 },
+    ml: { label: "ML", priority: 17 },
+    utr_mismatch: { label: "UTR Mismatch", priority: 18 },
+    utr_match: { label: "UTR Match", priority: 19 },
+    date_gap: { label: "Date Gap", priority: 20 },
+    amt_diff: { label: "Amt Diff", priority: 21 },
+    split_txn: { label: "Split Txn", priority: 22 },
+    fee_aware: { label: "Fee Aware", priority: 23 },
   };
 
   function updateTagFilterBar() {
@@ -3775,7 +3883,7 @@
       return a.priority - b.priority;
     });
 
-    const TOP_TAG_COUNT = 4;
+    const TOP_TAG_COUNT = 8;
     const hasMore = availableTags.length > TOP_TAG_COUNT;
     const visibleTags = isTagFilterExpanded ? availableTags : availableTags.slice(0, TOP_TAG_COUNT);
 
@@ -3951,7 +4059,7 @@
       return a.priority - b.priority;
     });
 
-    const TOP_TAG_COUNT = 4;
+    const TOP_TAG_COUNT = 8;
     const hasMore = availableTags.length > TOP_TAG_COUNT;
     const visibleTags = isExcTagFilterExpanded ? availableTags : availableTags.slice(0, TOP_TAG_COUNT);
 
@@ -4268,44 +4376,65 @@
 
 
   function getFeatureFlagsHTML(tx) {
-    const flags = [];
-    const ev = tx.evidence || {};
-    const st = (tx.status || "").toLowerCase().trim();
+    let rawFlags = tx.feature_flags || (tx.evidence && tx.evidence.flags) || [];
+    if (!Array.isArray(rawFlags)) rawFlags = [];
 
-    // 1. UTR Match vs UTR Mismatch
-    if (ev.identifier_matched) {
-      flags.push({ label: "UTR Match", type: "success" });
-    } else if (st === "llm" || st === "ml" || st === "manual" || st === "unmatched" || st === "exception") {
-      flags.push({ label: "UTR Mismatch", type: "warning" });
+    // If server provided feature_flags string array, process it; otherwise fallback to dynamic checks
+    if (rawFlags.length === 0) {
+      if (tx.transaction_type && tx.transaction_type !== "Standard Commercial") {
+        rawFlags = [tx.transaction_type];
+      } else {
+        const ev = tx.evidence || {};
+        const st = (tx.status || "").toLowerCase().trim();
+        const curr = String(tx.currency || "").toUpperCase();
+        const desc = (String(tx.description || "") + " " + String(tx.reason || "") + " " + String(ev.rule || "")).toUpperCase();
+        
+        if (curr && curr !== "INR" && curr !== "RS" && curr !== "RUPEES") {
+          rawFlags.push("International Txn");
+        }
+        if (desc.includes("INTERNAL") || desc.includes("SELF") || desc.includes("TRANSFER") || desc.includes("CONTRA") || desc.includes("SWEEP")) {
+          rawFlags.push("Internal Transfer");
+        }
+        if (st.includes("manual") || (ev.rule && ev.rule.toLowerCase().includes("manual"))) {
+          rawFlags.push("Manual Override");
+        }
+        if (ev.identifier_matched || st === "settled" || st === "exact" || (ev.rule && ev.rule.toLowerCase().includes("exact"))) {
+          rawFlags.push("Exact UTR Match");
+        }
+        if (st === "unmatched" || st === "exception" || st === "unreconciled" || (!tx.utr || tx.utr === "—")) {
+          rawFlags.push("Unmatched UTR");
+        }
+        if (ev.rule && (ev.rule.includes("MDR") || ev.rule.includes("Batch") || ev.rule.includes("1-to-N"))) {
+          rawFlags.push("Batch MDR Payout");
+        }
+        if (st === "llm" || (ev.rule && ev.rule.includes("LLM"))) {
+          rawFlags.push("Groq LLM Assisted");
+        }
+        if (rawFlags.length === 0) {
+          rawFlags.push("Standard Commercial");
+        }
+      }
     }
 
-    // 2. Date Gap Tolerance
-    const dateDiff = ev.date_difference_days || 0;
-    if (dateDiff > 0) {
-      flags.push({ label: `Date Gap (+${dateDiff}d)`, type: "info" });
-    }
+    const styleMap = {
+      "International Txn": "flag-purple",
+      "Internal Transfer": "flag-info",
+      "Manual Override": "flag-amber",
+      "Exact UTR Match": "flag-success",
+      "Unmatched UTR": "flag-warning",
+      "Batch MDR Payout": "flag-cyan",
+      "Groq LLM Assisted": "flag-purple",
+      "Digit Transposition": "flag-amber",
+      "Duplicate Discrepancy": "flag-danger",
+      "Standard Commercial": "flag-secondary"
+    };
 
-    // 3. Amount Difference
-    const amtDiff = Math.abs(ev.amount_difference !== undefined ? ev.amount_difference : 0);
-    if (amtDiff > 0.01) {
-      flags.push({ label: `Amt Diff (${formatMoney(amtDiff)})`, type: "amber" });
-    }
+    const chips = rawFlags.map(f => {
+      const cls = styleMap[f] || "flag-secondary";
+      return `<span class="flag-chip ${cls}">${escapeHtml(f)}</span>`;
+    });
 
-    // 4. Split Transactions
-    if (tx.is_split || ev.is_split || (tx.stage && tx.stage.includes("split")) || (ev.candidate_count && ev.candidate_count > 1 && !ev.identifier_matched)) {
-      flags.push({ label: "Split Txn", type: "purple" });
-    }
-
-    // 5. Fee Aware
-    if (tx.fee_aware || (tx.reason && tx.reason.toLowerCase().includes("fee"))) {
-      flags.push({ label: "Fee Aware", type: "cyan" });
-    }
-
-    if (flags.length === 0) {
-      flags.push({ label: "Exact Match", type: "success" });
-    }
-
-    return `<div class="flags-cell">${flags.map(f => `<span class="flag-chip flag-${f.type}">${f.label}</span>`).join("")}</div>`;
+    return `<div class="flags-cell" style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">${chips.join("")}</div>`;
   }
 
   function openRecordComparisonModal(tx) {
@@ -4846,6 +4975,7 @@
     }
     empty.style.display = "none";
 
+    const fragment = document.createDocumentFragment();
     transactions.forEach((tx) => {
       const tr = document.createElement("tr");
       tr.style.cursor = "pointer";
@@ -4893,7 +5023,7 @@
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
         <td>${currPill}</td>
-        <td class="${amountClass}">${formatMoney(tx.amount)}</td>
+        <td class="${amountClass}">${formatMoney(tx.amount, true, tx.currency)}</td>
         <td>${flagsHTML}</td>
         <td><span class="status-pill ${statusPillClass(tx)}" ${titleReason}>${pillLabel}</span></td>
         <td>
@@ -4919,8 +5049,9 @@
         openRecordComparisonModal(tx);
       });
 
-      body.appendChild(tr);
+      fragment.appendChild(tr);
     });
+    body.appendChild(fragment);
   }
 
   function renderExceptionsTable(exceptions) {
@@ -4941,6 +5072,7 @@
     }
     empty.style.display = "none";
 
+    const fragment = document.createDocumentFragment();
     exceptions.forEach((ex) => {
       const tr = document.createElement("tr");
       tr.style.cursor = "pointer";
@@ -4982,7 +5114,7 @@
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
         <td>${exCurrPill}</td>
-        <td class="${amountClass}">${formatMoney(ex.amount)}</td>
+        <td class="${amountClass}">${formatMoney(ex.amount, true, ex.currency)}</td>
         <td>${priorityPill}</td>
         <td>${flagsHTML}</td>
         <td><span class="status-pill ${statusPillCls}">${escapeHtml(exStatus)}</span></td>
@@ -5009,8 +5141,9 @@
         openRecordComparisonModal(ex);
       });
 
-      body.appendChild(tr);
+      fragment.appendChild(tr);
     });
+    body.appendChild(fragment);
   }
 
   function renderManualReviewQueue(exceptions) {
@@ -5184,6 +5317,7 @@
         if (navBtn) navBtn.innerHTML = '<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>Processing...</span>';
 
         try {
+          startPipelineProgressPoller("Running 4-Pass Cascade Reconciliation...");
           const result = await window.LedgerApi.runReconciliation();
           currentRunId = result.run_id;
           stateManager.invalidate();

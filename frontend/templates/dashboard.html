@@ -548,7 +548,7 @@
                             class="sort-arrow">↕</span></th>
                         <th data-sort-key="currency" class="sort-header">CURRENCY <span class="sort-arrow">↕</span></th>
                         <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
-                        <th class="sort-header">FEATURE FLAGS</th>
+                        <th class="sort-header">TYPE / FEATURE FLAGS</th>
                         <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
                         <th class="sort-header">ACTIONS</th>
                       </tr>
@@ -613,7 +613,7 @@
                       <th data-sort-key="currency" class="sort-header">CURRENCY <span class="sort-arrow">↕</span></th>
                       <th data-sort-key="amount" class="sort-header">AMOUNT <span class="sort-arrow">↕</span></th>
                       <th data-sort-key="priority" class="sort-header">PRIORITY <span class="sort-arrow">↕</span></th>
-                      <th class="sort-header">FEATURE FLAGS</th>
+                      <th class="sort-header">TYPE / FEATURE FLAGS</th>
                       <th data-sort-key="status" class="sort-header">STATUS <span class="sort-arrow">↕</span></th>
                       <th class="sort-header">ACTIONS</th>
                     </tr>
@@ -1310,100 +1310,77 @@
   <!-- ------------------------------------------------------------ -->
   <!-- Add New Transaction Modal Pop-Up -->
   <!-- ------------------------------------------------------------ -->
-  <div class="compare-modal-backdrop" id="addTransactionModalBackdrop"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(3, 7, 18, 0.75); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
-    <div class="compare-modal-card"
-      style="width:100%; max-width:540px; background:#0f172a; border:1px solid rgba(255, 255, 255, 0.12); border-radius:16px; padding:28px; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.8);">
-      <div
-        style="display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; padding-bottom:14px; border-bottom:1px solid rgba(255, 255, 255, 0.1);">
-        <h3
-          style="margin:0; font-size:1.2rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:10px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:rgba(59, 130, 246, 0.15); border:1px solid rgba(59, 130, 246, 0.3); display:flex; align-items:center; justify-content:center;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5">
+  <!-- ------------------------------------------------------------ -->
+  <!-- Add New Transaction Modal Pop-Up -->
+  <!-- ------------------------------------------------------------ -->
+  <div class="compare-modal-backdrop" id="addTransactionModalBackdrop" style="display:none;">
+    <div class="compare-modal-card" style="max-width: 540px; padding: 24px;">
+      <div class="compare-modal-header" style="padding: 0 0 16px 0; border-bottom: 1px solid var(--border);">
+        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+          <div style="width: 34px; height: 34px; border-radius: 10px; background: var(--accent-blue-subtle, rgba(59, 130, 246, 0.15)); border: 1px solid var(--accent-blue-border, rgba(59, 130, 246, 0.3)); display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue, #60a5fa)" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </div>
           Add New Transaction Entry
         </h3>
-        <button type="button" id="closeAddTxModalBtn"
-          style="background:rgba(255, 255, 255, 0.05); border:1px solid rgba(255, 255, 255, 0.1); width:30px; height:30px; border-radius:8px; color:#94a3b8; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:all 0.15s ease;">✕</button>
+        <button type="button" class="compare-modal-close" id="closeAddTxModalBtn" title="Close modal">✕</button>
       </div>
 
-      <form id="addTxForm" onsubmit="return false;">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px;">
+      <form id="addTxForm" onsubmit="return false;" style="margin-top: 18px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Date
-              *</label>
-            <input type="date" id="addTxDate" class="modal-styled-input" style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none;"
-              required>
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Date *</label>
+            <input type="date" id="addTxDate" class="modal-styled-input" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem;" required>
           </div>
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Net
-              Amount *</label>
-            <input type="number" step="0.01" id="addTxAmount" class="modal-styled-input" placeholder="0.00"
-              style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none;" required>
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Net Amount *</label>
+            <input type="number" step="0.01" id="addTxAmount" class="modal-styled-input" placeholder="0.00" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem;" required>
           </div>
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label
-            style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Description
-            / Narration *</label>
-          <input type="text" id="addTxDescription" class="modal-styled-input" placeholder="e.g. Payment for Order #10082"
-            style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none;" required>
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Description / Narration *</label>
+          <input type="text" id="addTxDescription" class="modal-styled-input" placeholder="e.g. Payment for Order #10082" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem;" required>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">UTR
-              / Reference ID</label>
-            <input type="text" id="addTxUtr" class="modal-styled-input" placeholder="e.g. UTR9988223"
-              style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none;">
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">UTR / Reference ID</label>
+            <input type="text" id="addTxUtr" class="modal-styled-input" placeholder="e.g. UTR9988223" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem;">
           </div>
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Order
-              ID</label>
-            <input type="text" id="addTxOrderId" class="modal-styled-input" placeholder="e.g. ORD-4081"
-              style="width:100%; box-sizing:border-box; padding:10px 12px; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none;">
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Order ID</label>
+            <input type="text" id="addTxOrderId" class="modal-styled-input" placeholder="e.g. ORD-4081" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem;">
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom:24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Currency</label>
-            <select id="addTxCurrency" class="modal-styled-input" style="width:100%; box-sizing:border-box; padding:10px 12px; background:#1e293b; border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none; cursor:pointer;">
-              <option value="INR" selected style="background:#1e293b; color:#f8fafc;">INR</option>
-              <option value="USD" style="background:#1e293b; color:#f8fafc;">USD</option>
-              <option value="EUR" style="background:#1e293b; color:#f8fafc;">EUR</option>
-              <option value="GBP" style="background:#1e293b; color:#f8fafc;">GBP</option>
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Currency</label>
+            <select id="addTxCurrency" class="modal-styled-input" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem; cursor: pointer;">
+              <option value="INR" selected>INR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
             </select>
           </div>
           <div>
-            <label
-              style="display:block; font-size:0.73rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px;">Transaction
-              Mode</label>
-            <select id="addTxChannel" class="modal-styled-input" style="width:100%; box-sizing:border-box; padding:10px 12px; background:#1e293b; border:1px solid rgba(255, 255, 255, 0.15); border-radius:8px; color:#f8fafc; font-size:0.86rem; outline:none; cursor:pointer;">
-              <option value="CREDIT" selected style="background:#1e293b; color:#f8fafc;">CREDIT / Deposit</option>
-              <option value="DEBIT" style="background:#1e293b; color:#f8fafc;">DEBIT / Payment</option>
-              <option value="UPI" style="background:#1e293b; color:#f8fafc;">UPI</option>
-              <option value="BANK_TRANSFER" style="background:#1e293b; color:#f8fafc;">Bank Transfer</option>
-              <option value="CARD" style="background:#1e293b; color:#f8fafc;">Card</option>
+            <label style="display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;">Transaction Mode</label>
+            <select id="addTxChannel" class="modal-styled-input" style="width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 0.86rem; cursor: pointer;">
+              <option value="CREDIT" selected>CREDIT / Deposit</option>
+              <option value="DEBIT">DEBIT / Payment</option>
+              <option value="UPI">UPI</option>
+              <option value="BANK_TRANSFER">Bank Transfer</option>
+              <option value="CARD">Card</option>
             </select>
           </div>
         </div>
 
-        <div
-          style="display:flex; align-items:center; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255, 255, 255, 0.1); padding-top:18px;">
-          <button type="button" id="cancelAddTxBtn"
-            style="padding:10px 18px; border-radius:8px; border:1px solid rgba(255, 255, 255, 0.15); background:rgba(255, 255, 255, 0.05); color:#94a3b8; font-weight:600; font-size:0.86rem; cursor:pointer; transition:all 0.15s ease;">Cancel</button>
-          <button type="submit" id="submitAddTxBtn"
-            style="padding:10px 22px; border-radius:8px; border:none; background:linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color:#ffffff; font-weight:700; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; gap:8px; box-shadow:0 4px 14px rgba(37, 99, 235, 0.4); transition:all 0.15s ease;">
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 18px;">
+          <button type="button" class="btn btn-secondary" id="cancelAddTxBtn" style="padding: 10px 18px;">Cancel</button>
+          <button type="submit" id="submitAddTxBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px; padding: 10px 22px;">
             <span>Save &amp; Reconcile</span>
           </button>
         </div>
@@ -1414,72 +1391,50 @@
   <!-- ------------------------------------------------------------ -->
   <!-- Cash Forecast Day Details Modal Pop-Up -->
   <!-- ------------------------------------------------------------ -->
-  <div class="compare-modal-backdrop" id="forecastDayDetailsModalBackdrop"
-    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(6px);">
-    <div class="compare-modal-card"
-      style="width:100%; max-width:700px; background:var(--bg-surface-elevated, #111827); border:1px solid var(--border, #374151); border-radius:12px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.4); max-height:85vh; display:flex; flex-direction:column;">
-      <div
-        style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border, #374151); flex-shrink:0;">
-        <h3
-          style="margin:0; font-size:1.15rem; font-weight:700; color:var(--text-primary, #f9fafb); display:flex; align-items:center; gap:8px;">
+  <div class="compare-modal-backdrop" id="forecastDayDetailsModalBackdrop" style="display:none;">
+    <div class="compare-modal-card" style="max-width: 720px; padding: 24px; max-height: 85vh;">
+      <div class="compare-modal-header" style="padding: 0 0 16px 0; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2">
             <path d="M3 3v18h18" />
             <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
           </svg>
-          Cash Flow Details: <span id="fdModalDateLabel" style="color:var(--primary, #6366f1);"></span>
+          Cash Flow Details: <span id="fdModalDateLabel" style="color: var(--accent-blue);"></span>
         </h3>
-        <button type="button" id="closeFdModalBtn"
-          style="background:transparent; border:none; color:var(--text-muted, #9ca3af); cursor:pointer; font-size:1.2rem;">✕</button>
+        <button type="button" class="compare-modal-close" id="closeFdModalBtn" title="Close modal">✕</button>
       </div>
 
       <!-- KPI Summary Cards in Modal -->
-      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:20px; flex-shrink:0;">
-        <div
-          style="background:var(--bg-surface, #1f2937); padding:10px 14px; border-radius:8px; border:1px solid var(--border, #374151);">
-          <div
-            style="font-size:0.68rem; font-weight:700; color:var(--text-secondary, #9ca3af); text-transform:uppercase;">
-            Settled Today</div>
-          <div id="fdModalSettledToday" style="font-size:1.05rem; font-weight:700; color:#10b981; margin-top:2px;">0.00
-            <span style="font-size:0.7rem; color:var(--text-muted);">INR</span></div>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0; flex-shrink: 0;">
+        <div style="background: var(--bg-elevated); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Settled Today</div>
+          <div id="fdModalSettledToday" style="font-size: 1.05rem; font-weight: 700; color: var(--color-success); margin-top: 2px;">0.00 <span style="font-size: 0.7rem; color: var(--text-muted);">INR</span></div>
         </div>
-        <div
-          style="background:var(--bg-surface, #1f2937); padding:10px 14px; border-radius:8px; border:1px solid var(--border, #374151);">
-          <div
-            style="font-size:0.68rem; font-weight:700; color:var(--text-secondary, #9ca3af); text-transform:uppercase;">
-            Pending Today</div>
-          <div id="fdModalPendingToday" style="font-size:1.05rem; font-weight:700; color:#f59e0b; margin-top:2px;">0.00
-            <span style="font-size:0.7rem; color:var(--text-muted);">INR</span></div>
+        <div style="background: var(--bg-elevated); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Pending Today</div>
+          <div id="fdModalPendingToday" style="font-size: 1.05rem; font-weight: 700; color: var(--color-warning); margin-top: 2px;">0.00 <span style="font-size: 0.7rem; color: var(--text-muted);">INR</span></div>
         </div>
-        <div
-          style="background:var(--bg-surface, #1f2937); padding:10px 14px; border-radius:8px; border:1px solid var(--border, #374151);">
-          <div
-            style="font-size:0.68rem; font-weight:700; color:var(--text-secondary, #9ca3af); text-transform:uppercase;">
-            Cumulative Settled</div>
-          <div id="fdModalCumSettled" style="font-size:1.05rem; font-weight:700; color:#10b981; margin-top:2px;">0.00
-            <span style="font-size:0.7rem; color:var(--text-muted);">INR</span></div>
+        <div style="background: var(--bg-elevated); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Cumulative Settled</div>
+          <div id="fdModalCumSettled" style="font-size: 1.05rem; font-weight: 700; color: var(--color-success); margin-top: 2px;">0.00 <span style="font-size: 0.7rem; color: var(--text-muted);">INR</span></div>
         </div>
-        <div
-          style="background:var(--bg-surface, #1f2937); padding:10px 14px; border-radius:8px; border:1px solid var(--border, #374151);">
-          <div
-            style="font-size:0.68rem; font-weight:700; color:var(--text-secondary, #9ca3af); text-transform:uppercase;">
-            Cumulative Pending</div>
-          <div id="fdModalCumPending" style="font-size:1.05rem; font-weight:700; color:#f59e0b; margin-top:2px;">0.00
-            <span style="font-size:0.7rem; color:var(--text-muted);">INR</span></div>
+        <div style="background: var(--bg-elevated); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Cumulative Pending</div>
+          <div id="fdModalCumPending" style="font-size: 1.05rem; font-weight: 700; color: var(--color-warning); margin-top: 2px;">0.00 <span style="font-size: 0.7rem; color: var(--text-muted);">INR</span></div>
         </div>
       </div>
 
       <!-- Transaction List Table in Modal -->
-      <div style="flex-grow:1; overflow-y:auto; min-height:180px;">
-        <table style="width:100%; border-collapse:collapse; text-align:left;">
+      <div style="flex-grow: 1; overflow-y: auto; min-height: 180px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
           <thead>
-            <tr
-              style="border-bottom:1px solid var(--border, #374151); font-size:0.7rem; text-transform:uppercase; color:var(--text-secondary, #9ca3af);">
-              <th style="padding:8px 4px;">Source</th>
-              <th style="padding:8px 4px;">Description</th>
-              <th style="padding:8px 4px;">Reference ID</th>
-              <th style="padding:8px 4px; text-align:right;">Settled Amount</th>
-              <th style="padding:8px 4px; text-align:right;">Pending Amount</th>
-              <th style="padding:8px 4px; text-align:center;">Status</th>
+            <tr style="border-bottom: 1px solid var(--border); font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted);">
+              <th style="padding: 8px 4px;">Source</th>
+              <th style="padding: 8px 4px;">Description</th>
+              <th style="padding: 8px 4px;">Reference ID</th>
+              <th style="padding: 8px 4px; text-align: right;">Settled Amount</th>
+              <th style="padding: 8px 4px; text-align: right;">Pending Amount</th>
+              <th style="padding: 8px 4px; text-align: center;">Status</th>
             </tr>
           </thead>
           <tbody id="fdModalTableBody">
@@ -1488,10 +1443,8 @@
         </table>
       </div>
 
-      <div
-        style="display:flex; justify-content:flex-end; border-top:1px solid var(--border, #374151); padding-top:14px; margin-top:14px; flex-shrink:0;">
-        <button type="button" id="closeFdModalFooterBtn"
-          style="padding:8px 18px; border-radius:6px; border:1px solid var(--border, #4b5563); background:transparent; color:var(--text-secondary, #9ca3af); font-weight:600; cursor:pointer;">Close</button>
+      <div style="display: flex; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; flex-shrink: 0;">
+        <button type="button" class="btn btn-secondary" id="closeFdModalFooterBtn" style="padding: 8px 18px;">Close</button>
       </div>
     </div>
   </div>
