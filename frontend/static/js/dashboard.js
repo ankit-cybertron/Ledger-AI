@@ -101,10 +101,12 @@
     const tbReconcile = document.getElementById("topbarReconcileBtn") || document.querySelector("#topbarReconcileDropdown > .topbar-dropdown-btn");
     const tbReports = document.getElementById("topbarReportsBtn") || document.querySelector("#topbarExportsDropdown > .topbar-dropdown-btn");
     const tbAsk = document.getElementById("topbarAskBtn") || document.querySelector("a[href*='sub-talk-to-ledger']");
+    const tbForecast = document.getElementById("topbarForecastBtn");
 
     if (tbReconcile) tbReconcile.classList.toggle("active", ["sub-reconcile", "sub-manual-review", "sub-config"].includes(subId));
     if (tbReports) tbReports.classList.toggle("active", subId === "sub-reports");
     if (tbAsk) tbAsk.classList.toggle("active", subId === "sub-talk-to-ledger");
+    if (tbForecast) tbForecast.classList.toggle("active", subId === "sub-forecast");
 
     // ── Auto-accordion: open group containing active tab, collapse others ─────
     const subToGroup = {
@@ -115,6 +117,7 @@
       "sub-manual-review": "groupReconciliation",
       "sub-config": "groupReconciliation",
       "sub-reports": "groupExports",
+      "sub-forecast": "groupExports",
     };
     const activeGroup = subToGroup[subId] || null;
     ["groupSources", "groupReconciliation", "groupExports"].forEach((gId) => {
@@ -142,6 +145,8 @@
       _loadReportsPanel(true);
     } else if (subId === "sub-config") {
       _loadConfigPanel(true);
+    } else if (subId === "sub-forecast") {
+      window.loadForecastTab(true);
     }
   }
 
@@ -198,8 +203,9 @@
     Promise.all([
       fetch("/api/closed_periods").then(r => r.json()).catch(() => ({ periods: [] })),
       fetch("/api/report-html").then(r => r.json()).catch(() => ({})),
-      fetch("/api/statements").then(r => r.json()).catch(() => ({ statements: [] }))
-    ]).then(([closedRes, reportRes, stData]) => {
+      fetch("/api/statements").then(r => r.json()).catch(() => ({ statements: [] })),
+      fetch("/api/forecast?days=30").then(r => r.json()).catch(() => ({}))
+    ]).then(([closedRes, reportRes, stData, forecastRes]) => {
       _panelLoaded.reports = true;
       const closedPeriods = closedRes.periods || [];
       const reportData = reportRes.data || {};
@@ -207,8 +213,43 @@
       const transactions = reportData.transactions || [];
       const exceptions = reportData.exceptions || [];
       const integrity = reportData.integrity || {};
+      const fSum = forecastRes.summary || {};
 
-      let vaultContentInner = "";
+      let vaultContentInner = `
+        <!-- Cash Forecast Audit Card in Reports -->
+        <div style="background: var(--bg-surface); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: var(--radius-lg); padding: 22px 26px; margin-bottom: 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border);">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <h3 style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin:0;">Forward Cash Flow Forecast Report</h3>
+              </div>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin:4px 0 0;">30-Day moving average, recurring flow detection, and pending settlement lag analysis.</p>
+            </div>
+            <button type="button" onclick="activateSub('sub-forecast')" style="padding:7px 14px; background:#8b5cf6; color:#fff; border:none; border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
+              View Forecast Module &rarr;
+            </button>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
+            <div>
+              <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Current Settled Balance</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#10b981; margin-top:2px;">${(fSum.current_balance || 0).toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">30D Projected Ending Cash</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#8b5cf6; margin-top:2px;">${(fSum.forecast_30d_projected || 0).toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Pending Settlement Batches</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#f59e0b; margin-top:2px;">${fSum.pending_count || 0} Batches</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Recurring Flow Patterns</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#3b82f6; margin-top:2px;">${fSum.detected_patterns || 0} Patterns</div>
+            </div>
+          </div>
+        </div>
+      `;
 
       // 1. Spotlight Card for Latest Closed Period
       if (closedPeriods.length > 0) {
@@ -941,8 +982,9 @@
 
     Promise.all([
       fetch("/api/reconciliation").then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      fetch("/api/statements").then(r => r.ok ? r.json() : {}).catch(() => ({}))
-    ]).then(([reconRes, stmtRes]) => {
+      fetch("/api/statements").then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch("/api/forecast?days=30").then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    ]).then(([reconRes, stmtRes, forecastRes]) => {
       _panelLoaded.overview = true;
       const run = reconRes.run || {};
       const s = run.summary || {};
@@ -958,20 +1000,30 @@
 
       const statements = stmtRes.statements || [];
 
+      const fSum = forecastRes.summary || {};
+      const projCash = fSum.forecast_30d_projected || 0;
+      const pendingCount = fSum.pending_count || 0;
+
       wrap.innerHTML = `
-        <div style="padding: 24px 28px; max-width: 1100px; margin: 0 auto;">
+        <div style="padding: 20px 24px; width: 100%; box-sizing: border-box;">
           <!-- Executive Header -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px;">
             <div>
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin: 0;">Executive Overview</h2>
                 <span style="font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: ${total ? 'var(--accent-blue-subtle)' : 'var(--bg-elevated)'}; color: ${total ? 'var(--accent-blue)' : 'var(--text-muted)'}; border: 1px solid var(--border);">
                   ${total ? (run.closed ? 'FULLY CLOSED' : 'ACTIVE RUN') : 'AWAITING RUN'}
                 </span>
               </div>
-              <p style="font-size: 0.88rem; color: var(--text-muted); margin: 4px 0 0;">Real-time automated reconciliation status & financial balance integrity</p>
+              <div style="font-size: 0.83rem; color: var(--text-muted); margin-top: 4px;">
+                High-level reconciliation analytics, cash positions, and forward projections.
+              </div>
             </div>
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <button type="button" onclick="activateSub('sub-forecast')" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <span>View Full Forecast</span>
+              </button>
               <button type="button" onclick="activateSub('sub-reconcile')" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--accent-blue); color: #fff; border: none; border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>
                 <span>Auto Match</span>
@@ -979,36 +1031,46 @@
             </div>
           </div>
 
-          <!-- 4 Core Metric Cards Grid -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <!-- 5 Core Metric Cards Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
             <!-- Card 1: Total Transactions -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px;">
-              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Total Transactions</div>
-              <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">${total.toLocaleString()}</div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary);">
-                Payments: <span style="color: #ef4444; font-weight: 600;">-${formatMoney(Math.abs(payments), false)}</span> | Deposits: <span style="color: #10b981; font-weight: 600;">+${formatMoney(Math.abs(deposits), false)}</span>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; min-width: 0;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total Transactions</div>
+              <div style="font-family: var(--font-mono); font-size: clamp(1.2rem, 1.5vw, 1.6rem); font-weight: 700; color: var(--text-primary); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${total.toLocaleString()}</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); word-break: break-word; line-height: 1.4;">
+                Payments: <span style="color: #ef4444; font-weight: 600;">-${formatMoney(Math.abs(payments), false)}</span><br/>Deposits: <span style="color: #10b981; font-weight: 600;">+${formatMoney(Math.abs(deposits), false)}</span>
               </div>
             </div>
 
             <!-- Card 2: Auto-Matched Rate -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px;">
-              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Matched Rate</div>
-              <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: var(--color-success); margin-bottom: 6px;">${pct}%</div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary);">${totalMatched} of ${total} entries reconciled</div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; min-width: 0;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Matched Rate</div>
+              <div style="font-family: var(--font-mono); font-size: clamp(1.2rem, 1.5vw, 1.6rem); font-weight: 700; color: var(--color-success); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pct}%</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); word-break: break-word; line-height: 1.4;">${totalMatched} of ${total} entries reconciled</div>
             </div>
 
             <!-- Card 3: Open Exception Items -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px;">
-              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Open Exceptions</div>
-              <div style="font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; color: ${unmatched > 0 ? 'var(--color-warning)' : 'var(--text-primary)'}; margin-bottom: 6px;">${unmatched}</div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary);">${unmatched ? 'Requires manual audit review' : 'No open exceptions'}</div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; min-width: 0;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Open Exceptions</div>
+              <div style="font-family: var(--font-mono); font-size: clamp(1.2rem, 1.5vw, 1.6rem); font-weight: 700; color: ${unmatched > 0 ? 'var(--color-warning)' : 'var(--text-primary)'}; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${unmatched}</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); word-break: break-word; line-height: 1.4;">${unmatched ? 'Requires manual audit review' : 'No open exceptions'}</div>
             </div>
 
             <!-- Card 4: Unreconciled Variance -->
-            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px;">
-              <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;">Unreconciled Discrepancy</div>
-              <div style="font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: ${variance > 0 ? 'var(--color-danger)' : 'var(--text-primary)'}; margin-bottom: 6px;">${formatMoney(variance, false)}</div>
-              <div style="font-size: 0.8rem; color: var(--text-secondary);">Net variance balance</div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; min-width: 0;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Unreconciled Discrepancy</div>
+              <div style="font-family: var(--font-mono); font-size: clamp(1.1rem, 1.4vw, 1.5rem); font-weight: 700; color: ${variance > 0 ? 'var(--color-danger)' : 'var(--text-primary)'}; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${formatMoney(variance, false)}">${formatMoney(variance, false)}</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); word-break: break-word; line-height: 1.4;">Net variance balance</div>
+            </div>
+
+            <!-- Card 5: 30D Cash Forecast Projection -->
+            <div style="background: var(--bg-surface); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: var(--radius-lg); padding: 16px 18px; min-width: 0;">
+              <div style="font-size: 0.72rem; font-weight: 700; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display:flex; align-items:center; gap:6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                30D Projected Ending Cash
+              </div>
+              <div style="font-family: var(--font-mono); font-size: clamp(1.1rem, 1.4vw, 1.5rem); font-weight: 700; color: #8b5cf6; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${formatMoney(projCash, false)}">${formatMoney(projCash, false)}</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); word-break: break-word; line-height: 1.4;">${pendingCount} pending settlement batches</div>
             </div>
           </div>
 
@@ -1623,6 +1685,9 @@
     const navConfig = document.getElementById("navConfig");
     if (navConfig) navConfig.addEventListener("click", (e) => { e.preventDefault(); activateSub("sub-config"); });
 
+    const navForecast = document.getElementById("topbarForecastBtn");
+    if (navForecast) navForecast.addEventListener("click", (e) => { e.preventDefault(); activateSub("sub-forecast"); });
+
     // ── Group Accordion Toggles ──────────────────────────────────────────
     ["groupSources", "groupReconciliation", "groupExports"].forEach((groupId) => {
       const groupEl = document.getElementById(groupId);
@@ -1849,6 +1914,21 @@
       topbarSourcesEl.innerHTML = '<span class="topbar-dropdown-empty">No statement sources loaded</span>';
       return;
     }
+
+    const masterItem = document.createElement("a");
+    masterItem.className = "topbar-dropdown-item";
+    masterItem.href = "javascript:void(0)";
+    masterItem.onclick = (e) => {
+      e.preventDefault();
+      if (typeof window.openUnifiedSourceView === "function") window.openUnifiedSourceView();
+    };
+    masterItem.innerHTML = `
+      <span style="font-weight:700; color:#3b82f6; display:flex; align-items:center; gap:6px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        All Sources (Master Table)
+      </span>
+    `;
+    topbarSourcesEl.appendChild(masterItem);
 
     statements.forEach((stmt, idx) => {
       const dotColor = getStatementColor(stmt, idx);
@@ -2675,6 +2755,177 @@
 
   let activeStatementLoadedRows = [];
   let isEditingStatementRows = false;
+  let unifiedMasterRows = [];
+
+  window.openUnifiedSourceView = async function() {
+    activateSub("sub-unified-sources");
+    const bodyEl = document.getElementById("unifiedMasterTableBody");
+    if (bodyEl) {
+      bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);"><div class="spinner" style="margin:0 auto 10px; display:block;"></div> Loading Unified Master Source Table…</td></tr>';
+    }
+
+    try {
+      const res = await window.LedgerApi.getStatements();
+      const stmts = res.statements || [];
+      const sourceSelect = document.getElementById("unifiedSourceFilterSelect");
+      if (sourceSelect) {
+        sourceSelect.innerHTML = '<option value="all" selected>All Sources</option>';
+        stmts.forEach((s) => {
+          sourceSelect.innerHTML += `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`;
+        });
+      }
+
+      const allRows = [];
+      let totalSettled = 0;
+      let totalMatched = 0;
+      let totalUnmatched = 0;
+
+      for (let i = 0; i < stmts.length; i++) {
+        const s = stmts[i];
+        try {
+          const detail = await window.LedgerApi.getStatementDetail(s.id);
+          const stmtData = detail.statement || s;
+          const rows = stmtData.rows || [];
+          const color = getStatementColor(stmtData, i);
+
+          rows.forEach((r) => {
+            const tax = (r.status || "UNMATCHED").toUpperCase();
+            if (tax === "SETTLED") totalSettled++;
+            else if (tax === "MATCHED") totalMatched++;
+            else totalUnmatched++;
+
+            allRows.push({
+              source_id: s.id,
+              source_name: s.name,
+              source_color: color,
+              date: r.date || r.transaction_date || r.Date || r["Value Date"] || "",
+              description: r.description || r.narration || r.Details || r.Description || "",
+              utr: r.utr || r.transaction_id || r.reference_number || r.rrn || r.id || "—",
+              amount: parseFloat(r.amount || r.net_amount || r.gross_amount || 0),
+              currency: r.currency || "INR",
+              taxonomy_status: tax
+            });
+          });
+        } catch (e) {
+          console.warn("Failed loading detail for statement:", s.id, e);
+        }
+      }
+
+      unifiedMasterRows = allRows;
+
+      const statSources = document.getElementById("unifiedStatSourcesCount");
+      const statTotal = document.getElementById("unifiedStatTotalRows");
+      const statSettled = document.getElementById("unifiedStatSettledRows");
+      const statMatched = document.getElementById("unifiedStatMatchedRows");
+      const statUnmatched = document.getElementById("unifiedStatUnmatchedRows");
+
+      if (statSources) statSources.textContent = stmts.length;
+      if (statTotal) statTotal.textContent = allRows.length.toLocaleString();
+      if (statSettled) statSettled.textContent = totalSettled.toLocaleString();
+      if (statMatched) statMatched.textContent = totalMatched.toLocaleString();
+      if (statUnmatched) statUnmatched.textContent = totalUnmatched.toLocaleString();
+
+      filterAndRenderUnifiedTable();
+      initUnifiedTableFilterListeners();
+    } catch (err) {
+      console.error("Error building unified master table:", err);
+      if (bodyEl) {
+        bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load unified table: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+  };
+
+  function initUnifiedTableFilterListeners() {
+    const sInput = document.getElementById("unifiedSearchInput");
+    const srcSelect = document.getElementById("unifiedSourceFilterSelect");
+    const stSelect = document.getElementById("unifiedStatusFilterSelect");
+
+    if (sInput && !sInput._bound) {
+      sInput._bound = true;
+      sInput.addEventListener("input", filterAndRenderUnifiedTable);
+    }
+    if (srcSelect && !srcSelect._bound) {
+      srcSelect._bound = true;
+      srcSelect.addEventListener("change", filterAndRenderUnifiedTable);
+    }
+    if (stSelect && !stSelect._bound) {
+      stSelect._bound = true;
+      stSelect.addEventListener("change", filterAndRenderUnifiedTable);
+    }
+  }
+
+  function filterAndRenderUnifiedTable() {
+    const bodyEl = document.getElementById("unifiedMasterTableBody");
+    const countText = document.getElementById("unifiedFilteredCountText");
+    if (!bodyEl) return;
+
+    const query = (document.getElementById("unifiedSearchInput")?.value || "").toLowerCase().trim();
+    const sourceFilter = document.getElementById("unifiedSourceFilterSelect")?.value || "all";
+    const statusFilter = document.getElementById("unifiedStatusFilterSelect")?.value || "all";
+
+    const filtered = unifiedMasterRows.filter((r) => {
+      if (sourceFilter !== "all" && r.source_id !== sourceFilter) return false;
+      if (statusFilter !== "all" && r.taxonomy_status !== statusFilter) return false;
+      if (query) {
+        const text = `${r.source_name} ${r.date} ${r.description} ${r.utr} ${r.amount} ${r.taxonomy_status}`.toLowerCase();
+        if (!text.includes(query)) return false;
+      }
+      return true;
+    });
+
+    if (countText) {
+      countText.textContent = `Showing ${filtered.length.toLocaleString()} of ${unifiedMasterRows.length.toLocaleString()} rows`;
+    }
+
+    if (filtered.length === 0) {
+      bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">No transaction records match the current filter selection.</td></tr>';
+      return;
+    }
+
+    bodyEl.innerHTML = filtered.map((r) => {
+      let badgeBg = "rgba(239, 68, 68, 0.15)";
+      let badgeColor = "#f87171";
+      let badgeBorder = "rgba(239, 68, 68, 0.4)";
+      if (r.taxonomy_status === "SETTLED") {
+        badgeBg = "rgba(16, 185, 129, 0.15)";
+        badgeColor = "#34d399";
+        badgeBorder = "rgba(16, 185, 129, 0.4)";
+      } else if (r.taxonomy_status === "MATCHED") {
+        badgeBg = "rgba(59, 130, 246, 0.15)";
+        badgeColor = "#60a5fa";
+        badgeBorder = "rgba(59, 130, 246, 0.4)";
+      } else if (r.taxonomy_status === "SIMILAR") {
+        badgeBg = "rgba(245, 158, 11, 0.15)";
+        badgeColor = "#fbbf24";
+        badgeBorder = "rgba(245, 158, 11, 0.4)";
+      }
+
+      const amtColor = r.amount >= 0 ? "#10b981" : "#ef4444";
+      const amtSign = r.amount >= 0 ? "+" : "";
+
+      return `
+        <tr style="border-bottom:1px solid var(--border); transition:background-color 0.15s ease;">
+          <td style="padding:10px 14px;">
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border);">
+              <span style="width:7px; height:7px; border-radius:50%; background:${r.source_color}; display:inline-block;"></span>
+              <span style="font-weight:600; font-size:0.78rem; color:var(--text-primary);">${escapeHtml(r.source_name)}</span>
+            </div>
+          </td>
+          <td style="padding:10px 14px; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;">${escapeHtml(formatDateDDMMYYYY(r.date))}</td>
+          <td style="padding:10px 14px;">
+            <div style="font-size:0.83rem; font-weight:500; color:var(--text-primary); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</div>
+          </td>
+          <td style="padding:10px 14px; font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted); font-weight:600;">${escapeHtml(r.utr)}</td>
+          <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:0.85rem; font-weight:700; color:${amtColor};">
+            <span style="font-size:0.7rem; color:var(--text-muted); margin-right:4px;">${r.currency}</span>${amtSign}${r.amount.toFixed(2)}
+          </td>
+          <td style="padding:10px 14px; text-align:center;">
+            <span style="display:inline-block; padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.72rem; letter-spacing:0.04em; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder};">${r.taxonomy_status}</span>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
 
   async function openStatementView(statementId, searchQuery = "") {
     if (!statementId) return;
@@ -2982,29 +3233,33 @@
       toast.style.display = "flex";
       toast.style.alignItems = "center";
       toast.style.gap = "8px";
+      toast.innerHTML = `<span id="toastIconSpan"></span><span id="toastTextSpan"></span>`;
       document.body.appendChild(toast);
     }
 
-    let iconSvg = "";
+    const iconSpan = toast.querySelector("#toastIconSpan");
+    const textSpan = toast.querySelector("#toastTextSpan");
 
     if (type === "success") {
       toast.style.background = "#15803d";
       toast.style.color = "#ffffff";
       toast.style.border = "1px solid #22c55e";
-      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+      if (iconSpan) iconSpan.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
     } else if (type === "info" || type === "loading") {
       toast.style.background = "#1e3a8a";
       toast.style.color = "#ffffff";
       toast.style.border = "1px solid #3b82f6";
-      iconSvg = '<span class="spinner" style="width:16px; height:16px; border-width:2px; border-color:#ffffff #ffffff transparent transparent; margin-right:4px;"></span>';
+      if (iconSpan && !iconSpan.querySelector(".spinner")) {
+        iconSpan.innerHTML = '<span class="spinner" style="width:16px; height:16px; border-width:2px; margin-right:4px;"></span>';
+      }
     } else {
       toast.style.background = "#dc2626";
       toast.style.color = "#ffffff";
       toast.style.border = "1px solid #ef4444";
-      iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      if (iconSpan) iconSpan.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
     }
 
-    toast.innerHTML = `${iconSvg} <span>${msg}</span>`;
+    if (textSpan) textSpan.textContent = msg;
     toast.style.opacity = "1";
     toast.style.transform = "translateY(0)";
 
@@ -3866,7 +4121,7 @@
       segUnreconciledEl.style.display = "none";
     }
 
-    document.getElementById("statBeginning").textContent = formatMoney(s.beginning_balance, false);
+    document.getElementById("statBeginning").textContent = formatMoney(s.beginning_balance || 0, false);
 
     const payEl = document.getElementById("statPayments");
     if (payEl) {
@@ -3880,6 +4135,29 @@
       depEl.textContent = `+${Math.abs(s.deposits_total || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       depEl.style.color = "#10b981";
       depEl.style.fontWeight = "600";
+    }
+
+    // Settled & Pending Amount calculation
+    let settledAmtSum = 0;
+    let pendingAmtSum = 0;
+    (currentTransactions || []).forEach(t => {
+      const st = (t.status || "").toUpperCase();
+      const amt = Math.abs(t.amount || 0);
+      if (st === "SETTLED" || st === "MATCHED") {
+        settledAmtSum += amt;
+      } else {
+        pendingAmtSum += amt;
+      }
+    });
+
+    const setAmtEl = document.getElementById("statSettledAmt");
+    if (setAmtEl) {
+      setAmtEl.textContent = formatMoney(settledAmtSum, false);
+    }
+
+    const penAmtEl = document.getElementById("statPendingAmt");
+    if (penAmtEl) {
+      penAmtEl.textContent = formatMoney(pendingAmtSum, false);
     }
 
     const varianceEl = document.getElementById("statVariance");
@@ -4865,10 +5143,12 @@
 
     try {
       startPipelineProgressPoller("Setting Primary Statement...", async () => {
+        stateManager.invalidate();
+        for (const k in _panelLoaded) delete _panelLoaded[k];
         await loadSidebarSources();
         await loadStatementsTable();
         if (activeStatementId) await openStatementView(activeStatementId);
-        await triggerAutoMatch();
+        await hydrateExistingRun();
       });
 
       await window.LedgerApi.setPrimaryStatement(statementId);
@@ -5046,44 +5326,454 @@
     }
   }
 
-  function initTestCaseLoaders() {
-    document.querySelectorAll(".btn-test-load").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const testcase = btn.dataset.testcase;
-        if (!testcase) return;
+  window.toggleBenchmarkSection = function() {
+    const body = document.getElementById("benchmarkBody");
+    const chevron = document.getElementById("benchmarkChevron");
+    if (!body) return;
+    if (body.style.display === "none") {
+      body.style.display = "block";
+      if (chevron) chevron.style.transform = "rotate(180deg)";
+    } else {
+      body.style.display = "none";
+      if (chevron) chevron.style.transform = "rotate(0deg)";
+    }
+  };
 
-        const origHtml = btn.innerHTML;
-        const allBtns = document.querySelectorAll(".btn-test-load");
-        allBtns.forEach((b) => (b.disabled = true));
-        btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Loading ${testcase}...`;
+  async function initTestCaseLoaders() {
+    const container = document.getElementById("testDataGridContainer");
+    const badge = document.getElementById("benchmarkCountBadge");
+    if (!container) return;
 
-        try {
-          const res = await fetch("/api/load_test_case", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ test_case: testcase }),
-          });
-          const data = await res.json();
+    try {
+      const res = await window.LedgerApi.getTestCases();
+      const cases = res.test_cases || [];
 
-          if (data.ok || data.success) {
-            sessionStorage.setItem("ledger_data_loaded", "true");
-            await loadSidebarSources();
-            await loadStatementsTable();
-            await hydrateExistingRun();
-            const overviewTab = document.querySelector('[data-tab="sub-overview"]');
-            if (overviewTab) overviewTab.click();
-          } else {
-            alert(data.error || "Failed to load test case.");
+      if (badge) {
+        badge.textContent = `${cases.length} benchmark ${cases.length === 1 ? 'case' : 'cases'} available`;
+      }
+
+      if (cases.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-muted); font-size:0.8rem;">No test cases found in test_cases/ folder.</div>`;
+        return;
+      }
+
+      container.innerHTML = cases.map(c => `
+        <button type="button" class="btn btn-test-load test-case-${c.name.toLowerCase()}" data-testcase="${c.name}">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>${c.name}</span>
+          </div>
+          <span class="test-file-badge">${c.file_count} files</span>
+        </button>
+      `).join("");
+
+      container.querySelectorAll(".btn-test-load").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const testcase = btn.dataset.testcase;
+          if (!testcase) return;
+
+          const origHtml = btn.innerHTML;
+          const allBtns = container.querySelectorAll(".btn-test-load");
+          allBtns.forEach((b) => (b.disabled = true));
+          btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></span> Loading ${testcase}...`;
+
+          try {
+            const res = await fetch("/api/load_test_case", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ test_case: testcase }),
+            });
+            const data = await res.json();
+
+            if (data.ok || data.success) {
+              sessionStorage.setItem("ledger_data_loaded", "true");
+              await loadSidebarSources();
+              await loadStatementsTable();
+              await hydrateExistingRun();
+              const overviewTab = document.querySelector('[data-tab="sub-overview"]');
+              if (overviewTab) overviewTab.click();
+            } else {
+              alert(data.error || "Failed to load test case.");
+            }
+          } catch (err) {
+            console.error("Test load error:", err);
+            alert("Error loading test case: " + err.message);
+          } finally {
+            btn.innerHTML = origHtml;
+            allBtns.forEach((b) => (b.disabled = false));
           }
-        } catch (err) {
-          console.error("Test load error:", err);
-          alert("Error loading test case: " + err.message);
-        } finally {
-          btn.innerHTML = origHtml;
-          allBtns.forEach((b) => (b.disabled = false));
-        }
+        });
       });
+    } catch (err) {
+      console.warn("Failed to load dynamic test cases:", err);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Forward Cash Forecaster (Part 24)
+  // ------------------------------------------------------------------
+  window.forecastChartInstance = null;
+
+  window.loadForecastTab = function loadForecastTab(force) {
+    const horizonSelect = document.getElementById("forecastDaysSelect");
+    const horizon = horizonSelect ? horizonSelect.value : 30;
+
+    window.LedgerApi.getCashForecast(horizon).then(data => {
+      if (!data.ok) return;
+
+      // Update KPI Cards
+      const curBalEl = document.getElementById("forecastCurrentBalance");
+      if (curBalEl) curBalEl.textContent = (data.summary.current_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      const projBalEl = document.getElementById("forecastProjectedBalance");
+      if (projBalEl) projBalEl.textContent = (data.summary.forecast_30d_projected || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      const pendingAmtEl = document.getElementById("forecastPendingSettlements");
+      if (pendingAmtEl) {
+        const sumPending = (data.pending_settlements || []).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+        pendingAmtEl.textContent = sumPending.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      const pendingCntEl = document.getElementById("forecastPendingCount");
+      if (pendingCntEl) pendingCntEl.textContent = `${data.pending_settlements?.length || 0} batches expected (T+N lag)`;
+
+      const recCntEl = document.getElementById("forecastRecurringCount");
+      if (recCntEl) recCntEl.textContent = data.recurring_patterns?.length || 0;
+
+      // Update Recurring Patterns Table
+      const patternsBody = document.getElementById("forecastPatternsTableBody");
+      if (patternsBody) {
+        if (!data.recurring_patterns || data.recurring_patterns.length === 0) {
+          patternsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No recurring patterns detected.</td></tr>`;
+        } else {
+          patternsBody.innerHTML = data.recurring_patterns.map(p => {
+            const flowColor = p.avg_amount < 0 ? "#ef4444" : "#10b981";
+            const confidencePct = Math.round(p.confidence * 100);
+            return `
+              <tr style="border-bottom:1px solid var(--border); transition: background-color 0.2s;">
+                <td style="padding:10px 4px;">
+                  <div style="font-weight:600; color:var(--text-primary); max-width: 180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.sample_desc}">${p.label}</div>
+                  <div style="font-size:10px; color:var(--text-muted); max-width: 180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.sample_desc}</div>
+                </td>
+                <td style="padding:10px 4px; text-align:right; font-family:var(--font-mono); font-weight:600; color:${flowColor};"><span style="font-size:10px; color:var(--text-muted); margin-right:3px;">${p.currency || 'INR'}</span>${p.avg_amount < 0 ? '-' : ''}${Math.abs(p.avg_amount).toFixed(2)}</td>
+                <td style="padding:10px 4px; text-align:center; color:var(--text-secondary);">${p.cadence_label}</td>
+                <td style="padding:10px 4px; text-align:center; color:var(--text-secondary); font-family:var(--font-mono);">${formatDateDDMMYYYY(p.next_expected)}</td>
+                <td style="padding:10px 4px; text-align:right;">
+                  <span style="display:inline-block; padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px; background:rgba(59, 130, 246, 0.1); color:#3b82f6;">${confidencePct}%</span>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      // Update Pending Settlements Table
+      const pendingBody = document.getElementById("forecastPendingTableBody");
+      if (pendingBody) {
+        if (!data.pending_settlements || data.pending_settlements.length === 0) {
+          pendingBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No pending settlements.</td></tr>`;
+        } else {
+          pendingBody.innerHTML = data.pending_settlements.map(ps => {
+            return `
+              <tr style="border-bottom:1px solid var(--border); transition: background-color 0.2s;">
+                <td style="padding:10px 4px; max-width: 160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${ps.description}">${ps.description}</td>
+                <td style="padding:10px 4px; text-align:right; font-family:var(--font-mono); font-weight:600; color:#10b981;"><span style="font-size:10px; color:var(--text-muted); margin-right:3px;">${ps.currency || 'INR'}</span>${ps.amount.toFixed(2)}</td>
+                <td style="padding:10px 4px; text-align:center; color:var(--text-secondary); font-family:var(--font-mono);">${formatDateDDMMYYYY(ps.initiated_date)}</td>
+                <td style="padding:10px 4px; text-align:center; color:var(--text-secondary); font-family:var(--font-mono);">${formatDateDDMMYYYY(ps.expected_settlement)}</td>
+                <td style="padding:10px 4px; text-align:right;"><span style="display:inline-block; padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px; background:rgba(245, 158, 11, 0.1); color:#f59e0b;">${ps.status}</span></td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      // Render Chart
+      renderForecastChart(data);
+    }).catch(err => {
+      console.error("Failed to load forecast data:", err);
     });
+  };
+
+  function renderForecastChart(data) {
+    const canvas = document.getElementById("cashForecastChartCanvas");
+    if (!canvas) return;
+
+    if (window.forecastChartInstance) {
+      window.forecastChartInstance.destroy();
+      window.forecastChartInstance = null;
+    }
+
+    const hist = data.historical || [];
+    const fore = data.forecast || [];
+
+    if (hist.length === 0 && fore.length === 0) return;
+
+    // Combine labels
+    const labels = [];
+    const rawDates = [];
+    const historicalData = [];
+    const projectedData = [];
+    const lowerBandData = [];
+    const upperBandData = [];
+
+    // Add historical values
+    hist.forEach(h => {
+      labels.push(formatPeriodLabel(h.date));
+      rawDates.push(h.date);
+      historicalData.push(h.cumulative);
+      projectedData.push(null);
+      lowerBandData.push(null);
+      upperBandData.push(null);
+    });
+
+    // We want the projection line to connect to the last historical point
+    const lastHistVal = hist.length > 0 ? hist[hist.length - 1].cumulative : 0;
+
+    if (fore.length > 0 && hist.length > 0) {
+      const lastIdx = hist.length - 1;
+      projectedData[lastIdx] = lastHistVal;
+      lowerBandData[lastIdx] = lastHistVal;
+      upperBandData[lastIdx] = lastHistVal;
+    }
+
+    // Add forecast values
+    fore.forEach(f => {
+      labels.push(formatPeriodLabel(f.date));
+      rawDates.push(f.date);
+      historicalData.push(null);
+      projectedData.push(f.cumulative);
+      lowerBandData.push(f.lower_band);
+      upperBandData.push(f.upper_band);
+    });
+
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+    const textColor = isLight ? '#374151' : '#9ca3af';
+
+    const ctx = canvas.getContext("2d");
+    window.forecastChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Historical Settled',
+            data: historicalData,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.05)',
+            borderWidth: 2.5,
+            fill: true,
+            pointRadius: hist.length > 100 ? 0 : 2,
+            pointHoverRadius: 5,
+            tension: 0.1
+          },
+          {
+            label: 'Lower Bound',
+            data: lowerBandData,
+            borderColor: 'rgba(139, 92, 246, 0.25)',
+            borderWidth: 1,
+            fill: false,
+            pointRadius: 0,
+            tension: 0.1
+          },
+          {
+            label: 'Projected Balance',
+            data: projectedData,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            tension: 0.1
+          },
+          {
+            label: 'Upper Bound',
+            data: upperBandData,
+            borderColor: 'rgba(139, 92, 246, 0.25)',
+            borderWidth: 1,
+            fill: 1, // fill down to Lower Bound (index 1)
+            backgroundColor: 'rgba(139, 92, 246, 0.07)',
+            pointRadius: 0,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        onClick: (event, elements) => {
+          if (elements && elements.length > 0) {
+            const firstPoint = elements[0];
+            const index = firstPoint.index;
+            const clickedDate = rawDates[index];
+            if (clickedDate) {
+              openForecastDayDetailsModal(clickedDate);
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (context.parsed.y !== null) {
+                  label += ': ' + context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: gridColor
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10
+              },
+              maxTicksLimit: 12
+            }
+          },
+          y: {
+            grid: {
+              color: gridColor
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function openForecastDayDetailsModal(date) {
+    const backdrop = document.getElementById("forecastDayDetailsModalBackdrop");
+    if (!backdrop) return;
+
+    document.getElementById("fdModalDateLabel").textContent = formatDateDDMMYYYY(date);
+    document.getElementById("fdModalSettledToday").innerHTML = `Loading...`;
+    document.getElementById("fdModalPendingToday").innerHTML = `Loading...`;
+    document.getElementById("fdModalCumSettled").innerHTML = `Loading...`;
+    document.getElementById("fdModalCumPending").innerHTML = `Loading...`;
+    const tbody = document.getElementById("fdModalTableBody");
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-secondary);">Loading transactions for ${formatDateDDMMYYYY(date)}...</td></tr>`;
+
+    backdrop.style.display = "flex";
+
+    window.LedgerApi.getForecastDayDetails(date)
+      .then(data => {
+        if (!data || !data.ok) {
+          throw new Error(data.message || "Failed to load details");
+        }
+
+        const dateTag = data.is_future ? '(Projected Cash)' : '(Historical Settled)';
+        document.getElementById("fdModalDateLabel").textContent = `${formatDateDDMMYYYY(date)} ${dateTag}`;
+
+        let settledToday = 0;
+        let pendingToday = 0;
+        let mainCurrency = "INR";
+        tbody.innerHTML = "";
+
+        if (data.transactions && data.transactions.length > 0) {
+          data.transactions.forEach(t => {
+            settledToday += t.settled_amount || 0;
+            pendingToday += t.pending_amount || 0;
+            if (t.currency && t.currency !== "INR") mainCurrency = t.currency;
+
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid var(--border, #374151)";
+            tr.style.fontSize = "0.75rem";
+            tr.style.color = "var(--text-primary)";
+
+            let badgeBg = "var(--bg-surface, #1f2937)";
+            let badgeColor = "var(--text-secondary, #9ca3af)";
+            if (t.status === "SETTLED") {
+              badgeBg = "rgba(16, 185, 129, 0.15)";
+              badgeColor = "#10b981";
+            } else if (t.status === "PENDING" || String(t.status).includes("PROJECTED") || String(t.status).includes("EXPECTED")) {
+              badgeBg = "rgba(245, 158, 11, 0.15)";
+              badgeColor = "#f59e0b";
+            }
+
+            const formatAmt = (val) => val && val !== 0 ? val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : "-";
+            const rowCurr = t.currency || "INR";
+
+            tr.innerHTML = `
+              <td style="padding:10px 4px; font-weight:600;">${t.source}</td>
+              <td style="padding:10px 4px; color:var(--text-secondary);">${t.description}</td>
+              <td style="padding:10px 4px; font-family:var(--font-mono); color:var(--text-muted); font-size:0.7rem;">${t.ref || '-'}</td>
+              <td style="padding:10px 4px; text-align:right; font-weight:600; color:#10b981;"><span style="font-size:0.65rem; color:var(--text-muted); margin-right:3px;">${rowCurr}</span>${formatAmt(t.settled_amount)}</td>
+              <td style="padding:10px 4px; text-align:right; font-weight:600; color:#f59e0b;"><span style="font-size:0.65rem; color:var(--text-muted); margin-right:3px;">${rowCurr}</span>${formatAmt(t.pending_amount)}</td>
+              <td style="padding:10px 4px; text-align:center;">
+                <span style="padding:2px 8px; border-radius:12px; font-size:0.65rem; font-weight:700; background:${badgeBg}; color:${badgeColor};">${t.status}</span>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-muted);">No active transactions recorded for this day.</td></tr>`;
+        }
+
+        document.getElementById("fdModalSettledToday").innerHTML = `${settledToday.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalPendingToday").innerHTML = `${pendingToday.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalCumSettled").innerHTML = `${(data.total_settled_cumulative || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalCumPending").innerHTML = `${(data.total_pending_cumulative || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+      })
+      .catch(err => {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:20px; text-align:center; color:#ef4444;">Error loading details: ${err.message}</td></tr>`;
+      });
+  }
+
+  window.editBeginningBalance = function() {
+    const statEl = document.getElementById("statBeginning");
+    const current = statEl ? statEl.textContent.replace(/,/g, '') : "0.00";
+    const input = prompt("Enter Beginning Balance amount:", current || "0.00");
+    if (input !== null && input.trim() !== "") {
+      const num = parseFloat(input);
+      if (!isNaN(num)) {
+        window.LedgerApi.updateBeginningBalance(num)
+          .then(() => {
+            if (statEl) statEl.textContent = formatMoney(num, false);
+            if (typeof _loadOverviewPanel === "function") _loadOverviewPanel(true);
+            if (typeof _loadForecastPanel === "function") _loadForecastPanel(true);
+            if (typeof _loadReportsPanel === "function") _loadReportsPanel(true);
+            showNotificationToast(`Beginning balance updated to ${formatMoney(num, false)}`, "success");
+          })
+          .catch(err => alert("Failed to update beginning balance: " + (err.message || err)));
+      } else {
+        alert("Please enter a valid numeric balance.");
+      }
+    }
+  };
+
+  function initForecastModalHandlers() {
+    const fdModal = document.getElementById("forecastDayDetailsModalBackdrop");
+    const closeFdBtn = document.getElementById("closeFdModalBtn");
+    const closeFdFooterBtn = document.getElementById("closeFdModalFooterBtn");
+    const closeFdModal = () => {
+      if (fdModal) fdModal.style.display = "none";
+    };
+    if (closeFdBtn) closeFdBtn.addEventListener("click", closeFdModal);
+    if (closeFdFooterBtn) closeFdFooterBtn.addEventListener("click", closeFdModal);
+    if (fdModal) {
+      fdModal.addEventListener("click", (e) => {
+        if (e.target === fdModal) closeFdModal();
+      });
+    }
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
@@ -5100,6 +5790,7 @@
     initReconcile();
     initCompareModal();
     initTestCaseLoaders();
+    initForecastModalHandlers();
 
     let hasData = false;
     try {

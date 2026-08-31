@@ -243,6 +243,20 @@ const LedgerApi = {
   sendChatMessage(sessionId, message) {
     return postJson(`/chat/sessions/${encodeURIComponent(sessionId)}/messages`, { message });
   },
+
+  // --- Cash Forecast (Part 24) -------------------------------------------
+  getCashForecast(days = 30) {
+    return getJson(`/forecast?days=${encodeURIComponent(days)}`);
+  },
+  getForecastDayDetails(date) {
+    return getJson(`/forecast/day-details?date=${encodeURIComponent(date)}`);
+  },
+  updateBeginningBalance(val) {
+    return postJson(`/reconciliation/beginning_balance`, { beginning_balance: val });
+  },
+  getTestCases() {
+    return getJson(`/testcases`);
+  },
 };
 
 // Exposed as a global since the dashboard is plain JS (no bundler yet).

@@ -20,7 +20,7 @@
 
     <!-- ▸ Sources Dropdown -->
     <div class="topbar-dropdown" id="topbarSourcesDropdown">
-      <button type="button" class="page-topbar-link topbar-dropdown-btn" aria-haspopup="true" aria-expanded="false" title="Data Sources Dropdown">
+      <button type="button" class="page-topbar-link topbar-dropdown-btn" aria-haspopup="true" aria-expanded="false" title="Data Sources Dropdown" onclick="if(window.openUnifiedSourceView){window.openUnifiedSourceView();}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         <span>Sources</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="topbar-chevron"><polyline points="6 9 12 15 18 9"/></svg>
@@ -70,13 +70,13 @@
       </div>
     </div>
 
-    <!-- Ask Ledger AI -->
-    <a id="topbarAskBtn" class="page-topbar-link {{ 'active' if request.args.get('tab') == 'sub-talk-to-ledger' else '' }}"
-       href="{{ url_for('dashboard', tab='sub-talk-to-ledger') }}"
-       onclick="if(window.activateSub){activateSub('sub-talk-to-ledger');return false;}"
+    <!-- Cash Forecast (Part 24) -->
+    <a id="topbarForecastBtn" class="page-topbar-link {{ 'active' if request.args.get('tab') == 'sub-forecast' else '' }}"
+       href="{{ url_for('dashboard', tab='sub-forecast') }}"
+       onclick="if(window.activateSub){activateSub('sub-forecast');return false;}"
        role="listitem">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      <span>Ask Ledger AI</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Cash Forecast</span>
     </a>
 
     <!-- Reports & Exports -->
@@ -86,12 +86,6 @@
        role="listitem">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       <span>Reports & Exports</span>
-    </a>
-
-    <!-- Pipeline Help & Guide -->
-    <a class="page-topbar-link" href="{{ url_for('help_page') }}" title="Ledger AI Guide" role="listitem">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Guide</span>
     </a>
   </div>
 
