@@ -4550,6 +4550,12 @@
       const srcPill = createSourceBadgeHTML(srcName, srcColor, ex.source_type);
 
       let matchedPill = `<span class="flag-chip flag-secondary" style="opacity: 0.7;">Unmatched</span>`;
+      const matchedName = ex.matched_source_name || (ex.counterpart && ex.counterpart.source_name) || (ex.matched_sources && ex.matched_sources[0] && ex.matched_sources[0].name);
+      if (matchedName && matchedName.toLowerCase() !== "unmatched") {
+        const mColor = (ex.counterpart && ex.counterpart.source_color) || (window.statementColorMap && window.statementColorMap[matchedName]) || "#f59e0b";
+        const mType = (ex.counterpart && ex.counterpart.source_type) || (ex.matched_sources && ex.matched_sources[0] && ex.matched_sources[0].type) || "counterpart";
+        matchedPill = createSourceBadgeHTML(matchedName, mColor, mType);
+      }
 
       // Priority Pill
       const rawPrio = String(ex.priority || ex.risk_priority || (Math.abs(ex.amount || 0) > 50000 ? "HIGH" : Math.abs(ex.amount || 0) > 10000 ? "MEDIUM" : "LOW")).toUpperCase();

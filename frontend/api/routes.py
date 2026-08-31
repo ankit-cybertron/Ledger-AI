@@ -1040,6 +1040,18 @@ def _build_dashboard_run(period_label="Current Period"):
         if (not exc_item.get("date") or str(exc_item.get("date")).strip() == "" or str(exc_item.get("date")).strip() == "nan") and info.get("date"):
             exc_item["date"] = info["date"]
 
+        # Enrich exc_item from raw_transactions matching metadata
+        matched_tx = next((t for t in raw_transactions if str(t.get("id") or t.get("settlement_id") or "").strip().lower() in {sid.lower(), bid.lower()} and (sid or bid)), None)
+        if matched_tx:
+            if not exc_item.get("matched_source_name"):
+                exc_item["matched_source_name"] = matched_tx.get("matched_source_name")
+            if not exc_item.get("counterpart"):
+                exc_item["counterpart"] = matched_tx.get("counterpart")
+            if not exc_item.get("matched_sources"):
+                exc_item["matched_sources"] = matched_tx.get("matched_sources")
+            if not exc_item.get("status") or exc_item.get("status") == "exception":
+                exc_item["status"] = matched_tx.get("status") or exc_item.get("status")
+
         exceptions.append(exc_item)
 
     # Ensure all automated unmatched transactions from engine are listed in exceptions
@@ -1048,15 +1060,29 @@ def _build_dashboard_run(period_label="Current Period"):
         st = (t.get("status") or "").lower().strip()
         sid = str(t.get("settlement_id") or t.get("id") or "").strip()
         if st in {"unmatched", "exception", "manual", "similar", "review"} and sid and sid.lower() not in existing_exc_sids:
+            cp_obj = t.get("counterpart") if isinstance(t.get("counterpart"), dict) else None
+            m_sources = t.get("matched_sources") or []
+            m_sname = t.get("matched_source_name") or (cp_obj.get("source_name") if cp_obj else None)
+            if not m_sname and m_sources and isinstance(m_sources, list) and len(m_sources) > 0:
+                m_sname = m_sources[0].get("name")
+
             exceptions.append({
                 "exception_id": f"EXC-{len(exceptions)+1:04d}",
                 "settlement_id": sid,
-                "bank_transaction_id": t.get("counterpart", {}).get("id") if isinstance(t.get("counterpart"), dict) else "UNLINKED",
+                "bank_transaction_id": cp_obj.get("id") if cp_obj else "UNLINKED",
                 "amount": t.get("amount", 0.0),
                 "date": t.get("date", ""),
                 "description": t.get("description", ""),
                 "source_name": t.get("source_name", "Automated Engine"),
+                "source_type": t.get("source_type", "settlement"),
+                "source_color": t.get("source_color"),
                 "status": t.get("status") or "exception",
+                "matched_source_name": m_sname,
+                "counterpart": cp_obj,
+                "matched_sources": m_sources,
+                "evidence": t.get("evidence"),
+                "confidence": t.get("confidence", 0.0),
+                "utr": t.get("utr"),
                 "exception_type": "similar_review" if st in {"similar", "review"} else "automated_unmatched",
                 "reason": t.get("reason") or "Automated transaction flagged for review.",
                 "resolution_status": "open",
