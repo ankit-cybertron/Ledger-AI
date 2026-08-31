@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guide — Ledger AI</title>
+<title>Guide & Architecture — Ledger AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
     <a href="{{ url_for('index') }}" class="nav-link">Home</a>
     <a href="{{ url_for('help_page') }}" class="nav-link active" style="color:var(--accent-blue);">Guide</a>
     <button id="themeToggleBtn" class="theme-toggle-landing-btn" title="Toggle Theme" aria-label="Toggle Theme">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
     </button>
     <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Launch App &rarr;</a>
   </div>
@@ -38,19 +38,20 @@
   
   <!-- Hero Section -->
   <header class="help-hero">
-    <div class="help-badge">TECHNICAL DOCUMENTATION & GUIDE</div>
-    <h1 class="help-headline">End-to-End Pipeline & Decision Logic</h1>
+    <div class="help-badge">SYSTEM GUIDE &amp; TECHNICAL ARCHITECTURE</div>
+    <h1 class="help-headline">Autonomous Financial Operations Guide</h1>
     <p class="help-subhead">
-      Learn how Ledger AI ingests multi-format statements, maps data schemas, executes a deterministic 3-pass reconciliation cascade, and leverages Groq Llama-3 LLM reasoning for genuine ambiguities.
+      Deep-dive into Ledger AI's multi-pass reconciliation engine, 12-dimensional ML confidence matrix, Groq LLM multi-key failover rotation, 30-day forward cash forecaster, and executive PDF audit reporting pipeline.
     </p>
 
     <!-- Nav Pills -->
     <nav class="help-nav-pills">
-      <a href="#ingestion-pipeline" class="help-pill">1. Ingestion Pipeline</a>
-      <a href="#decision-tree" class="help-pill">2. Decision Flowchart</a>
-      <a href="#reconciliation-passes" class="help-pill">3. 3-Pass Rules Cascade</a>
-      <a href="#llm-matching" class="help-pill">4. LLM Matching Agent</a>
-      <a href="#status-taxonomy" class="help-pill">5. Status Taxonomy</a>
+      <a href="#ingestion-pipeline" class="help-pill">1. Ingestion &amp; Schema Alignment</a>
+      <a href="#decision-tree" class="help-pill">2. 4-Pass Reconciliation Flowchart</a>
+      <a href="#forecasting-engine" class="help-pill">3. Forward Cash Forecaster</a>
+      <a href="#llm-matching" class="help-pill">4. Groq LLM Failover Agent</a>
+      <a href="#status-taxonomy" class="help-pill">5. 4-Status Taxonomy</a>
+      <a href="#pdf-reporting" class="help-pill">6. PDF &amp; Audit Generator</a>
     </nav>
   </header>
 
@@ -58,11 +59,10 @@
   <section id="ingestion-pipeline" class="help-section">
     <div class="section-header-box">
       <div class="section-step-num">STAGE 01</div>
-      <h2>Multi-Format Statement Ingestion Pipeline</h2>
-      <p>From raw file upload (`.csv`, `.xlsx`, `.pdf`) to canonical normalized transaction models.</p>
+      <h2>Multi-Format Statement Ingestion &amp; Schema Alignment</h2>
+      <p>From raw file upload (`CSV`, `XLSX`, `PDF`) to canonical normalized transaction models.</p>
     </div>
 
-    <!-- Visual Flowchart Grid (5 Clean Step Cards without file paths) -->
     <div class="ingestion-pipeline-grid">
       <div class="pipeline-step-card">
         <div class="pipeline-card-header">
@@ -71,8 +71,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
         </div>
-        <h4>Multi-Format PDF & Table Extractor</h4>
-        <p>Extracts CSV, Excel sheets, and PDF statement tables (ICICI, Razorpay, Payroll) with banner promotion and footer stripping.</p>
+        <h4>Multi-Format Extractor</h4>
+        <p>Parses CSV spreadsheets, Excel workbooks, and PDF bank statement tables with header cleaning and footer stripping.</p>
       </div>
 
       <div class="pipeline-step-card">
@@ -82,8 +82,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           </div>
         </div>
-        <h4>Parenthetical & Currency Normalizer</h4>
-        <p>Converts SBI parenthetical debits <code>(1,234.56)</code> to float <code>-1234.56</code> and strips regional currency symbols.</p>
+        <h4>Numeric &amp; Currency Normalizer</h4>
+        <p>Converts SBI parenthetical debits <code>(1,234.56)</code> to float <code>-1234.56</code>, handles Dr/Cr suffixes, and strips currency symbols.</p>
       </div>
 
       <div class="pipeline-step-card">
@@ -93,8 +93,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/></svg>
           </div>
         </div>
-        <h4>Multi-Primary Bank & Header Mapper</h4>
-        <p>Supports multi-primary bank pool loading (HDFC, SBI, ICICI) and maps headers via Levenshtein & dictionary alias algorithms.</p>
+        <h4>3-Stage Header &amp; AI Mapper</h4>
+        <p>Maps column headers using exact dictionary aliases, Levenshtein distance, and zero-shot Groq AI header alignment.</p>
       </div>
 
       <div class="pipeline-step-card">
@@ -104,8 +104,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
         </div>
-        <h4>Status Eligibility Filter</h4>
-        <p>Excludes non-event status rows (<code>FAILED</code>, <code>DECLINED</code>, <code>PENDING</code>) before matching pool entry.</p>
+        <h4>Clean Fallback ID &amp; Dedupe</h4>
+        <p>Generates clean synthetic IDs (e.g. <code>BNK-TXN-0004</code>) and computes SHA-256 content hashes to eliminate duplicate row uploads.</p>
       </div>
 
       <div class="pipeline-step-card">
@@ -115,8 +115,8 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
         </div>
-        <h4>Cross-App Deduplication Hash</h4>
-        <p>Generates cryptographic SHA-256 row fingerprints to resolve cross-app duplicate exports (GPay, PhonePe, Razorpay).</p>
+        <h4>Statement Pool Separator</h4>
+        <p>Splits active statement sources into Primary Ledgers (Bank/Cash) and Counterpart Ledgers (Gateway/Orders/UPI) for rule matching.</p>
       </div>
     </div>
   </section>
@@ -125,8 +125,8 @@
   <section id="decision-tree" class="help-section">
     <div class="section-header-box">
       <div class="section-step-num">STAGE 02</div>
-      <h2>Reconciliation Decision Flowchart & Logic Tree</h2>
-      <p>How the engine evaluates every primary record against candidate counterpart statements in sequence.</p>
+      <h2>Reconciliation Decision Flowchart &amp; 4-Pass Cascade</h2>
+      <p>How the engine evaluates primary statement records against counterpart channels in sequence.</p>
     </div>
 
     <div class="decision-flow-pipeline">
@@ -135,8 +135,8 @@
       <div class="flow-start-banner">
         <div class="start-dot"></div>
         <div class="start-text">
-          <strong>Primary Ledger Record Ingested</strong>
-          <span>Bank statement row, gateway payout line, or order entry candidate</span>
+          <strong>Primary &amp; Counterpart Records Ingested</strong>
+          <span>Bank statements, gateway settlement feeds, order ledgers, and UPI registers</span>
         </div>
       </div>
 
@@ -147,26 +147,26 @@
         <div class="stage-card-main">
           <div class="stage-badge-row">
             <span class="pass-tag tag-p1">PASS 1 &bull; EXACT RULE MATCHER</span>
-            <span class="stage-formula">UTR / RRN / Auth / Order ID &bull; Bidirectional &bull; Net Parity &bull; Gap &le; 4 Days</span>
+            <span class="stage-formula">UTR / RRN / Reference ID &bull; Exact Amount Parity &bull; Date Gap &le; 3 Days</span>
           </div>
-          <h3>Exact Reference & Outbound Debit Matcher</h3>
-          <p>Scans counterpart statements for explicit reference codes and outbound debit NEFT/RTGS keys with zero amount variance.</p>
+          <h3>Exact Reference &amp; Identifier Matcher</h3>
+          <p>Pairs records with sanitized reference codes (UTR, Bank Ref, Bill No) and 100% amount parity.</p>
         </div>
 
         <div class="stage-outcomes-container">
           <div class="outcome-box outcome-yes">
             <div class="outcome-header">
               <span class="branch-pill pill-yes">YES (Matched)</span>
-              <span class="status-pill status-settled">SETTLED</span>
+              <span class="status-pill status-settled">SETTLED / MATCHED</span>
             </div>
-            <p>100% Balanced Parity. Auto-committed to Settled Ledger.</p>
+            <p>100% Exact Parity. Auto-committed to Reconciliation Store.</p>
           </div>
           <div class="outcome-box outcome-no">
             <div class="outcome-header">
               <span class="branch-pill pill-no">NO (Unmatched)</span>
               <span class="next-pass-text">Proceeds to Pass 2 &downarrow;</span>
             </div>
-            <p>No exact reference match found. Routing to Composite Scoring.</p>
+            <p>No exact reference match found. Routing to 4-Factor Composite Scorer.</p>
           </div>
         </div>
       </div>
@@ -177,11 +177,11 @@
       <div class="flow-stage-card">
         <div class="stage-card-main">
           <div class="stage-badge-row">
-            <span class="pass-tag tag-p2">PASS 2 &bull; COMPOSITE SCORER</span>
-            <span class="stage-formula">S = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr) &bull; Digit Transposition Safe</span>
+            <span class="pass-tag tag-p2">PASS 2 &bull; COMPOSITE SCORER &amp; 12D ML</span>
+            <span class="stage-formula">S = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr) &bull; Weekend Adjusted</span>
           </div>
           <h3>4-Factor Weighted Similarity Matrix</h3>
-          <p>Calculates multi-vector similarity score across fuzzy IDs, weekend-adjusted business days, narration tokens, and fee envelopes.</p>
+          <p>Evaluates multi-vector similarity across fuzzy IDs, date offsets, narration token overlap, and amount tolerance (&le; ₹1.00).</p>
         </div>
 
         <div class="stage-outcomes-grid3">
@@ -190,21 +190,21 @@
               <span class="branch-pill pill-yes">S &ge; 0.85</span>
               <span class="status-pill status-matched">MATCHED</span>
             </div>
-            <p>High-confidence pair. Auto-approved match.</p>
+            <p>High-confidence score. Auto-approved match.</p>
           </div>
           <div class="outcome-box outcome-warn">
             <div class="outcome-header">
               <span class="branch-pill pill-warn">0.50 &le; S &lt; 0.85</span>
               <span class="status-pill status-similar">SIMILAR</span>
             </div>
-            <p>Digit transposition typo (e.g. ₹47,097.63 vs ₹47,079.63). Queued in Candidate Drawer.</p>
+            <p>Potential match (minor variance or fuzzy text). Queued in Review Drawer.</p>
           </div>
           <div class="outcome-box outcome-no">
             <div class="outcome-header">
               <span class="branch-pill pill-no">S &lt; 0.50</span>
               <span class="next-pass-text">Proceeds to Pass 3 &downarrow;</span>
             </div>
-            <p>Low confidence score. Routing to Split Payout Solver.</p>
+            <p>Low confidence score. Routing to Batch Fee Solver.</p>
           </div>
         </div>
       </div>
@@ -215,11 +215,11 @@
       <div class="flow-stage-card">
         <div class="stage-card-main">
           <div class="stage-badge-row">
-            <span class="pass-tag tag-p3">PASS 3 &bull; SPLIT & FEE SOLVER</span>
-            <span class="stage-formula">Net Payout = &sum; Gross Sales &minus; Gateway MDR Fees &minus; GST</span>
+            <span class="pass-tag tag-p3">PASS 3 &bull; SPLIT &amp; MDR FEE SOLVER</span>
+            <span class="stage-formula">Net Payout = &sum; Gross Sales &minus; Gateway MDR Fees &minus; GST Taxes</span>
           </div>
-          <h3>N:1 Batch Payout & MDR Fee Solver</h3>
-          <p>Reconciles N individual payment rows (e.g., 58 UPI payments → 25 Razorpay batches → 25 bank credits) with MDR fee deduction.</p>
+          <h3>1-to-N Batch Payout &amp; MDR Fee Solver</h3>
+          <p>Reconciles 1 lump-sum bank deposit against N individual order transactions minus gateway commission fees and taxes.</p>
         </div>
 
         <div class="stage-outcomes-container">
@@ -228,14 +228,14 @@
               <span class="branch-pill pill-yes">YES (Fee Parity Met)</span>
               <span class="status-pill status-settled">SETTLED</span>
             </div>
-            <p>Batch MDR fee equation balances. Auto-settled.</p>
+            <p>Batch payout fee equation balances. Auto-settled.</p>
           </div>
           <div class="outcome-box outcome-no">
             <div class="outcome-header">
               <span class="branch-pill pill-no">NO (Unbalanced)</span>
               <span class="next-pass-text">Proceeds to Pass 4 &downarrow;</span>
             </div>
-            <p>Fee equation fails to balance. Routing to LLM Agent.</p>
+            <p>Fee equation fails to balance. Routing to Groq LLM Agent.</p>
           </div>
         </div>
       </div>
@@ -247,10 +247,10 @@
         <div class="stage-card-main">
           <div class="stage-badge-row">
             <span class="pass-tag tag-p4">PASS 4 &bull; GROQ LLM AGENT</span>
-            <span class="stage-formula">Context Prompt &bull; Multi-Key Llama-3 API Key Rotation</span>
+            <span class="stage-formula">Structured JSON Context &bull; Multi-Key Rotation (`GROQ_API_KEY`)</span>
           </div>
-          <h3>Groq LLM Exception Resolver</h3>
-          <p>Executes deep semantic evaluation on customer names, transposition errors, and non-standard narrative text.</p>
+          <h3>Groq LLM Ambiguous Match Resolver</h3>
+          <p>Evaluates ambiguous candidate pairs using Groq API with multi-key failover and natural language audit explanations.</p>
         </div>
 
         <div class="stage-outcomes-container">
@@ -259,7 +259,7 @@
               <span class="branch-pill pill-yes">CONFIRMED</span>
               <span class="status-pill status-matched">MATCHED</span>
             </div>
-            <p>AI verified match with natural language audit trail.</p>
+            <p>AI verified match with natural language reasoning.</p>
           </div>
           <div class="outcome-box outcome-danger">
             <div class="outcome-header">
@@ -274,52 +274,59 @@
     </div>
   </section>
 
-  <!-- Section 3: 3-Pass Rules Cascade -->
-  <section id="reconciliation-passes" class="help-section">
+  <!-- Section 3: Forward Cash Forecaster (Polished UI Showcase) -->
+  <section id="forecasting-engine" class="help-section">
     <div class="section-header-box">
       <div class="section-step-num">STAGE 03</div>
-      <h2>Multi-Pass Rules & Mathematical Scoring Formulas</h2>
-      <p>Deterministic mathematical rules execute first; machine learning heuristics execute second.</p>
+      <h2>Forward Cash Forecaster &amp; Liquidity Model</h2>
+      <p>Projects 30-day liquid cash trajectories, estimates empirical settlement lags, and propagates beginning balance state.</p>
     </div>
 
-    <div class="rules-grid">
-      <div class="rule-detail-card">
-        <div class="card-tag tag-exact">PASS 1 &bull; EXACT RULE MATCH</div>
-        <h3>Exact Identifier & Outbound Parity</h3>
-        <ul class="rule-list">
-          <li><strong>UTR / Order Match</strong>: Explicit prefix-stripped reference code equality (1.00 confidence).</li>
-          <li><strong>Vendor / Expense Debits</strong>: Bank debits matched to vendor register NEFT/RTGS lines.</li>
-          <li><strong>Date Window</strong>: Business-day-aware settlement gap tolerance (1&ndash;4 days).</li>
-          <li><strong>Outcome</strong>: Assigned <code>SETTLED</code> status immediately.</li>
-        </ul>
+    <!-- Redesigned High-End Interactive Showcase Grid -->
+    <div class="rules-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      
+      <!-- Card 1 -->
+      <div class="rule-detail-card" style="border-top: 3px solid #10b981; background: var(--bg-card); padding: 24px; border-radius: 12px;">
+        <div class="card-tag tag-exact" style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; display: inline-block; margin-bottom: 12px;">
+          14-DAY WMA &amp; SEASONAL DECOMPOSITION
+        </div>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;">Weighted Moving Average Trend</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+          Decomposes daily net inflows into trend level <code>T(d)</code> and 7-day weekly seasonal component <code>S(d)</code>. Computes 30-day forward baseline cash trajectories with 1.5&sigma; confidence bands.
+        </p>
+        <div class="formula-box" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2);">
+          Projected(t) = Trend_last + S(t mod 7) + Pending(t)
+        </div>
       </div>
 
-      <div class="rule-detail-card">
-        <div class="card-tag tag-scoring">PASS 2 &bull; COMPOSITE SCORING</div>
-        <h3>4-Factor Weighted Similarity Matrix</h3>
-        <div class="formula-box">
-          <code>Score = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr)</code>
+      <!-- Card 2 -->
+      <div class="rule-detail-card" style="border-top: 3px solid #3b82f6; background: var(--bg-card); padding: 24px; border-radius: 12px;">
+        <div class="card-tag tag-scoring" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; display: inline-block; margin-bottom: 12px;">
+          SETTLEMENT LAG ESTIMATOR
         </div>
-        <ul class="rule-list">
-          <li><strong>ID Weight (0.40)</strong>: Substring and token matching on partial keys.</li>
-          <li><strong>Amount Weight (0.30)</strong>: MDR fee-aware calculation using 3.5% fee envelope.</li>
-          <li><strong>Date Weight (0.15)</strong>: Business day difference excluding weekends.</li>
-          <li><strong>Narration Weight (0.15)</strong>: Shared keyword token matching.</li>
-        </ul>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;">Channel Settlement Cycles</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+          Evaluates historical channel lags to estimate future payout dates for open gateway batches. Applies <strong>T+2</strong> for Razorpay, <strong>T+3</strong> for Stripe/Cards, and <strong>T+0</strong> for direct UPI.
+        </p>
+        <div class="formula-box" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.2);">
+          Expected_Date = Batch_Date + Lag_Channel
+        </div>
       </div>
 
-      <div class="rule-detail-card">
-        <div class="card-tag tag-fee">PASS 3 &bull; SPLIT & FEE SOLVER</div>
-        <h3>N:1 Batch Payout Fee Equation</h3>
-        <div class="formula-box">
-          <code>Net Settlement = &sum; Gross Sales &minus; MDR Fees &minus; GST</code>
+      <!-- Card 3 -->
+      <div class="rule-detail-card" style="border-top: 3px solid #f59e0b; background: var(--bg-card); padding: 24px; border-radius: 12px;">
+        <div class="card-tag tag-fee" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; display: inline-block; margin-bottom: 12px;">
+          BEGINNING BALANCE CASCADE
         </div>
-        <ul class="rule-list">
-          <li><strong>Multi-Order Consolidation</strong>: Matches bank payouts against 58 Razorpay/UPI payments.</li>
-          <li><strong>Fee Deduction Verification</strong>: Deducts gateway commission (1.8% + GST) automatically.</li>
-          <li><strong>Outcome</strong>: Assigned <code>SETTLED</code> status upon exact net batch parity.</li>
-        </ul>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;">Cumulative Liquid Cash Progression</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+          Anchors cumulative cash balances on the user-configured Beginning Balance (B₀). Updating beginning balance in the UI instantly recalculates Overview KPIs, Forecast curves, and PDF Reports.
+        </p>
+        <div class="formula-box" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.2);">
+          C(d) = B₀ + &sum; Net_Cash_Flow(k)
+        </div>
       </div>
+
     </div>
   </section>
 
@@ -327,15 +334,15 @@
   <section id="llm-matching" class="help-section">
     <div class="section-header-box">
       <div class="section-step-num">STAGE 04</div>
-      <h2>Groq LLM Ambiguous Matching Agent</h2>
-      <p>Handles non-standard narrations, customer name variations, and ambiguous reference keys using Llama-3 inference with API key rotation.</p>
+      <h2>Groq LLM Matching Agent &amp; Multi-Key Failover</h2>
+      <p>Handles ambiguous narrations and customer name variations using Groq LLM API with key failover rotation.</p>
     </div>
 
     <div class="llm-explanation-box">
       <div class="llm-card-left">
-        <h3>Agent Trigger Conditions</h3>
+        <h3>Agent Trigger &amp; Key Failover</h3>
         <p>
-          The LLM agent is invoked automatically when candidate scores fall in the ambiguous range (<code>0.50 &le; Score &lt; 0.85</code>), or when a user clicks <strong>"Run LLM Match"</strong> in the Candidate Modal. Rotates across Primary, Secondary, and Tertiary Groq API keys automatically.
+          Invoked automatically for ambiguous candidate pairs (<code>0.60 &le; Score &lt; 0.85</code>) or via the <strong>"Run LLM Match"</strong> UI button. Automatically rotates across <code>GROQ_API_KEY</code>, <code>GROQ_API_KEY1</code>, and <code>GROQ_API_KEY2</code> environment variables with Llama-3 model fallback.
         </p>
         
         <h4>Structured JSON Input Context:</h4>
@@ -359,7 +366,7 @@
       <div class="llm-card-right">
         <h3>Structured Reasoning Output</h3>
         <p>
-          The Groq LLM API returns JSON adhering to a strict response schema, including natural language audit explanation:
+          The Groq LLM agent returns structured JSON containing confidence metrics and natural language reasoning:
         </p>
 
         <div class="llm-response-preview">
@@ -374,7 +381,7 @@
           <div class="preview-row">
             <span class="preview-label">Audit Reasoning:</span>
             <p class="reasoning-text">
-              "The bank transaction 'CARD-SETL Meera Iyer' for ₹4,999.00 matches card payment PGREF202421 for ₹5,000.00 minus a ₹1.00 gateway processing fee. Customer name 'Meera Iyer' and transaction dates (1-day gap) align perfectly."
+              "The bank transaction 'CARD-SETL Meera Iyer' for ₹4,999.00 matches card payment PGREF202421 for ₹5,000.00 minus a ₹1.00 gateway processing fee. Customer name 'Meera Iyer' and transaction dates align perfectly."
             </p>
           </div>
         </div>
@@ -395,14 +402,14 @@
       <div class="taxonomy-card card-settled">
         <div class="tax-card-header">
           <span class="status-pill status-settled">SETTLED</span>
-          <span class="tax-code">100_SETTLED</span>
+          <span class="tax-code">200_SETTLED</span>
         </div>
-        <h4>Fully Reconciled Bank Deposit</h4>
-        <p class="tax-desc">100% mathematical parity. Primary bank statement line matched with zero delta or valid MDR fee equation.</p>
+        <h4>Primary Statement Reconciled</h4>
+        <p class="tax-desc">Match involves a Primary Statement record (Bank/Cash). Reconciled with zero amount delta or valid MDR fee equation.</p>
         <ul class="tax-list">
-          <li><strong>Score</strong>: 1.00 (Exact)</li>
-          <li><strong>Amount Delta</strong>: Exactly ₹0.00 (or net MDR fee)</li>
-          <li><strong>UI Action</strong>: Auto-committed to primary summary dashboard.</li>
+          <li><strong>Rule</strong>: Primary statement record involved</li>
+          <li><strong>Parity</strong>: Exact reference or net batch payout fee parity</li>
+          <li><strong>UI Action</strong>: Auto-committed to Settled Summary dashboard.</li>
         </ul>
       </div>
 
@@ -410,13 +417,13 @@
       <div class="taxonomy-card card-matched">
         <div class="tax-card-header">
           <span class="status-pill status-matched">MATCHED</span>
-          <span class="tax-code">200_MATCHED</span>
+          <span class="tax-code">201_MATCHED</span>
         </div>
-        <h4>Counterpart / Order Book Pair</h4>
-        <p class="tax-desc">Counterpart-to-counterpart order cross-linking (Order Book ↔ UPI/card) or composite score &ge; 0.85.</p>
+        <h4>Counterpart-to-Counterpart Match</h4>
+        <p class="tax-desc">Match between two Counterpart statement sources (Gateway vs Order Book) or verified via ML/LLM model.</p>
         <ul class="tax-list">
-          <li><strong>Score</strong>: &ge; 0.85</li>
-          <li><strong>Tolerance</strong>: Variance &le; ₹1.00</li>
+          <li><strong>Rule</strong>: Both records from Counterpart sources</li>
+          <li><strong>Score</strong>: Composite Score &ge; 0.85</li>
           <li><strong>UI Action</strong>: Displayed in main reconciliation table.</li>
         </ul>
       </div>
@@ -428,11 +435,11 @@
           <span class="tax-code">300_SIMILAR</span>
         </div>
         <h4>Potential Candidate Match</h4>
-        <p class="tax-desc">Candidate matches with digit transposition typos (₹47,097.63 vs ₹47,079.63) or moderate confidence.</p>
+        <p class="tax-desc">Candidate match identified with potential keyword or amount alignment, queued for human/LLM review.</p>
         <ul class="tax-list">
-          <li><strong>Score</strong>: 0.50 &le; Score &lt; 0.85</li>
-          <li><strong>Typo Guard</strong>: Surfaced for manual verification.</li>
-          <li><strong>UI Action</strong>: Routed to "Find Similar Payments" drawer.</li>
+          <li><strong>Score Window</strong>: 0.50 &le; Score &lt; 0.85</li>
+          <li><strong>Keyword Extraction</strong>: Highlights shared tokens</li>
+          <li><strong>UI Action</strong>: Routed to candidate review drawer.</li>
         </ul>
       </div>
 
@@ -443,12 +450,41 @@
           <span class="tax-code">400_UNMATCHED</span>
         </div>
         <h4>Exception Discrepancy / Open Item</h4>
-        <p class="tax-desc">True orphan exceptions (cash sales, unpaid orders, unknown bank debits), open refunds, or USD currency mismatch.</p>
+        <p class="tax-desc">Financial discrepancy failing all matching rules ($< 0.50$). Isolated into the Exception Ledger.</p>
         <ul class="tax-list">
           <li><strong>Score</strong>: &lt; 0.50</li>
-          <li><strong>Types</strong>: True orphan, open refund, currency mismatch.</li>
-          <li><strong>UI Action</strong>: Isolated into Exception Ledger table.</li>
+          <li><strong>Audit Action</strong>: Never force-matched</li>
+          <li><strong>UI Action</strong>: Isolated into Exception Ledger with "Run LLM Match".</li>
         </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: PDF & Audit Generator -->
+  <section id="pdf-reporting" class="help-section">
+    <div class="section-header-box">
+      <div class="section-step-num">STAGE 06</div>
+      <h2>Audit-Grade PDF &amp; Report Generator</h2>
+      <p>Generates print-ready executive PDF audit reports with visual summary cards, charts, and zero-loss integrity verification.</p>
+    </div>
+
+    <div class="rules-grid">
+      <div class="rule-detail-card">
+        <div class="card-tag tag-exact">REPORTLAB PDF ENGINE</div>
+        <h3>Executive PDF Compilation</h3>
+        <p>Uses ReportLab with a custom two-pass <code>NumberedCanvas</code> to produce branded PDF audit reports complete with dynamic headers, footers, and page numbers ("Page X of Y").</p>
+      </div>
+
+      <div class="rule-detail-card">
+        <div class="card-tag tag-scoring">MATPLOTLIB CHARTS</div>
+        <h3>Visual Analytics Cards</h3>
+        <p>Renders high-DPI status pie charts, amount variance bar graphs, and 30-day forward cash flow trend charts embedded directly into the PDF report flowables.</p>
+      </div>
+
+      <div class="rule-detail-card">
+        <div class="card-tag tag-fee">AUDIT INTEGRITY VERIFICATION</div>
+        <h3>Zero-Loss Parity Equation</h3>
+        <p>Verifies that 100% of input transaction records are accounted for in the four-status taxonomy (&sum; Total = N_SETTLED + N_MATCHED + N_SIMILAR + N_UNMATCHED).</p>
       </div>
     </div>
   </section>
@@ -459,7 +495,7 @@
       <a href="{{ url_for('index') }}" class="btn btn-secondary-nav">&larr; Back to Home</a>
       <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Open Reconciliation Dashboard &rarr;</a>
     </div>
-    <p class="footer-copy">Ledger AI &bull; Autonomous Financial Reconciliation System</p>
+    <p class="footer-copy">Ledger AI &bull; Autonomous Financial Reconciliation &amp; Forward Cash Controller</p>
   </footer>
 
 </main>

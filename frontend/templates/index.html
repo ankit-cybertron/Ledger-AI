@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ledger AI — Close week shouldn't take a guess</title>
+  <title>Ledger AI — Autonomous Financial Reconciliation & Forward Cash Controller Platform</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -28,7 +28,8 @@
     </div>
     <div class="topbar-nav">
       <a href="{{ url_for('help_page') }}" class="nav-link">Guide</a>
-      <a href="#about" class="nav-link">About</a>
+      <a href="#product-features" class="nav-link">Product Capabilities</a>
+      <a href="#about" class="nav-link">Architecture</a>
       <a href="#contact" class="nav-link">Contact</a>
       <button id="themeToggleBtn" class="theme-toggle-landing-btn" title="Toggle Theme" aria-label="Toggle Theme">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -43,30 +44,27 @@
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
         </svg>
       </button>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Launch App &rarr;</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Launch Platform &rarr;</a>
     </div>
   </nav>
 
   <main class="hero">
     <div class="hero-live-badge">
-      <span class="pulse-dot"></span> AUTOMATED RECONCILIATION PIPELINE &bull; ENGINE ONLINE
+      <span class="pulse-dot"></span> AUTONOMOUS FINANCIAL OPERATIONS PLATFORM &bull; ENGINE v2.0 ONLINE
     </div>
 
     <h1 class="headline">
-      Close week shouldn&rsquo;t<br>
-      take <span class="ghost">a guess</span>
+      Autonomous Financial Control<br>
+      <span class="ghost">&amp; Cash Intelligence</span>
     </h1>
 
     <p class="subhead">
-      Ledger AI reconciles payment gateway settlements, bank statements, and your order ledger
-      automatically &mdash; exact rules first, 12-dimensional ML composite scoring second, and Groq Llama-3
-      LLM reasoning for genuine ambiguities. Categorizes every transaction into SETTLED, MATCHED, SIMILAR,
-      and UNMATCHED statuses with corporate PDF audit reports.
+      The complete AI-powered financial operations engine. Ingest multi-source bank statements, payment gateway settlement summaries, and order registers. Execute deterministic 4-pass reconciliation, solve 1-to-N batch MDR fee equations, run Groq LLM semantic reasoning on ambiguous transactions, and project 30-day liquid cash availability &mdash; with zero force-matching and complete auditability.
     </p>
 
-    <div class="cta-row" style="display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
+    <div class="cta-row" style="display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom: 2.5rem;">
       <a href="{{ url_for('dashboard') }}" class="btn btn-primary" id="loginBtn">
-        Open Dashboard
+        Launch Live Dashboard
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round" />
@@ -74,17 +72,17 @@
       </a>
       <a href="{{ url_for('help_page') }}" class="btn btn-secondary-nav"
         style="padding: 14px 24px !important; font-size: 0.98rem !important;">
-        Guide &rarr;
+        Interactive System Guide &rarr;
       </a>
     </div>
 
-    <section class="features">
+    <section class="features" id="features-overview">
       <div class="feature">
         <h3>Multi-Format Ingestion</h3>
         <p>CSV, XLSX &amp; PDF STATEMENTS</p>
       </div>
       <div class="feature">
-        <h3>3-Pass Cascade Engine</h3>
+        <h3>4-Pass Cascade Engine</h3>
         <p>EXACT, ML SCORER &amp; GROQ LLM</p>
       </div>
       <div class="feature">
@@ -92,32 +90,17 @@
         <p>SETTLED, MATCHED, SIMILAR, UNMATCHED</p>
       </div>
       <div class="feature">
-        <h3>Audit-Grade Export</h3>
-        <p>CORPORATE FINANCIAL PDF REPORTS</p>
+        <h3>Forward Cash Forecaster</h3>
+        <p>30-DAY LIQUIDITY &amp; SETTLEMENT LAG</p>
       </div>
     </section>
 
-    <!-- About Section -->
-    <section id="about" class="landing-section about-section">
-      <h2 class="section-title">About Ledger AI</h2>
+    <!-- Product Features Showcase Section -->
+    <section id="product-features" class="landing-section about-section">
+      <h2 class="section-title">Platform Capabilities &amp; Financial Core</h2>
       <p class="section-description">
-        Ledger AI is an enterprise financial reconciliation platform designed for absolute transparency. Traditional
-        reconciliation relies on manual spreadsheet formulas or black-box AI models that force-match unbalanced rows.
-        Ledger AI introduces a <strong>Deterministic 3-Pass Cascade Engine</strong>: exact mathematical rules execute
-        first, composite similarity matrix scores candidates second, batch fee equations resolve payouts third, and Groq
-        Llama-3 LLM reasoning evaluates genuine ambiguities with audit trails.
+        Built for high-volume finance teams and commercial merchants. Ledger AI solves the verification bottleneck by combining mathematical precision with Groq LLM semantic reasoning and 30-day liquidity forecasting.
       </p>
-
-      <!-- Product Overview Video Player Box -->
-      <div class="video-section">
-        <div class="video-wrapper">
-          <iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0"
-            title="Ledger AI Walkthrough & Overview"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen>
-          </iframe>
-        </div>
-      </div>
 
       <div class="about-cards">
         <div class="about-card">
@@ -127,23 +110,20 @@
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
           </div>
-          <h4>Multi-Format Data Ingestion</h4>
-          <p>Parses raw CSVs, Excel sheets, and PDF statement tables with Levenshtein column mapping, duplicate header
-            resolution, and SHA-256 deduplication hashing.</p>
+          <h4>Multi-Format Ingestion &amp; AI Alignment</h4>
+          <p>Ingests CSV, Excel, and PDF bank statements with 3-stage column header mapping (exact dictionary, Levenshtein distance, and zero-shot Groq AI smart schema alignment). Resolves duplicate headers and SHA-256 content hashes automatically.</p>
         </div>
 
         <div class="about-card">
           <div class="card-icon icon-purple">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
-              <path
-                d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               <circle cx="12" cy="12" r="4" />
             </svg>
           </div>
-          <h4>Deterministic 3-Pass Engine</h4>
-          <p>Matches exact UTR reference keys, evaluates 4-factor composite similarity scores ($S = 0.40 \cdot \text{ID}
-            + 0.30 \cdot \text{Amt} + \dots$), and solves batch payout fee equations.</p>
+          <h4>4-Pass Reconciliation &amp; MDR Fee Solver</h4>
+          <p>Pairs exact reference UTR keys (Pass 1), evaluates 4-factor composite scoring ($S = 0.40 S_{\text{id}} + 0.30 S_{\text{amt}} + 0.15 S_{\text{date}} + 0.15 S_{\text{narr}}$) (Pass 2), and solves 1-to-N batch payout MDR fee equations ($\text{Net Deposit} = \sum \text{Sales} - \text{MDR} - \text{GST}$) (Pass 3).</p>
         </div>
 
         <div class="about-card">
@@ -154,22 +134,62 @@
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <h4>Groq Llama-3 Agent & Comparison Drawer</h4>
-          <p>Deep semantic AI analysis for ambiguous names and non-standard text. Side-by-side comparison window
-            highlights matching keywords and net variance.</p>
+          <h4>Groq LLM Agent &amp; Failover Key Rotation</h4>
+          <p>Deep semantic AI analysis for ambiguous names, non-standard text narrations, and digit transposition typos. Powered by Groq API with multi-key failover rotation (`GROQ_API_KEY` rotation) and Llama-3 model fallback.</p>
         </div>
 
         <div class="about-card">
           <div class="card-icon icon-blue">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <h4>Forward Cash Forecaster &amp; Settlement Lags</h4>
+          <p>Predicts 30-day liquid cash availability using 14-day weighted moving average (WMA) models, weekly seasonal decomposition, empirical gateway channel settlement lag estimation (T+2 / T+3), and beginning balance state propagation.</p>
+        </div>
+
+        <div class="about-card">
+          <div class="card-icon icon-purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          </div>
+          <h4>Unified Master Source Table</h4>
+          <p>Single-pane table aggregating records across all primary bank ledgers and counterpart payment channels into a centralized searchable view with dynamic status badges and source filters.</p>
+        </div>
+
+        <div class="about-card">
+          <div class="card-icon icon-green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
           </div>
-          <h4>Corporate PDF Audit Reports</h4>
-          <p>Generates executive-ready PDF audit reports featuring summary KPI tiles, status-coded badges, standardized
-            currency formatting, and itemized match tables.</p>
+          <h4>Executive PDF Reports &amp; Period Vaulting</h4>
+          <p>Compiles print-ready ReportLab PDF audit reports complete with visual KPI summary tiles, embedded Matplotlib trend charts, status pill indicators, itemized match ledgers, and audit integrity verification equations.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture & Walkthrough Section -->
+    <section id="about" class="landing-section about-section" style="padding-top:0;">
+      <h2 class="section-title">System Architecture</h2>
+      <p class="section-description">
+        Explore how Ledger AI reconciles financial feeds across exact rules, composite scoring, MDR fee solvers, and Groq LLM agents.
+      </p>
+
+      <div class="video-section">
+        <div class="video-wrapper">
+          <iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0"
+            title="Ledger AI Platform Overview"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
         </div>
       </div>
     </section>
@@ -177,7 +197,7 @@
     <!-- Contact Section -->
     <section id="contact" class="landing-section contact-section">
       <div class="contact-box">
-        <h2 class="section-title">Contact</h2>
+        <h2 class="section-title">Get in Touch</h2>
         <p class="section-description">Have questions, feedback, or custom reconciliation requirements?</p>
         <a href="mailto:ankit.cybertron@proton.me" class="contact-email-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,7 +210,7 @@
     </section>
 
     <footer class="footer">
-      <span class="dot"></span> An idea since 2025 &mdash; by <strong>Ankit Kumar Tiwari</strong>
+      <span class="dot"></span> Ledger AI &mdash; Autonomous Financial Reconciliation &amp; Forward Cash Controller Platform
     </footer>
   </main>
 
