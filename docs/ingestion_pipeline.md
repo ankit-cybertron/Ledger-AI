@@ -68,7 +68,7 @@ The **Ingestion Pipeline** ingests raw financial statement files (`CSV`, `XLSX`,
 - Detects files containing duplicate headers mapping to the same canonical field (e.g., two `Amount` columns).
 - Computes non-null count and variance metrics to automatically retain the primary data column and drop redundant duplicates.
 
-### Stage 3: 3-Stage Column Mapping & AI Smart Alignment (`ingestion/column_mapper.py` & `frontend/statement_store.py`)
+### Stage 3: 3-Stage Column Mapping & AI Alignment (`ingestion/column_mapper.py` & `frontend/statement_store.py`)
 - **Stage 3A (Exact Alias)**: Checks raw header strings against configurable alias dictionary (`config/column_aliases.json`). Confidence = $1.0$.
 - **Stage 3B (Fuzzy Similarity)**: Evaluates string distance using Levenshtein ratio for unmapped headers. Confidence = $0.60 - 0.90$.
 - **Stage 3C (Groq AI Alignment & Alias Learning)**: When **Smart AI Import** or **Organize Table by AI** is triggered, sample data rows and unmapped headers are sent to Groq LLM (`openai/gpt-oss-120b`). High-confidence mappings are automatically saved into `config/column_aliases.json` for permanent zero-shot matching on future imports.
@@ -77,7 +77,7 @@ The **Ingestion Pipeline** ingests raw financial statement files (`CSV`, `XLSX`,
 ### Stage 4 & 5: Row Normalization (`ingestion/normalizer.py`)
 - **Locale-Agnostic Numeric Parsing**: Handles currency symbols (`₹`, `$`), thousand separators, Dr/Cr suffixes, and parenthetical negatives `(500.00)`.
 - **Reference Identifier Extraction**: Extracts UTRs, Order IDs, and Settlement IDs from free-text narration using regex patterns defined in `config/normalization_rules.json`.
-- **Clean Fallback ID Generator (`_generate_clean_fallback_tx_id`)**: When a record has no explicit transaction ID, generates clean human-readable IDs (`BNK-TXN-0004`, `ORD-TXN-0012`, `UPI-TXN-0005`) instead of raw ugly filename strings.
+- **Clean Fallback ID Generator (`_generate_clean_fallback_tx_id`)**: When a record has no explicit transaction ID, generates clean human-readable IDs (`BNK-TXN-0004`, `ORD-TXN-0012`, `UPI-TXN-0005`) instead of raw filename strings.
 
 ### Intra-Statement Deduplication (`ingestion/dedupe.py`)
 - Computes a SHA-256 content hash over key fields (`transaction_date`, `net_amount`, `utr`, `order_id`, `description`, `customer_name`).
@@ -87,9 +87,9 @@ The **Ingestion Pipeline** ingests raw financial statement files (`CSV`, `XLSX`,
 
 ## 4. Key Files & Code Reference
 
-| File Path | Responsible Class / Function | Purpose |
+| File Path | Responsible Class / Function | Implementation Role |
 |---|---|---|
-| `ingestion/file_reader.py` | `read_source_file()`, `RawTable` | Reads CSV, XLSX, and PDF files. |
+| `ingestion/file_reader.py` | `read_source_file()`, `RawTable` | Reads CSV, XLSX, and PDF files into RawTable structs. |
 | `ingestion/duplicate_columns.py` | `detect_duplicate_columns()` | Resolves multi-column header collisions. |
 | `ingestion/column_mapper.py` | `map_columns()`, `ColumnMapping` | 3-stage column header mapper. |
 | `ingestion/normalizer.py` | `normalize_row()`, `_generate_clean_fallback_tx_id()` | Normalizes amounts, status, dates, and IDs. |

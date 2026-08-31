@@ -1,7 +1,7 @@
-# Ledger AI — Developer Guide to Transaction Matching & Status Classification
+# Ledger AI — Developer Guide to Transaction Matching & Technical Architecture
 
 > **Developer Architectural Specification**  
-> Comprehensive reference for developers detailing transaction status rules, multi-pass matching mechanics, file structures, deduplication algorithms, and side-by-side UI keyword comparison logic.
+> Comprehensive technical reference for developers detailing transaction status rules, multi-pass matching mechanics, file structures, deduplication algorithms, unified master table views, beginning balance state propagation, PDF report generation, and side-by-side UI keyword comparison logic.
 
 ---
 
@@ -9,103 +9,124 @@
 
 **Ledger AI** ingests multi-source financial statements (Bank Statements, Payment Gateways like Razorpay/Stripe, Internal Order Books, Cash Books, and UPI feeds) across formats (`CSV`, `XLSX`, `PDF`).
 
-The system normalizes incoming records into standard `CanonicalTransaction` models and evaluates them through a multi-pass reconciliation engine. Based on mathematical certainty, fuzzy scoring, ML vector classification, and LLM reasoning, every transaction is categorized into one of four taxonomy statuses:
+The system normalizes incoming records into standard `CanonicalTransaction` models and evaluates them through a multi-pass reconciliation engine. Based on mathematical certainty, fuzzy scoring, 12-dimensional ML vector classification, and Groq LLM reasoning, every transaction is categorized into one of four taxonomy statuses:
 
-1. **`SETTLED`**: Fully reconciled and mathematically finalized payout/deposit.
-2. **`MATCHED`**: Reconciled via high-confidence rule engine, ML score ($\ge 0.85$), or LLM recommendation.
-3. **`SIMILAR`**: Potential candidate match identified ($0.50 \le \text{Score} < 0.85$) requiring developer/user review.
-4. **`UNMATCHED`**: Discrepancy / exception failing all matching rules ($< 0.50$), routed to exception ledger.
+1. **`SETTLED`**: Primary statement record (Bank/Cash) reconciled against counterpart payouts or 1-to-N batch deposits.
+2. **`MATCHED`**: Reconciled between two counterpart sources (e.g. Gateway vs Order Book) via high-confidence rule engine, ML score ($\ge 0.85$), or LLM recommendation.
+3. **`SIMILAR`**: Potential candidate match identified ($0.50 \le \text{Score} < 0.85$) surfacing in candidate drawer for user/LLM review.
+4. **`UNMATCHED`**: Financial discrepancy failing all matching rules ($< 0.50$), routed to the Exception Ledger.
 
 ---
 
 ## 2. File-by-File Architecture & Code Map
 
-Below is the directory map of files responsible for statement ingestion, matching, deduplication, and UI comparison:
+Below is the complete directory map of implemented files across ingestion, reconciliation, forecasting, reporting, API endpoints, and UI controllers:
 
-| Directory / File | Main Function / Class | Core Purpose & Logic |
+| Subsystem / File | Main Functions / Classes | Implementation Purpose & Logic |
 |---|---|---|
-| **`ingestion/normalizer.py`** | `normalize_row()`, `_generate_clean_fallback_tx_id()` | Converts raw mapped rows into `CanonicalTransaction`. Parses amounts, extracts UTR/Order IDs, and generates clean synthetic IDs (`BNK-TXN-0004`). |
-| **`ingestion/column_mapper.py`** | `map_columns()` | 3-stage column mapping (exact alias lookup + fuzzy string distance fallback). |
-| **`ingestion/dedupe.py`** | `detect_duplicates()` | Identifies identical intra-statement row uploads using SHA-256 content hashes. |
-| **`reconciler/reconcile.py`** | `reconcile_all_statements()` | Main multi-statement reconciliation orchestrator. Divides statements into Primary vs. Counterpart pools and runs matching passes. |
+| **`ingestion/normalizer.py`** | `normalize_row()`, `_generate_clean_fallback_tx_id()` | Converts raw mapped rows into `CanonicalTransaction`. Parses locale amounts, extracts UTR/Order IDs, and generates clean synthetic IDs (`BNK-TXN-0004`). |
+| **`ingestion/column_mapper.py`** | `map_columns()` | 3-stage column mapping (exact alias lookup + fuzzy distance fallback + Groq AI header alignment). |
+| **`ingestion/dedupe.py`** | `detect_duplicates()` | Computes SHA-256 content hashes to detect intra-statement duplicate row uploads. |
+| **`reconciler/pipeline_runner.py`** | `run_full_pipeline()` | Master 6-step reconciliation orchestrator executing exact, tolerance, ML, exception ledger, and summary passes. |
+| **`reconciler/reconcile.py`** | `reconcile_all_statements()` | Main multi-statement reconciliation engine applying Primary vs. Counterpart pool rules. |
 | **`matcher/exact_matcher.py`** | `match_exact()` | Stage 1 Exact Matcher. Sanitizes UTR/reference strings and matches with 100% amount parity. |
-| **`matcher/tolerance_matcher.py`** | `match_tolerance()` | Stage 2 Tolerance & Fuzzy Matcher. Computes multi-factor weighted scores ($\le ₹1.00$ variance, $\le 3$ day gap). |
-| **`matcher/split_aggregate_matcher.py`**| `match_split_aggregate()` | Stage 3 Batch & Fee Solver. Solves 1-to-N batch deposits using net payout fee equations. |
-| **`frontend/api/routes.py`** | `_build_dashboard_run()`, `/api/similar_payments` | API Data Layer. Performs symmetric pair deduplication (`seen_matched_ids`), assigns primary source badges, and fetches candidate matches. |
-| **`frontend/statement_store.py`** | `_load_db()`, `rebuild_generated_csv()` | Local JSON store manager for uploaded statements and CSV generator. |
-| **`ml/feedback_loop.py`** | `extract_features_for_pair()` | Builds 12-dimensional feature vectors for Random Forest evaluation. |
-| **`llm/ambiguous_matcher.py`** | `run_llm_match()` | Gemini LLM Agent integration for ambiguous match resolution. |
-| **`frontend/static/js/dashboard.js`** | `openRecordComparisonModal()`, `extractSharedKeywords()` | Frontend UI controller. Manages direct row clicks, side-by-side matrices, and description keyword extraction. |
+| **`matcher/tolerance_matcher.py`** | `match_tolerance()` | Stage 2 Tolerance Matcher. Computes 4-factor composite weighted scores ($\le ₹1.00$ variance, $\le 3$ day gap). |
+| **`matcher/split_aggregate_matcher.py`**| `match_split_aggregate()`, `match_batch()` | Stage 3 Batch & Fee Solver. Solves 1-to-N batch deposits using net payout fee equations. |
+| **`matcher/scoring_engine.py`** | `calculate_pair_score()` | Implements the composite weighted scoring equation ($0.40 S_{\text{id}} + 0.30 S_{\text{amt}} + 0.15 S_{\text{date}} + 0.15 S_{\text{narr}}$). |
+| **`forecasting/engine.py`** | `build_forecast()`, `estimate_pending_settlements()` | Forward cash forecaster. Computes seasonal decomposition, 14-day WMA trends, pending settlements, recurring patterns, and beginning balance cumulative series. |
+| **`reports/report_builder.py`** | `build_filtered_report_data()` | Aggregates summary KPIs, status subsets, source filters, date ranges, and 30-day forecast data for audit exports. |
+| **`reports/pdf_generator.py`** | `generate_pdf_report()` | Generates high-fidelity PDF audit reports complete with visual summary blocks, charts, and detailed transaction tables. |
+| **`llm/query_llm.py`** | `query_llm()`, `get_all_groq_keys()` | Central Groq LLM query engine with multi-key failover (`GROQ_API_KEY`, `GROQ_API_KEY1`, `GROQ_API_KEY2`) and fallback model rotation. |
+| **`llm/ambiguous_matcher.py`** | `run_llm_match()` | Groq LLM agent evaluating ambiguous candidate pairs ($0.60 \le \text{Score} < 0.85$). |
+| **`frontend/api/routes.py`** | `_build_dashboard_run()`, `/reconciliation/beginning_balance`, `/forecast`, `/report/pdf` | Core Flask API layer managing statement store, beginning balance persistence, mirror-pair deduplication (`seen_matched_ids`), and report downloads. |
+| **`frontend/statement_store.py`** | `get_statement()`, `list_statements()`, `rebuild_generated_csv()` | JSON database store managing uploaded statement records and disk persistence (`data/statements_db.json`). |
+| **`frontend/static/js/dashboard.js`** | `openUnifiedSourceView()`, `editBeginningBalance()`, `initTestCaseLoaders()`, `openRecordComparisonModal()` | Client UI application controller. Manages tab routing, master table rendering, modal popups, benchmark loaders, and keyword comparison. |
 
 ---
 
-## 3. Status Classification Rules & Criteria
+## 3. Implemented Subsystem Workflows
+
+### 3.1 Unified Master Source Table View (`#sub-unified-sources`)
+- **UI Route**: Triggered from topbar "Sources" dropdown or direct sidebar click (`openUnifiedSourceView()`).
+- **Aggregation Logic**: `filterAndRenderUnifiedTable()` aggregates rows from all ingested statements into a single, searchable table.
+- **Filtering Capabilities**: Dynamic status filter pills (All, SETTLED, MATCHED, SIMILAR, UNMATCHED), source dropdown selector, date range inputs, search bar, and column visibility toggles.
+
+### 3.2 Beginning Balance Engine & State Propagation
+- **Endpoint**: `POST /reconciliation/beginning_balance` accepts `{"beginning_balance": <float>}`.
+- **Backend Handler**: Updates global `_BEGINNING_BALANCE` in `frontend/api/routes.py` and updates all active runs in `_RUNS`.
+- **Cascade Trigger**: In `dashboard.js`, `editBeginningBalance()` sends the backend request and immediately triggers a refresh cascade:
+  1. `hydrateExistingRun()` (updates Overview KPIs & charts)
+  2. `loadForecastData()` (re-calculates cumulative forward cash flow)
+  3. `refreshReportsView()` (updates PDF report data)
+
+### 3.3 Pre-configured Test Benchmark Data Loader
+- **Location**: `test_cases/` folder scanner (`/api/test_cases`).
+- **Dynamic Case Detection**: Scans for folders matching `Test[N]` (e.g. `Test1`, `Test2`, `Test3`, `Test4`, `Test5`).
+- **UI Component**: Collapsible benchmark section featuring high-contrast dark-mode cards with custom badge styling per test case (`.btn-test-load`, `.test-file-badge`).
+
+### 3.4 Add New Transaction Entry Modal
+- **UI Modal**: `#addTransactionModalBackdrop` rendered with glassmorphism backdrop (`backdrop-filter: blur(8px)`), `#0f172a` slate container, styled date/amount/description/UTR inputs, currency selectors (`INR`, `USD`, `EUR`, `GBP`), transaction mode options, and primary `Save & Reconcile` button.
+
+---
+
+## 4. Status Classification Rules
 
 ### 1. `SETTLED` Status
-- **Target Condition**: Complete ledger reconciliation between Bank and Counterpart/Gateway records.
+- **Target Condition**: Reconciliation involving at least one record from a Primary Statement source (`is_primary=True`).
 - **Criteria**:
   - **Exact Reference Match**: Cleaned UTR, Settlement ID, or Bank Reference matches counterpart exactly.
   - **Zero Amount Variance**: `abs(primary_net_amount - counterpart_net_amount) == 0.00`.
-  - **Or Fee Equation Verified**: 
-    $$\text{Net Bank Deposit} = \sum_{i=1}^N \text{Gross Order Amount}_i - \text{Gateway Fees} - \text{GST/Tax}$$
-- **Engine Assignment**: Executed in `matcher/exact_matcher.py` & `matcher/split_aggregate_matcher.py`.
+  - **Or Batch Fee Equation**: Net Bank Deposit equals gross order sum minus gateway fees and taxes.
 - **UI Pill**: `<span class="status-pill status-settled">SETTLED</span>`
 
 ### 2. `MATCHED` Status
-- **Target Condition**: High-confidence match under tolerance or verified via ML/LLM model.
+- **Target Condition**: Reconciliation between two counterpart records (`is_primary=False`).
 - **Criteria**:
   - **Weighted Score Floor**: Composite Score $\ge 0.85$.
-  - **Amount Variance**: Amount delta $\le ₹1.00$ (configurable in `config/matching_config.py`).
-  - **Date Window**: Transaction date difference $\le 3$ calendar days.
-  - **Or LLM Recommendation**: LLM Smart Match agent returned `CONFIRMED` recommendation with confidence $\ge 0.70$.
-- **Engine Assignment**: Executed in `matcher/tolerance_matcher.py` & `llm/ambiguous_matcher.py`.
+  - **Amount Variance**: Amount delta $\le ₹1.00$.
+  - **Date Window**: Date difference $\le 3$ calendar days.
+  - **Or LLM Recommendation**: LLM Smart Match agent returns `CONFIRMED` recommendation.
 - **UI Pill**: `<span class="status-pill status-matched">MATCHED</span>`
 
 ### 3. `SIMILAR` Status
-- **Target Condition**: Candidate pair identified with potential text or amount alignment, requiring user/developer review.
+- **Target Condition**: Candidate pair identified with potential alignment, requiring user/LLM review.
 - **Criteria**:
-  - **Score Range**: Composite Score between $0.50$ and $0.84$.
-  - **Partial Overlap**: Shared customer name, card settlement token, or date/amount proximity without exact UTR match.
-  - **Candidate Drawer**: Displayed in the side-by-side modal under **"Find Similar Payments"** (`/api/similar_payments`).
-- **Engine Assignment**: Generated in `matcher/tolerance_matcher.py` & `frontend/api/routes.py`.
+  - **Score Window**: Composite Score between $0.50$ and $0.84$.
+  - **Candidate Drawer**: Surfaced in comparison modal under **"Find Similar Payments"** (`/api/similar_payments`).
 - **UI Pill**: `<span class="status-pill status-similar">SIMILAR</span>`
 
 ### 4. `UNMATCHED` Status (Exceptions)
-- **Target Condition**: Discrepancy or orphaned record unable to be matched against any active statement pool.
-- **Criteria**:
-  - Composite Score $< 0.50$ across all candidate statements.
-  - Missing counterpart record (e.g. uncollected deposit, failed gateway transfer, chargeback).
-- **Engine Assignment**: Default status in `reconciler/reconcile.py` for unresolved records.
+- **Target Condition**: Discrepancy or orphaned record failing all matching rules ($< 0.50$).
+- **Routing**: Isolated into the **Exception Ledger** table with an active **"Run LLM Match"** action button.
 - **UI Pill**: `<span class="status-pill status-unmatched">UNMATCHED</span>`
 
 ---
 
-## 4. Multi-Source Primary Prioritization & Mirror Pair Deduplication
+## 5. Symmetric Mirror-Pair Deduplication
 
-In a two-sided reconciliation system, matching Record A (Bank Statement) to Record B (Internal Order Book) naturally creates two directional pairs:
-1. `(Record A -> Record B)`
-2. `(Record B -> Record A)`
+To prevent duplicate row entries when Record A (Bank) matches Record B (Gateway), `frontend/api/routes.py` applies symmetric pair deduplication in `_build_dashboard_run()`:
 
-To prevent duplicate row listings in the UI dashboard, `frontend/api/routes.py` applies the following logic in `_build_dashboard_run()`:
-
-1. **Statement Priority Ordering**: Statements flagged as `is_primary=True` (e.g., Bank Statement) take precedence as the anchor/primary row.
-2. **Symmetric Deduplication Set (`seen_matched_ids`)**:
-   ```python
-   seen_matched_ids = set()
-   for tx in all_transactions:
-       pair_key = (tx.primary_id, tx.counterpart_id)
-       reverse_key = (tx.counterpart_id, tx.primary_id)
-       if pair_key in seen_matched_ids or reverse_key in seen_matched_ids:
-           continue
-       seen_matched_ids.add(pair_key)
-       # Include single consolidated row in dashboard table
-   ```
+```python
+seen_matched_ids = set()
+for tx in all_reconciled_transactions:
+    p_id = str(tx.get("primary_id"))
+    c_id = str(tx.get("counterpart_id"))
+    
+    pair_key = (p_id, c_id)
+    reverse_key = (c_id, p_id)
+    
+    if pair_key in seen_matched_ids or reverse_key in seen_matched_ids:
+        continue
+        
+    seen_matched_ids.add(pair_key)
+    # Consolidated single row rendered in dashboard table
+```
 
 ---
 
-## 5. Description & Keyword Similarity Extraction in UI
+## 6. Description & Keyword Extraction in UI
 
-In `frontend/static/js/dashboard.js`, when a developer or user clicks any transaction row to open the side-by-side Comparison Modal (`openRecordComparisonModal`), the system dynamically extracts shared keywords between the two records:
+When a user clicks any row to view the side-by-side Comparison Modal (`openRecordComparisonModal`), `dashboard.js` dynamically extracts shared keywords:
 
 ```javascript
 function extractSharedKeywords(str1, str2) {
@@ -123,21 +144,12 @@ function extractSharedKeywords(str1, str2) {
 }
 ```
 
-### Rendering in Parameter Match Matrix:
-- **Shared Tokens Found**: Displays `<span class="status-pill status-exact">🔑 Shared Keywords: MEERA, IYER</span>`
-- **Fuzzy Alignment**: Displays `<span class="status-pill">Fuzzy / Field Linked Match</span>`
-
 ---
 
-## 6. Development Checklist & System Rules
+## 7. Verification Commands
 
-When introducing new matching rules, UI components, or statement types:
-1. **Adding Column Aliases**: Update `config/column_aliases.json` under appropriate canonical key.
-2. **Adding Reference Regex**: Add regex pattern to `config/normalization_rules.json` under `identifier_patterns`.
-3. **Tuning Score Weights**: Adjust parameters in `config/matching_config.py`.
-4. **UI Design Tokens**: Use CSS variables from `frontend/static/css/tokens.css`. Use `.btn-topbar-automatch` for topbar/dashboard auto-match triggers and `background: transparent !important;` on inner main layout containers to expose `.bg-grid`.
-5. **Period Closure Protocol**: Confirm period closure via `/api/close_period`, trigger report file downloads, and perform safe state resets (`for (const k in _panelLoaded) delete _panelLoaded[k];`).
-6. **Validating Pipeline**: Run the full 66 unit test suite:
-   ```bash
-   PYTHONPATH=. ./.venv/bin/pytest tests/test_closed_period_vault.py tests/test_api_contract.py tests/test_dispute_coverage.py tests/test_matcher_redesign.py tests/test_part11_verification.py tests/test_part12_clean_state.py tests/test_part13_realtime_sync.py tests/test_report_export.py tests/test_unify_ingestion.py
-   ```
+Run the full pytest suite to validate all system components:
+
+```bash
+PYTHONPATH=. ./.venv/bin/pytest -q
+```

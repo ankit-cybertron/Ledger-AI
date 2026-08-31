@@ -9,7 +9,7 @@
 
 **Ledger AI** is an automated financial reconciliation and transaction matching platform designed to ingest multi-source financial statements (Bank Statements, Payment Gateways like Razorpay/Stripe, Internal Order Books, Cash Books, and UPI feeds) across formats (CSV, XLSX, PDF).
 
-The core engine uses a **Sequential 3-Pass Matching Cascade**, backed by a **12-Dimensional Machine Learning Confidence Model**, a **Gateway Fee & Settlement Equation Engine**, an **LLM Ambiguous Matching Agent (Google Gemini)**, and a **Four-Status Outcomes Taxonomy**.
+The core engine uses a **Sequential 3-Pass Matching Cascade**, backed by a **12-Dimensional Machine Learning Confidence Model**, a **Gateway Fee & Settlement Equation Engine**, a **Groq LLM Ambiguous Matching Agent**, and a **Four-Status Outcomes Taxonomy**.
 
 ---
 
@@ -54,7 +54,7 @@ The core engine uses a **Sequential 3-Pass Matching Cascade**, backed by a **12-
                                                 ▼
                                ┌────────────────────────────────┐
                                │      LLM Fallback Review       │
-                               │  (Gemini Agent for 0.60-0.85)  │
+                               │  (Groq Agent for 0.60-0.85)    │
                                └────────────────────────────────┘
                                                 │
                                                 ▼
@@ -147,14 +147,14 @@ Candidate matches pass through a **12-dimensional feature extraction vector** ev
   0.0                      0.50            0.60            0.85                 1.0
   ├─────────────────────────┼───────────────┼───────────────┼────────────────────┤
   │   UNMATCHED Exception   │    SIMILAR    │  LLM Review   │  AUTO-APPROVED     │
-  │   (Human Review Queue)  │ (Review Req)  │ (Gemini Agent)│  (MATCHED/SETTLED) │
+  │   (Human Review Queue)  │ (Review Req)  │  (Groq Agent) │  (MATCHED/SETTLED) │
   └─────────────────────────┴───────────────┴───────────────┴────────────────────┘
 ```
 
-### LLM Fallback Agent (`llm/ambiguous_matcher.py`)
+### LLM Fallback Agent (`llm/ambiguous_matcher.py` & `llm/query_llm.py`)
 
-- **Trigger Window**: Confidence scores falling between **`0.60`** and **`0.85`**.
-- **Model**: **Google Gemini API**.
+- **Trigger Window**: Confidence scores falling between **`0.60`** and **`0.85`** or on-demand user click.
+- **Provider & Models**: **Groq API** (`openai/gpt-oss-120b`, `qwen/qwen3.6-27b`, `openai/gpt-oss-20b`) with multi-key failover (`GROQ_API_KEY`, `GROQ_API_KEY1`, `GROQ_API_KEY2`).
 - **Context Payload**: Transmits structured JSON payloads containing primary/counterpart records, raw descriptions, transaction modes, fee breakdowns, and dates.
 - **Output Schema**:
   - `recommendation`: `"CONFIRMED"`, `"REJECTED"`, or `"MANUAL_REVIEW"`
@@ -167,8 +167,8 @@ Candidate matches pass through a **12-dimensional feature extraction vector** ev
 
 | Status | Code | Description | Qualification Criteria |
 |---|---|---|---|
-| **`SETTLED`** | `200_SETTLED` | Fully reconciled & payment finalized | Exact UTR + Amount match OR verified 1-to-N gateway batch payout. |
-| **`MATCHED`** | `201_MATCHED` | Reconciled via engine/ML rules | High confidence ($\ge 0.85$) passing tolerance and scoring guards. |
+| **`SETTLED`** | `200_SETTLED` | Fully reconciled & payment finalized | Match involves a Primary Statement record (`is_primary=True`). Exact UTR + Amount match OR verified 1-to-N gateway batch payout. |
+| **`MATCHED`** | `201_MATCHED` | Reconciled between counterpart records | Reconciled between two counterpart sources (`is_primary=False`). High confidence ($\ge 0.85$) passing tolerance/ML guards. |
 | **`SIMILAR`** | `300_SIMILAR` | Potential candidate match identified | Moderate score ($0.50 - 0.84$), flagged for human/LLM review. |
 | **`UNMATCHED`**| `400_UNMATCHED`| Discrepancy / Exception | Failed all reference, amount, date, and fee matching rules. |
 
