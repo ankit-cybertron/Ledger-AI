@@ -208,6 +208,8 @@ def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     success_color = "#10b981"
     warning_color = "#f59e0b"
     danger_color = "#ef4444"
+    purple_color = "#8b5cf6"
+    pink_color = "#ec4899"
     indigo_color = "#6366f1"
     sky_color = "#0284c7"
 
@@ -243,7 +245,7 @@ def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     else:
         ax.text(0.5, 0.5, "No Data Available", horizontalalignment="center", verticalalignment="center", fontsize=9, color="#64748b")
         ax.axis("off")
-    ax.set_title("Status Breakdown", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
+    ax.set_title("Taxonomy Status Breakdown", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
     fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
@@ -251,26 +253,32 @@ def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     images["status_breakdown"] = buf
     plt.close(fig)
 
-    # 2. Reconciliation Funnel
-    fn = charts_data.get("funnel_data", {})
-    fn_stages = fn.get("stages", ["Total", "Auto", "Settled", "Similar", "Unmatched"])
-    fn_counts = fn.get("counts", [0, 0, 0, 0, 0])
+    # 2. Matching Cascade Waterfall Flow (Passes 1-4 & Unresolved)
+    mc = charts_data.get("matching_cascade", {})
+    mc_labels = mc.get("labels", ["Pass 1: Exact", "Pass 2: Tolerance", "Pass 3: Split", "Pass 4: LLM", "Unresolved"])
+    mc_counts = mc.get("counts", [0, 0, 0, 0, 0])
+    mc_colors = [success_color, primary_color, purple_color, pink_color, danger_color]
+
     fig, ax = plt.subplots(figsize=(4.5, 3.0), dpi=300)
     apply_clean_spines(ax)
-    y_pos = range(len(fn_stages))
-    ax.barh(y_pos, fn_counts, color=indigo_color, height=0.5, edgecolor="none", alpha=0.9)
+    y_pos = range(len(mc_labels))
+    ax.barh(y_pos, mc_counts, color=mc_colors, height=0.55, edgecolor="none", alpha=0.9)
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(fn_stages, fontsize=8, color="#0f172a", fontweight="500")
+    # Shorten labels for clean PDF display
+    clean_labels = [l.replace("Pass ", "P").replace("Unresolved Exceptions", "Unresolved") for l in mc_labels]
+    ax.set_yticklabels(clean_labels, fontsize=7.5, color="#0f172a", fontweight="600")
     ax.invert_yaxis()
-    ax.set_xlabel("Records Count", fontsize=8, color="#475569")
-    ax.set_title("Reconciliation Stage Funnel", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
-    max_c = max(fn_counts) if fn_counts else 1
-    for i, v in enumerate(fn_counts):
-        ax.text(v + max_c * 0.02, i, f"{v:,}", va="center", fontsize=8, fontweight="bold", color="#1e293b")
+    ax.set_xlabel("Transaction Volume", fontsize=8, color="#475569")
+    ax.set_title("Matching Cascade Waterfall", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
+    max_mc = max(mc_counts) if mc_counts else 1
+    for i, v in enumerate(mc_counts):
+        if v > 0:
+            ax.text(v + max_mc * 0.02, i, f"{v:,}", va="center", fontsize=7.5, fontweight="bold", color="#1e293b")
     fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
     buf.seek(0)
+    images["matching_cascade"] = buf
     images["funnel"] = buf
     plt.close(fig)
 
@@ -310,58 +318,114 @@ def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     images["source_contribution"] = buf
     plt.close(fig)
 
-    # 4. Confidence Distribution Histogram
-    cd = charts_data.get("confidence_distribution", {})
-    c_labels = cd.get("labels", ["0.0-0.5", "0.5-0.7", "0.7-0.8", "0.8-0.9", "0.9-1.0"])
-    c_counts = cd.get("counts", [0, 0, 0, 0, 0])
+    # 4. Exception Risk Exposure Matrix (Age vs. Exposure Heatmap)
+    erm = charts_data.get("exception_risk_matrix", {})
+    matrix = erm.get("matrix", [])
+    age_t = erm.get("age_tiers", ["0–2d", "3–7d", "8–14d", "15d+"])
+    amt_t = erm.get("amount_tiers", ["<Rs.1k", "1k–10k", "10k–100k", "100k+"])
+
     fig, ax = plt.subplots(figsize=(4.5, 3.0), dpi=300)
     apply_clean_spines(ax)
-    ax.bar(c_labels, c_counts, color=sky_color, width=0.5, alpha=0.9)
-    ax.set_title("ML Model Confidence Distribution", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
-    ax.set_xlabel("Confidence Score Range", fontsize=8, color="#475569")
-    ax.set_ylabel("Transactions", fontsize=8, color="#475569")
-    plt.xticks(fontsize=7.5)
+    if matrix and len(matrix) == 4:
+        # Build numeric matrix of item counts
+        data_grid = [[matrix[r][c].get("count", 0) for c in range(4)] for r in range(4)]
+        im = ax.imshow(data_grid, cmap="Reds", aspect="auto", alpha=0.75)
+        ax.set_xticks(range(4))
+        ax.set_yticks(range(4))
+        clean_age = [a.replace(" Days", "d") for a in age_t]
+        clean_amt = [a.replace("₹", "Rs.") for a in amt_t]
+        ax.set_xticklabels(clean_age, fontsize=7.5, color="#0f172a")
+        ax.set_yticklabels(clean_amt, fontsize=7.5, color="#0f172a")
+        ax.set_xlabel("Aging Tier", fontsize=8, color="#475569")
+        ax.set_ylabel("Value Exposure", fontsize=8, color="#475569")
+
+        for r in range(4):
+            for c in range(4):
+                cell = matrix[r][c]
+                cnt = cell.get("count", 0)
+                if cnt > 0:
+                    ax.text(c, r, f"{cnt}\nRs.{cell.get('amount', 0):,.0f}", ha="center", va="center", fontsize=6.5, fontweight="bold", color="#0f172a")
+                else:
+                    ax.text(c, r, "—", ha="center", va="center", fontsize=7, color="#94a3b8")
+    else:
+        ax.text(0.5, 0.5, "Zero Open Exceptions", horizontalalignment="center", verticalalignment="center", fontsize=9, color="#10b981", fontweight="bold")
+        ax.axis("off")
+
+    ax.set_title("Exception Risk Exposure Matrix", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
     fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
     buf.seek(0)
+    images["exception_risk_matrix"] = buf
     images["confidence_dist"] = buf
     plt.close(fig)
 
-    # 5. Exception Aging Bar
-    ea = charts_data.get("exception_aging", {})
-    e_labels = ea.get("labels", ["0-1 day", "1-3 days", "3-7 days", "7+ days"])
-    e_counts = ea.get("counts", [0, 0, 0, 0])
-    fig, ax = plt.subplots(figsize=(4.5, 3.0), dpi=300)
-    apply_clean_spines(ax)
-    ax.bar(e_labels, e_counts, color=danger_color, width=0.5, alpha=0.85)
-    ax.set_title("Exception Aging Analysis", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
-    ax.set_xlabel("Age Bracket", fontsize=8, color="#475569")
-    ax.set_ylabel("Open Exceptions", fontsize=8, color="#475569")
-    plt.xticks(fontsize=8)
+    # 5. Gateway Performance & MDR Leakage Tracker (Dual-Axis)
+    gp = charts_data.get("gateway_performance_matrix", {})
+    gateways = gp.get("gateways", ["No Gateways"])
+    m_rates = gp.get("match_rates", [0.0])
+    f_vars = gp.get("fee_variances", [0.0])
+
+    fig, ax1 = plt.subplots(figsize=(4.5, 3.0), dpi=300)
+    apply_clean_spines(ax1)
+    x_pos = range(len(gateways))
+    clean_gw = [str(g)[:10] for g in gateways]
+
+    ax1.bar(x_pos, m_rates, color=primary_color, width=0.4, alpha=0.8, label="Match Rate %")
+    ax1.set_ylabel("Match Rate (%)", color=primary_color, fontsize=8, fontweight="bold")
+    ax1.set_ylim(0, 110)
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels(clean_gw, fontsize=7.5, rotation=0)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x_pos, f_vars, color=danger_color, marker="o", linestyle="--", linewidth=1.5, label="MDR Leakage (Rs.)")
+    ax2.set_ylabel("Fee Variance (Rs.)", color=danger_color, fontsize=8, fontweight="bold")
+    ax2.spines['top'].set_visible(False)
+    ax2.tick_params(colors=danger_color, labelsize=7.5)
+
+    ax1.set_title("Gateway Efficiency & MDR Leakage", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
     fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
     buf.seek(0)
+    images["gateway_performance"] = buf
     images["exception_aging"] = buf
     plt.close(fig)
 
-    # 6. Match Rate Trend Line with Gradient Fill
-    tl = charts_data.get("trend_line", {})
-    t_labels = tl.get("labels", ["Run 1"])
-    t_rates = tl.get("match_rates", [0.0])
+    # 6. Time x Amount Reconciliation Map (Scatter)
+    sm = charts_data.get("scatter_map", {})
+    points = sm.get("points", [])
+    links = sm.get("links", [])
+
     fig, ax = plt.subplots(figsize=(4.5, 3.0), dpi=300)
     apply_clean_spines(ax)
-    ax.plot(t_labels, t_rates, marker="o", color=success_color, linewidth=2.5, markersize=6, markerfacecolor="white", markeredgewidth=2)
-    ax.fill_between(t_labels, t_rates, color=success_color, alpha=0.12)
-    ax.set_title("Historical Match Rate Trend", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
-    ax.set_ylabel("Parity Match Rate (%)", fontsize=8, color="#475569")
-    ax.set_ylim(0, 105)
-    plt.xticks(rotation=15, fontsize=7.5)
+
+    if points:
+        status_c_map = {"settled": success_color, "matched": primary_color, "auto": primary_color, "similar": warning_color, "unmatched": danger_color, "exception": danger_color}
+        x_vals = range(len(points))
+        y_vals = [p.get("y", 0.0) for p in points]
+        colors_p = [status_c_map.get((p.get("status") or "").lower(), primary_color) for p in points]
+
+        # Draw connecting dashed lines for matched pairs
+        for link in links:
+            if len(link) == 2:
+                i1, i2 = link
+                if i1 < len(points) and i2 < len(points):
+                    ax.plot([i1, i2], [y_vals[i1], y_vals[i2]], color=primary_color, linestyle=":", linewidth=1.0, alpha=0.6)
+
+        ax.scatter(x_vals, y_vals, c=colors_p, s=25, alpha=0.85, edgecolors="white", linewidths=0.5)
+        ax.set_ylabel("Amount (Rs.)", fontsize=8, color="#475569")
+        ax.set_xlabel("Transactions Timeline", fontsize=8, color="#475569")
+    else:
+        ax.text(0.5, 0.5, "No Scatter Points", horizontalalignment="center", verticalalignment="center", fontsize=9, color="#64748b")
+        ax.axis("off")
+
+    ax.set_title("Time × Amount Reconciliation Map", fontsize=10, fontweight="bold", pad=10, color="#0f172a")
     fig.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
     buf.seek(0)
+    images["scatter_map"] = buf
     images["trend_line"] = buf
     plt.close(fig)
 

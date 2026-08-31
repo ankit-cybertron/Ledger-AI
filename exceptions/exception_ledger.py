@@ -99,7 +99,7 @@ def determine_priority(exception_type, confidence):
 def build_exception_ledger(reconciliation):
     """Builds structured Exception Ledger DataFrame from reconciliation results, preserving prior human audit resolutions."""
     exceptions = reconciliation[
-        reconciliation["status"].isin(["SIMILAR", "similar", "manual_review", "review"])
+        reconciliation["status"].isin(["SIMILAR", "similar", "manual_review", "review", "UNMATCHED", "unmatched", "EXCEPTION", "exception"])
     ].copy()
 
 

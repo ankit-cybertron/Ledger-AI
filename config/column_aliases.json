@@ -150,7 +150,8 @@
     "Bank RRN",
     "UTR / Reference No",
     "Answer Key (Reference Only)",
-    "Bill Reference No"
+    "Bill Reference No",
+    "Reference / UTR"
   ],
   "order_id": [
     "order_id",
