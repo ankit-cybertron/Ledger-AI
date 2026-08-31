@@ -1034,7 +1034,7 @@
             </div>
           </div>
 
-          <!-- PART 9 OVERVIEW CHARTS GRID (6 Charts) -->
+          <!-- PART 9 OVERVIEW CHARTS GRID (6 Financial Reconciliation Charts) -->
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px; margin-bottom: 24px;">
             
             <!-- Chart 1: Status Breakdown (Donut) -->
@@ -1048,21 +1048,21 @@
               </div>
             </div>
 
-            <!-- Chart 2: Reconciliation Funnel -->
+            <!-- Chart 2: Matching Cascade Waterfall (Pass 1 to Pass 4) -->
             <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
               <div style="margin-bottom: 14px;">
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Reconciliation Pipeline Funnel</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Transaction volume flow across pipeline stages</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Matching Cascade Waterfall</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Volume resolution flow across Passes 1–4 & unresolved exceptions</div>
               </div>
               <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
-                <canvas id="chartReconFunnel"></canvas>
+                <canvas id="chartMatchingCascade"></canvas>
               </div>
             </div>
 
-            <!-- Chart 3: Source-wise Contribution (Stacked Bar) -->
+            <!-- Chart 3: Source-Wise Stacked Contribution -->
             <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
               <div style="margin-bottom: 14px;">
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Source-Wise Contribution & Exceptions</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Source-Wise Stacked Contribution</div>
                 <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Taxonomy status breakdown per statement source</div>
               </div>
               <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
@@ -1070,36 +1070,41 @@
               </div>
             </div>
 
-            <!-- Chart 4: Confidence Score Distribution Histogram -->
+            <!-- Chart 4: Exception Risk Exposure Matrix (Age vs. Amount Exposure Grid) -->
             <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
-              <div style="margin-bottom: 14px;">
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Confidence Score Distribution</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Scoring engine calibration & match mass distribution</div>
+              <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Exception Risk Exposure Matrix</div>
+                  <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Aging tiers vs. monetary exposure heatmap for open items</div>
+                </div>
+                <div id="riskMatrixTotalBadge" style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25);">
+                  Risk Heatmap
+                </div>
               </div>
-              <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
-                <canvas id="chartConfidenceDist"></canvas>
+              <div id="containerExceptionRiskMatrix" style="flex: 1; width: 100%; min-height: 230px; display: flex; flex-direction: column; justify-content: center;">
+                <canvas id="chartAmountVariance"></canvas>
               </div>
             </div>
 
-            <!-- Chart 5: Exception Aging Chart -->
+            <!-- Chart 5: Gateway Match Rate & MDR Leakage Tracker -->
             <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
               <div style="margin-bottom: 14px;">
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Open Exception Aging</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Age buckets for SIMILAR / manual-review items</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Gateway Match Rate & MDR Leakage</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Processor match efficiency % vs. detected fee discrepancies</div>
               </div>
               <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
-                <canvas id="chartExceptionAging"></canvas>
+                <canvas id="chartGatewayPerformance"></canvas>
               </div>
             </div>
 
-            <!-- Chart 6: Match Rate Trend Line -->
+            <!-- Chart 6: Time x Amount Reconciliation Map (Scatter) -->
             <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; min-height: 320px; display: flex; flex-direction: column;">
               <div style="margin-bottom: 14px;">
-                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Reconciliation Match Rate Trend</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Historical match percentage over pipeline import runs</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Time × Amount Reconciliation Map</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Transaction clusters over time with matched pair connections</div>
               </div>
               <div style="flex: 1; position: relative; width: 100%; min-height: 230px;">
-                <canvas id="chartMatchTrend"></canvas>
+                <canvas id="chartScatterMap"></canvas>
               </div>
             </div>
 
@@ -1183,7 +1188,7 @@
       return;
     }
 
-    // Chart 1: Status Breakdown Donut
+    // Chart 1: Status Breakdown (Donut)
     const canvas1 = document.getElementById("chartStatusBreakdown");
     if (canvas1) {
       if (!hasData) {
@@ -1223,39 +1228,51 @@
       }
     }
 
-    // Chart 2: Reconciliation Funnel (Horizontal Bar)
-    const canvas2 = document.getElementById("chartReconFunnel");
+    // Chart 2: Matching Cascade Waterfall (Pass 1 to Pass 4)
+    const canvas2 = document.getElementById("chartMatchingCascade");
     if (canvas2) {
       if (!hasData) {
-        _showChartEmptyPlaceholder(canvas2, "No pipeline volume flow available yet.");
+        _showChartEmptyPlaceholder(canvas2, "No matching cascade flow data available yet.");
       } else {
-        const fn = chartsData.funnel_data || {};
-        _overviewChartInstances.reconFunnel = new Chart(canvas2.getContext("2d"), {
+        const mc = chartsData.matching_cascade || {};
+        _overviewChartInstances.matchingCascade = new Chart(canvas2.getContext("2d"), {
           type: "bar",
           data: {
-            labels: fn.stages || ["Total", "Auto", "Settled", "Similar", "Unmatched"],
+            labels: mc.labels || ["Pass 1: UTR Exact", "Pass 2: Fee Tolerance", "Pass 3: N:1 Split Batch", "Pass 4: Groq LLM Match", "Unresolved Exceptions"],
             datasets: [{
-              label: "Volume Flow",
-              data: fn.counts || [0, 0, 0, 0, 0],
-              backgroundColor: ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"],
-              borderRadius: 6
+              label: "Transaction Volume",
+              data: mc.counts || [0, 0, 0, 0, 0],
+              backgroundColor: ["#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#ef4444"],
+              borderRadius: 6,
+              barThickness: 22
             }]
           },
           options: {
             indexAxis: "y",
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    const cnt = ctx.raw || 0;
+                    const pct = total ? ((cnt / total) * 100).toFixed(1) : 0;
+                    return `${ctx.label}: ${cnt} entries (${pct}%)`;
+                  }
+                }
+              }
+            },
             scales: {
-              x: { grid: { color: gridColor }, ticks: { color: textColor } },
-              y: { grid: { display: false }, ticks: { color: textColor } }
+              x: { grid: { color: gridColor }, ticks: { color: textColor, precision: 0 } },
+              y: { grid: { display: false }, ticks: { color: textColor, font: { weight: "600" } } }
             }
           }
         });
       }
     }
 
-    // Chart 3: Source-wise Contribution (Stacked Bar)
+    // Chart 3: Source-Wise Stacked Contribution
     const canvas3 = document.getElementById("chartSourceContribution");
     if (canvas3) {
       if (!hasData) {
@@ -1287,98 +1304,267 @@
       }
     }
 
-    // Chart 4: Confidence Score Distribution Histogram
-    const canvas4 = document.getElementById("chartConfidenceDist");
-    if (canvas4) {
-      if (!hasData) {
-        _showChartEmptyPlaceholder(canvas4, "No confidence scoring distribution data available yet.");
+    // Chart 4: Exception Risk Exposure Matrix (Age vs. Amount Exposure Grid)
+    const matrixContainer = document.getElementById("containerExceptionRiskMatrix");
+    if (matrixContainer) {
+      const erm = chartsData.exception_risk_matrix || {};
+      const matrix = erm.matrix || [];
+      const ageTiers = erm.age_tiers || ["0–2 Days", "3–7 Days", "8–14 Days", "15+ Days"];
+      const amountTiers = erm.amount_tiers || ["< ₹1k", "₹1k–₹10k", "₹10k–₹100k", "₹100k+"];
+      const totalExp = erm.total_exposure || 0;
+
+      const badge = document.getElementById("riskMatrixTotalBadge");
+      if (badge) {
+        badge.textContent = totalExp > 0 ? `Exposure: ₹${totalExp.toLocaleString()}` : "Zero Open Exposure";
+        badge.style.color = totalExp > 0 ? "#ef4444" : "var(--color-success)";
+        badge.style.background = totalExp > 0 ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)";
+        badge.style.borderColor = totalExp > 0 ? "rgba(239, 68, 68, 0.25)" : "rgba(16, 185, 129, 0.25)";
+      }
+
+      if (!hasData || !matrix.length) {
+        matrixContainer.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:180px;color:var(--text-muted);font-size:0.82rem;text-align:center;padding:20px;background:var(--bg-elevated);border-radius:8px;border:1px dashed var(--border);">No open exception items to map risk exposure.</div>';
       } else {
-        const cd = chartsData.confidence_distribution || {};
-        _overviewChartInstances.confidenceDist = new Chart(canvas4.getContext("2d"), {
-          type: "bar",
-          data: {
-            labels: cd.labels || ["0.0 - 0.5", "0.5 - 0.7", "0.7 - 0.8", "0.8 - 0.9", "0.9 - 1.0"],
-            datasets: [{
-              label: "Transaction Count",
-              data: cd.counts || [0, 0, 0, 0, 0],
-              backgroundColor: "#8b5cf6",
-              borderRadius: 6
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: textColor } },
-              y: { grid: { color: gridColor }, ticks: { color: textColor } }
+        let gridHtml = `
+          <div style="overflow-x: auto; width: 100%;">
+            <table style="width: 100%; border-collapse: separate; border-spacing: 6px; font-size: 0.78rem;">
+              <thead>
+                <tr>
+                  <th style="padding: 6px; color: var(--text-muted); text-align: left; font-weight: 600;">Value \\ Age</th>
+                  ${ageTiers.map(a => `<th style="padding: 6px; color: var(--text-secondary); text-align: center; font-weight: 600; background: var(--bg-elevated); border-radius: 4px;">${a}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        amountTiers.forEach((amtLabel, rIdx) => {
+          gridHtml += `<tr>
+            <td style="padding: 6px 8px; color: var(--text-secondary); font-weight: 700; white-space: nowrap; background: var(--bg-elevated); border-radius: 4px;">${amtLabel}</td>`;
+
+          ageTiers.forEach((_, cIdx) => {
+            const cell = (matrix[rIdx] && matrix[rIdx][cIdx]) || { count: 0, amount: 0 };
+            const cnt = cell.count || 0;
+            const amt = cell.amount || 0;
+
+            // Compute risk intensity based on amount & age severity
+            let bg = "var(--bg-elevated)";
+            let border = "1px solid var(--border)";
+            let textColorCell = "var(--text-muted)";
+
+            if (cnt > 0) {
+              const severity = (rIdx + 1) * (cIdx + 1); // 1..16 severity index
+              const alpha = Math.min(0.15 + (severity * 0.05), 0.85);
+              if (severity <= 3) {
+                bg = `rgba(245, 158, 11, ${alpha})`;
+                border = "1px solid rgba(245, 158, 11, 0.4)";
+                textColorCell = "#f59e0b";
+              } else {
+                bg = `rgba(239, 68, 68, ${alpha})`;
+                border = "1px solid rgba(239, 68, 68, 0.4)";
+                textColorCell = "#ef4444";
+              }
             }
-          }
+
+            gridHtml += `
+              <td style="padding: 8px; text-align: center; background: ${bg}; border: ${border}; border-radius: 6px;">
+                <div style="font-weight: 700; font-family: var(--font-mono); color: ${cnt > 0 ? textColorCell : 'var(--text-muted)'}; font-size: 0.85rem;">
+                  ${cnt ? cnt + ' items' : '—'}
+                </div>
+                ${amt > 0 ? `<div style="font-size: 0.7rem; color: var(--text-primary); margin-top: 2px;">₹${amt.toLocaleString()}</div>` : ''}
+              </td>
+            `;
+          });
+
+          gridHtml += `</tr>`;
         });
+
+        gridHtml += `
+              </tbody>
+            </table>
+          </div>
+        `;
+        matrixContainer.innerHTML = gridHtml;
       }
     }
 
-    // Chart 5: Exception Aging Chart
-    const canvas5 = document.getElementById("chartExceptionAging");
+    // Chart 5: Gateway Match Rate & MDR Leakage Tracker (Dual-Axis Chart)
+    const canvas5 = document.getElementById("chartGatewayPerformance");
     if (canvas5) {
-      const ea = chartsData.exception_aging || {};
-      const totalExceptions = (ea.counts || []).reduce((a, b) => a + b, 0);
-      if (!hasData || totalExceptions === 0) {
-        _showChartEmptyPlaceholder(canvas5, "No open exception items to age.");
+      if (!hasData) {
+        _showChartEmptyPlaceholder(canvas5, "No gateway performance data available yet.");
       } else {
-        _overviewChartInstances.exceptionAging = new Chart(canvas5.getContext("2d"), {
+        const gp = chartsData.gateway_performance_matrix || {};
+        _overviewChartInstances.gatewayPerformance = new Chart(canvas5.getContext("2d"), {
           type: "bar",
           data: {
-            labels: ea.labels || ["0-1 day", "1-3 days", "3-7 days", "7+ days"],
-            datasets: [{
-              label: "Open Exception Items",
-              data: ea.counts || [0, 0, 0, 0],
-              backgroundColor: ["#3b82f6", "#f59e0b", "#f97316", "#ef4444"],
-              borderRadius: 6
-            }]
+            labels: gp.gateways || ["No Gateways"],
+            datasets: [
+              {
+                type: "bar",
+                label: "Match Rate (%)",
+                data: gp.match_rates || [0],
+                backgroundColor: "rgba(59, 130, 246, 0.75)",
+                borderColor: "#3b82f6",
+                borderWidth: 1,
+                borderRadius: 6,
+                yAxisID: "yMatch"
+              },
+              {
+                type: "line",
+                label: "MDR Fee Leakage (₹)",
+                data: gp.fee_variances || [0],
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239, 68, 68, 0.15)",
+                borderWidth: 2,
+                borderDash: [4, 4],
+                pointRadius: 4,
+                tension: 0.3,
+                yAxisID: "yFee"
+              }
+            ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { position: "bottom", labels: { color: textColor, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    if (ctx.dataset.yAxisID === "yMatch") {
+                      return `Match Rate: ${ctx.raw}%`;
+                    }
+                    return `MDR Discrepancy: ₹${(ctx.raw || 0).toLocaleString()}`;
+                  }
+                }
+              }
+            },
             scales: {
               x: { grid: { display: false }, ticks: { color: textColor } },
-              y: { grid: { color: gridColor }, ticks: { color: textColor } }
+              yMatch: {
+                type: "linear",
+                position: "left",
+                min: 0,
+                max: 100,
+                grid: { color: gridColor },
+                ticks: { color: textColor, callback: v => v + "%" },
+                title: { display: true, text: "Match Rate %", color: textColor, font: { size: 10 } }
+              },
+              yFee: {
+                type: "linear",
+                position: "right",
+                grid: { display: false },
+                ticks: { color: "#ef4444", callback: v => "₹" + v.toLocaleString() },
+                title: { display: true, text: "Fee Variance (₹)", color: "#ef4444", font: { size: 10 } }
+              }
             }
           }
         });
       }
     }
 
-    // Chart 6: Trend Line
-    const canvas6 = document.getElementById("chartMatchTrend");
+    // Chart 6: Time x Amount Reconciliation Map (Scatter Plot with Pair Lines)
+    const canvas6 = document.getElementById("chartScatterMap");
     if (canvas6) {
       if (!hasData) {
-        _showChartEmptyPlaceholder(canvas6, "No match-rate historical trend available yet.");
+        _showChartEmptyPlaceholder(canvas6, "No transaction scatter data available yet.");
       } else {
-        const tl = chartsData.trend_line || {};
-        _overviewChartInstances.matchTrend = new Chart(canvas6.getContext("2d"), {
-          type: "line",
+        const sm = chartsData.scatter_map || {};
+        const rawPoints = sm.points || [];
+        const links = sm.links || [];
+
+        // Convert ISO dates to numeric timestamps for scatter plot scale
+        const scatterData = rawPoints.map(p => {
+          const dt = new Date(p.x);
+          return {
+            x: isNaN(dt.getTime()) ? 0 : dt.getTime(),
+            y: p.y,
+            raw: p
+          };
+        }).filter(p => p.x > 0);
+
+        // Define status color helper
+        const statusColors = {
+          settled: "#10b981",
+          matched: "#3b82f6",
+          auto: "#3b82f6",
+          similar: "#f59e0b",
+          unmatched: "#ef4444",
+          exception: "#ef4444"
+        };
+
+        // Custom plugin to draw connecting lines between matched clusters
+        const clusterLinePlugin = {
+          id: 'clusterLinePlugin',
+          beforeDraw(chart) {
+            const { ctx, scales: { x, y } } = chart;
+            if (!x || !y || !links.length) return;
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = isDark ? 'rgba(59, 130, 246, 0.45)' : 'rgba(59, 130, 246, 0.6)';
+
+            links.forEach(([i1, i2]) => {
+              const p1 = scatterData[i1];
+              const p2 = scatterData[i2];
+              if (p1 && p2) {
+                const x1 = x.getPixelForValue(p1.x);
+                const y1 = y.getPixelForValue(p1.y);
+                const x2 = x.getPixelForValue(p2.x);
+                const y2 = y.getPixelForValue(p2.y);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+              }
+            });
+            ctx.restore();
+          }
+        };
+
+        _overviewChartInstances.scatterMap = new Chart(canvas6.getContext("2d"), {
+          type: "scatter",
           data: {
-            labels: tl.labels || ["Current Run"],
             datasets: [{
-              label: "Match Rate (%)",
-              data: tl.match_rates || [0],
-              borderColor: "#10b981",
-              backgroundColor: "rgba(16, 185, 129, 0.12)",
-              fill: true,
-              tension: 0.35,
-              pointRadius: 4,
-              pointHoverRadius: 6
+              label: "Transactions",
+              data: scatterData,
+              pointBackgroundColor: scatterData.map(d => statusColors[d.raw.status] || d.raw.sourceColor || "#3b82f6"),
+              pointBorderColor: isDark ? "#0f172a" : "#ffffff",
+              pointBorderWidth: 1.5,
+              pointRadius: 6,
+              pointHoverRadius: 8
             }]
           },
+          plugins: [clusterLinePlugin],
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    const item = ctx.raw.raw || {};
+                    return `[${(item.status || 'TXN').toUpperCase()}] ${item.source}: ₹${(item.y || 0).toLocaleString()} (${item.date})`;
+                  }
+                }
+              }
+            },
             scales: {
-              x: { grid: { display: false }, ticks: { color: textColor } },
-              y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + "%" } }
+              x: {
+                type: 'linear',
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  callback: function(val) {
+                    const d = new Date(val);
+                    return isNaN(d.getTime()) ? '' : `${d.getDate()}/${d.getMonth()+1}`;
+                  }
+                }
+              },
+              y: {
+                grid: { color: gridColor },
+                ticks: { color: textColor, callback: v => '₹' + v.toLocaleString() }
+              }
             }
           }
         });
@@ -3368,8 +3554,12 @@
         st === "unmatched" ||
         st === "unreconciled" ||
         st === "exception" ||
+        st === "similar" ||
+        st === "manual_review" ||
+        st === "review" ||
         ds === "unreconciled" ||
-        ds === "unmatched"
+        ds === "unmatched" ||
+        ds === "similar"
       );
     });
   }
@@ -3497,6 +3687,9 @@
       } else if (excSortKey === "matched_source_type_label") {
         valA = a.matched_source_type_label || a.matched_source_type || "";
         valB = b.matched_source_type_label || b.matched_source_type || "";
+      } else if (excSortKey === "priority") {
+        valA = a.priority || a.risk_priority || (Math.abs(a.amount || 0) > 50000 ? "HIGH" : Math.abs(a.amount || 0) > 10000 ? "MEDIUM" : "LOW");
+        valB = b.priority || b.risk_priority || (Math.abs(b.amount || 0) > 50000 ? "HIGH" : Math.abs(b.amount || 0) > 10000 ? "MEDIUM" : "LOW");
       }
 
       valA = valA ?? "";
@@ -3514,7 +3707,7 @@
       return 0;
     });
 
-    renderTransactionsTable(list, "exceptionsBody", "exceptionsEmpty", "excBadgeCount");
+    renderExceptionsTable(list);
   }
 
   function renderSummary(run) {
@@ -3842,11 +4035,12 @@
 
       document.getElementById("cmpBankId").textContent = counterpart.id || "—";
       document.getElementById("cmpBankSource").textContent = counterSrcLabel;
-      document.getElementById("cmpBankUtr").textContent = counterpart.id || "—";
+      document.getElementById("cmpBankUtr").textContent = counterpart.utr || counterpart.id || "—";
       document.getElementById("cmpBankTxId").textContent = counterpart.id || "—";
       document.getElementById("cmpBankDate").textContent = formatDateDDMMYYYY(counterpart.date || tx.date);
-      document.getElementById("cmpBankAmount").textContent = formatMoney(tx.amount);
-      document.getElementById("cmpBankDesc").textContent = tx.bank_description || tx.reason || "Matched Record";
+      const cpAmt = counterpart.amount !== undefined && counterpart.amount !== null ? counterpart.amount : (tx.counterpart_amount !== undefined ? tx.counterpart_amount : tx.amount);
+      document.getElementById("cmpBankAmount").textContent = formatMoney(cpAmt);
+      document.getElementById("cmpBankDesc").textContent = counterpart.description || tx.bank_description || tx.reason || "Similar / Matched Record";
 
       const rightViewBtn = document.getElementById("cmpRightViewSourceBtn");
       if (rightViewBtn) {
@@ -4357,14 +4551,28 @@
 
       let matchedPill = `<span class="flag-chip flag-secondary" style="opacity: 0.7;">Unmatched</span>`;
 
+      // Priority Pill
+      const rawPrio = String(ex.priority || ex.risk_priority || (Math.abs(ex.amount || 0) > 50000 ? "HIGH" : Math.abs(ex.amount || 0) > 10000 ? "MEDIUM" : "LOW")).toUpperCase();
+      let prioStyle = "background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);";
+      if (rawPrio === "HIGH" || rawPrio === "CRITICAL") {
+        prioStyle = "background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);";
+      } else if (rawPrio === "LOW") {
+        prioStyle = "background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);";
+      }
+      const priorityPill = `<span class="flag-chip" style="${prioStyle} font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-block;">${escapeHtml(rawPrio)}</span>`;
+
+      const exStatus = String(ex.status || "UNMATCHED").toUpperCase();
+      const statusPillCls = exStatus === "SIMILAR" ? "status-similar" : "status-unmatched";
+
       tr.innerHTML = `
         <td><code class="font-mono text-sm" style="color:var(--accent-blue, #60a5fa); font-weight:600;">${escapeHtml(primaryTxId)}</code></td>
         <td>${formatDateDDMMYYYY(ex.date)}</td>
         <td>${srcPill}</td>
         <td>${matchedPill}</td>
         <td class="${amountClass}">${formatMoney(ex.amount)}</td>
+        <td>${priorityPill}</td>
         <td>${flagsHTML}</td>
-        <td><span class="status-pill status-unmatched">UNMATCHED</span></td>
+        <td><span class="status-pill ${statusPillCls}">${escapeHtml(exStatus)}</span></td>
         <td>
           <button type="button" class="btn-ask-ai-row" title="Ask Ledger AI Agent about this transaction">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
