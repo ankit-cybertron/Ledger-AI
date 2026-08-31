@@ -184,6 +184,15 @@ def build_filtered_report_data(filters: Optional[Dict[str, Any]] = None) -> Dict
         "pass": integrity_pass
     }
 
+    # 7. Compute Forecast & Cash Flow projections for report scope
+    forecast_data = {}
+    try:
+        from forecasting.engine import build_forecast
+        from api.routes import _BEGINNING_BALANCE
+        forecast_data = build_forecast(filtered_txns, forecast_days=30, beginning_balance=_BEGINNING_BALANCE)
+    except Exception as exc:
+        print(f"[build_filtered_report_data] Forecast build warning: {exc}")
+
     meta = {
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "statuses": selected_statuses,
@@ -198,6 +207,7 @@ def build_filtered_report_data(filters: Optional[Dict[str, Any]] = None) -> Dict
         "transactions": filtered_txns,
         "exceptions": filtered_exceptions,
         "charts": filtered_charts,
+        "forecast": forecast_data,
         "integrity": integrity,
         "meta": meta,
         "sections": selected_sections,

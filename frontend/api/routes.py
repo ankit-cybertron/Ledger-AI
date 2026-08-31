@@ -38,6 +38,7 @@ import collections
 
 _RUNS = {}
 _RUN_LOG = []
+_BEGINNING_BALANCE = 0.0
 
 
 LEDGER_ROOT = os.path.abspath(
@@ -1158,7 +1159,7 @@ def _build_dashboard_run(period_label="Current Period"):
             "exceptions_count": exceptions_count,
             "unreconciled": unreconciled_count,
             "percent_reconciled": percent,
-            "beginning_balance": 0.0,
+            "beginning_balance": _BEGINNING_BALANCE,
             "payments_total": payments_total,
             "deposits_total": deposits_total,
             "variance": variance,
@@ -1275,8 +1276,14 @@ def import_statement():
         pipeline_tracker.finish_pipeline(success=False, error_msg="No file selected.")
         return _error("No file selected.")
 
-    raw_is_pri = request.form.get("is_primary", "false")
-    is_primary = str(raw_is_pri).lower().strip() in ("true", "1", "yes")
+    raw_is_pri = request.form.get("is_primary", "").strip()
+    source_type = (request.form.get("source") or request.form.get("source_type") or request.form.get("type") or "").lower().strip()
+    
+    if raw_is_pri != "":
+        is_primary = str(raw_is_pri).lower().strip() in ("true", "1", "yes")
+    else:
+        is_primary = any(k in source_type for k in ("bank", "primary", "statement"))
+
     custom_name = (request.form.get("name") or "").strip()
     color = (request.form.get("color") or "").strip()
     rules = (request.form.get("rules") or "").strip()
@@ -1301,6 +1308,9 @@ def import_statement():
         original_name = secure_filename(raw_filename)
         if not original_name or "." not in original_name:
             original_name = raw_filename
+
+        # If file is a bank statement or contains bank keywords, set is_primary = True
+        file_is_primary = is_primary or any(k in original_name.lower() for k in ("bank", "primary", "hdfc", "sbi", "icici", "kotak", "axis", "citibank"))
 
         pipeline_tracker.update_progress(
             15 + int((idx / max(1, total_files)) * 10),
@@ -1354,7 +1364,7 @@ def import_statement():
                 stmt_name,
                 original_name,
                 df,
-                is_primary=is_primary,
+                is_primary=file_is_primary,
                 color=color,
                 rules=rules,
                 use_llm=use_llm,
@@ -1407,7 +1417,48 @@ def get_statement_detail(statement_id):
     stmt = statement_store.get_statement(statement_id)
     if not stmt:
         return _error("Statement not found.", 404)
-    return jsonify({"ok": True, "statement": stmt})
+    stmt_copy = dict(stmt)
+    try:
+        run = _build_dashboard_run("Statement Detail Taxonomy")
+        txns = run.get("transactions", [])
+        period_settled = run.get("period_settled", False)
+
+        tx_map = {}
+        for t in txns:
+            tax = t.get("taxonomy_status") or map_txn_to_taxonomy(t.get("status"), period_settled)
+            for k in ["id", "transaction_id", "utr", "bank_transaction_id", "settlement_id", "primary_id"]:
+                if t.get(k):
+                    tx_map[str(t[k]).strip().lower()] = tax
+
+        enriched_rows = []
+        for r in stmt_copy.get("rows", []):
+            r_copy = dict(r)
+            tax = None
+            for k in ["id", "transaction_id", "utr", "bank_transaction_id", "settlement_id", "reference_number", "rrn"]:
+                v = str(r_copy.get(k) or "").strip().lower()
+                if v and v in tx_map:
+                    tax = tx_map[v]
+                    break
+
+            if not tax:
+                raw_st = str(r_copy.get("status") or "").lower().strip()
+                if raw_st in {"settled", "paid", "credit", "success"}:
+                    tax = "SETTLED" if stmt_copy.get("is_primary") or period_settled else "MATCHED"
+                elif raw_st in {"matched", "auto"}:
+                    tax = "MATCHED"
+                elif raw_st in {"similar", "manual", "llm", "review"}:
+                    tax = "SIMILAR"
+                else:
+                    tax = "UNMATCHED"
+
+            r_copy["status"] = tax
+            enriched_rows.append(r_copy)
+
+        stmt_copy["rows"] = enriched_rows
+    except Exception as exc:
+        print(f"[get_statement_detail] Error enriching taxonomy status: {exc}")
+
+    return jsonify({"ok": True, "statement": stmt_copy})
 
 
 @api_bp.route("/statements/<statement_id>/rename", methods=["POST"])
@@ -1477,18 +1528,30 @@ def load_test_case_endpoint():
     and executes the automated reconciliation pipeline.
     """
     payload = request.get_json(silent=True) or {}
-    test_case_name = str(payload.get("test_case", "Test1")).strip()
-    if test_case_name in ("1", "test1", "case1"):
-        test_case_name = "Test1"
-    elif test_case_name in ("2", "test2", "case2"):
-        test_case_name = "Test2"
-    elif test_case_name in ("3", "test3", "case3"):
-        test_case_name = "Test3"
-    elif test_case_name in ("4", "test4", "case4"):
-        test_case_name = "Test4"
+    raw_name = str(payload.get("test_case", "Test1")).strip()
+    if raw_name.isdigit():
+        test_case_name = f"Test{raw_name}"
+    elif raw_name.lower().startswith("case") and raw_name[4:].isdigit():
+        test_case_name = f"Test{raw_name[4:]}"
+    elif raw_name.lower().startswith("test"):
+        # preserve casing or normalize TestX
+        num_part = raw_name[4:].strip()
+        test_case_name = f"Test{num_part}" if num_part.isdigit() else raw_name
+    else:
+        test_case_name = raw_name
 
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     test_cases_dir = os.path.join(base_dir, "test_cases", test_case_name)
+
+    if not os.path.exists(test_cases_dir):
+        # Fallback case-insensitive lookup
+        parent_dir = os.path.join(base_dir, "test_cases")
+        if os.path.exists(parent_dir):
+            for entry in os.listdir(parent_dir):
+                if entry.lower() == test_case_name.lower():
+                    test_cases_dir = os.path.join(parent_dir, entry)
+                    test_case_name = entry
+                    break
 
     if not os.path.exists(test_cases_dir):
         return _error(f"Test case directory '{test_case_name}' not found at {test_cases_dir}", 404)
@@ -1595,6 +1658,28 @@ def append_statement_endpoint(statement_id):
         current_app.logger.warning(f"Auto pipeline run on append note: {exc}")
 
     return jsonify({"ok": True, "result": result})
+
+
+@api_bp.route("/testcases", methods=["GET"])
+def list_test_cases_endpoint():
+    """Discover all test case directories under test_cases/."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    test_cases_dir = os.path.join(base_dir, "test_cases")
+    cases = []
+    if os.path.exists(test_cases_dir):
+        for name in sorted(os.listdir(test_cases_dir)):
+            full_path = os.path.join(test_cases_dir, name)
+            if os.path.isdir(full_path) and name.lower().startswith("test"):
+                valid_files = [
+                    f for f in os.listdir(full_path)
+                    if not f.startswith(".") and f.lower().endswith((".csv", ".xlsx", ".pdf"))
+                ]
+                cases.append({
+                    "name": name,
+                    "file_count": len(valid_files)
+                })
+    return jsonify({"ok": True, "test_cases": cases})
+
 
 
 @api_bp.route("/statements/<statement_id>/set-primary", methods=["POST"])
@@ -2320,6 +2405,24 @@ def dashboard_summary():
     })
 
 
+@api_bp.route("/reconciliation/beginning_balance", methods=["POST"])
+def update_beginning_balance():
+    global _BEGINNING_BALANCE
+    payload = request.get_json(silent=True) or {}
+    try:
+        val = float(payload.get("beginning_balance", 0.0))
+    except (ValueError, TypeError):
+        return _error("Invalid beginning_balance value.")
+
+    _BEGINNING_BALANCE = val
+    for run_obj in _RUNS.values():
+        if isinstance(run_obj, dict) and "summary" in run_obj:
+            run_obj["summary"]["beginning_balance"] = val
+
+    return jsonify({"ok": True, "beginning_balance": val})
+
+
+
 # --------------------------------------------------------------------------
 # Talk to Ledger — Settlement Q&A agent bridge
 # --------------------------------------------------------------------------
@@ -2826,4 +2929,197 @@ def export_report():
     except Exception as exc:
         current_app.logger.error(f"Failed to export report: {exc}", exc_info=True)
         return _error(f"Failed to generate report: {str(exc)}", 500)
+
+
+# --------------------------------------------------------------------------
+# Forward Cash Forecaster (Part 24)
+# --------------------------------------------------------------------------
+
+@api_bp.route("/forecast", methods=["GET"])
+def get_cash_forecast():
+    """
+    Build and return a forward cash flow forecast from all ingested statement data.
+    Query params:
+      - days: forecast horizon (default 30, max 90)
+    """
+    try:
+        from forecasting.engine import build_forecast as _build_forecast
+
+        forecast_days = min(int(request.args.get("days", 30)), 90)
+
+        # Gather all transactions across all statements
+        all_txns = []
+        stmt_metas = statement_store.list_statements()
+        for meta in stmt_metas:
+            stmt = statement_store.get_statement(meta["id"])
+            if not stmt:
+                continue
+            rows = stmt.get("rows") or stmt.get("data") or []
+            stmt_name = stmt.get("name", "")
+            for row in rows:
+                row_copy = dict(row)
+                row_copy.setdefault("source_name", stmt_name)
+                all_txns.append(row_copy)
+
+        result = _build_forecast(all_txns, forecast_days=forecast_days, beginning_balance=_BEGINNING_BALANCE)
+        result["ok"] = True
+        return jsonify(result)
+
+    except Exception as exc:
+        current_app.logger.error(f"Forecast error: {exc}", exc_info=True)
+        return _error(f"Failed to build forecast: {str(exc)}", 500)
+
+
+@api_bp.route("/forecast/day-details", methods=["GET"])
+def get_forecast_day_details():
+    """
+    Get detailed transactions and cumulative metrics for a specific date in history or forecast.
+    """
+    date_str = request.args.get("date")
+    if not date_str:
+        return _error("Missing date parameter.", 400)
+
+    try:
+        from datetime import datetime, date
+        from forecasting.engine import _parse_date, _parse_amount, _detect_currency, build_forecast
+        
+        target_dt = _parse_date(date_str)
+        if not target_dt:
+            return _error("Invalid date format.", 400)
+        target_date = target_dt.date()
+
+        # Gather all transactions
+        all_txns = []
+        stmt_metas = statement_store.list_statements()
+        for meta in stmt_metas:
+            stmt = statement_store.get_statement(meta["id"])
+            if not stmt:
+                continue
+            rows = stmt.get("rows") or stmt.get("data") or []
+            stmt_name = stmt.get("name", "")
+            for row in rows:
+                row_copy = dict(row)
+                row_copy.setdefault("source_name", stmt_name)
+                all_txns.append(row_copy)
+
+        # Build full forecast structure to get cumulative projected balance & patterns
+        forecast_res = build_forecast(all_txns, forecast_days=90)
+        
+        # Classify historical transactions
+        parsed_txns = []
+        for tx in all_txns:
+            dt = _parse_date(
+                tx.get("transaction_date") or tx.get("date") or tx.get("settlement_date")
+                or tx.get("txn_date") or tx.get("Date") or tx.get("Transaction Date")
+                or tx.get("Value Date") or tx.get("Booking Date") or tx.get("created_at") or tx.get("Created At")
+            )
+            if dt is None:
+                continue
+            amt = _parse_amount(tx.get("net_amount") or tx.get("amount") or tx.get("Amount") or tx.get("settlement_amount") or tx.get("Net Amount") or 0)
+            status = str(tx.get("status") or "").upper()
+            
+            is_settled = status in ("SETTLED", "SUCCESS", "COMPLETED", "PAID", "CREDIT") or (status == "" and amt != 0)
+            is_pending = not is_settled and status not in ("REFUND", "REVERSED", "CANCELLED", "VOID")
+            curr = _detect_currency(tx, str(tx.get("description") or tx.get("narration") or ""))
+            
+            parsed_txns.append({
+                "date": dt.date(),
+                "amount": amt,
+                "is_settled": is_settled,
+                "is_pending": is_pending,
+                "description": tx.get("description") or tx.get("narration") or "No description",
+                "source": tx.get("source_name", "Unknown"),
+                "ref": tx.get("transaction_id") or tx.get("utr") or tx.get("ref_no") or "",
+                "currency": curr,
+            })
+
+        # Calculate historical cumulatives
+        total_settled_cumulative = 0.0
+        total_pending_cumulative = 0.0
+        day_txns = []
+
+        # Find today's date
+        today_date = date.today()
+        hist_dates = [tx["date"] for tx in parsed_txns]
+        if hist_dates:
+            today_date = max(hist_dates)
+
+        for tx in parsed_txns:
+            if tx["date"] <= target_date:
+                if tx["is_settled"]:
+                    total_settled_cumulative += tx["amount"]
+                elif tx["is_pending"]:
+                    total_pending_cumulative += tx["amount"]
+            
+            if tx["date"] == target_date:
+                day_txns.append({
+                    "description": tx["description"],
+                    "source": tx["source"],
+                    "ref": tx["ref"],
+                    "settled_amount": tx["amount"] if tx["is_settled"] else 0.0,
+                    "pending_amount": tx["amount"] if tx["is_pending"] else 0.0,
+                    "status": "SETTLED" if tx["is_settled"] else "PENDING",
+                    "currency": tx["currency"],
+                })
+
+        # If the date is in the future relative to history
+        is_future = target_date > today_date
+        
+        if is_future:
+            # Look up projected metrics from forecast results
+            matching_forecast_row = None
+            for row in forecast_res.get("forecast", []):
+                row_dt = _parse_date(row["date"])
+                if row_dt and row_dt.date() == target_date:
+                    matching_forecast_row = row
+                    break
+            
+            if matching_forecast_row:
+                total_settled_cumulative = matching_forecast_row.get("cumulative", 0.0)
+                # Projected daily transactions: recurring patterns or pending settlements expected on this date
+                # 1. Check pending settlements
+                for ps in forecast_res.get("pending_settlements", []):
+                    ps_dt = _parse_date(ps.get("expected_settlement"))
+                    if ps_dt and ps_dt.date() == target_date:
+                        day_txns.append({
+                            "description": ps.get("description", "Expected Settlement"),
+                            "source": "Projected Settlement Gateway",
+                            "ref": "PROJ-SETTLE",
+                            "settled_amount": ps.get("amount", 0.0),
+                            "pending_amount": 0.0,
+                            "status": "EXPECTED SETTLEMENT",
+                            "currency": ps.get("currency", "INR"),
+                        })
+                # 2. Check recurring patterns expected
+                for pat in forecast_res.get("recurring_patterns", []):
+                    next_expected_str = pat.get("next_expected")
+                    next_dt = _parse_date(next_expected_str)
+                    if next_dt:
+                        next_d = next_dt.date()
+                        cadence = pat.get("cadence_days", 7)
+                        # Check if target_date is on the occurrence cycle
+                        diff_days = (target_date - next_d).days
+                        if diff_days >= 0 and diff_days % cadence == 0:
+                            day_txns.append({
+                                "description": f"Recurring pattern: {pat.get('label')}",
+                                "source": "Projected Flow",
+                                "ref": "PROJ-RECURRING",
+                                "settled_amount": pat.get("avg_amount", 0.0),
+                                "pending_amount": 0.0,
+                                "status": "PROJECTED RECURRING",
+                                "currency": pat.get("currency", "INR"),
+                            })
+
+        return jsonify({
+            "ok": True,
+            "date": date_str,
+            "is_future": is_future,
+            "total_settled_cumulative": round(total_settled_cumulative, 2),
+            "total_pending_cumulative": round(total_pending_cumulative, 2),
+            "transactions": day_txns
+        })
+
+    except Exception as exc:
+        current_app.logger.error(f"Day details error: {exc}", exc_info=True)
+        return _error(f"Failed to load day details: {str(exc)}", 500)
 

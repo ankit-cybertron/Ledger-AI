@@ -748,6 +748,34 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
 
         story.append(Spacer(1, 10))
 
+    # 5.5 Forward Cash Flow Forecast & Projections Section
+    forecast_data = data.get("forecast", {})
+    if forecast_data:
+        story.append(Paragraph("Forward Cash Flow Forecast & Projections (30-Day)", h1_style))
+        f_sum = forecast_data.get("summary", {})
+        curr_bal = f_sum.get("current_balance", 0.0)
+        proj_30d = f_sum.get("forecast_30d_projected", 0.0)
+        pend_cnt = f_sum.get("pending_count", 0)
+        patt_cnt = f_sum.get("detected_patterns", 0)
+
+        f_rows = [
+            [Paragraph("Forecast Indicator", header_cell_style), Paragraph("Projected Amount / Count", header_cell_right)],
+            [Paragraph("Current Settled Cash Position", cell_bold_style), Paragraph(f"Rs. {curr_bal:,.2f}", cell_right_style)],
+            [Paragraph("30-Day Projected Ending Cash Balance", cell_bold_style), Paragraph(f"Rs. {proj_30d:,.2f}", cell_right_style)],
+            [Paragraph("Pending Gateway Settlement Batches", cell_bold_style), Paragraph(f"{pend_cnt} Batches", cell_right_style)],
+            [Paragraph("Detected Recurring Cash Flow Patterns", cell_bold_style), Paragraph(f"{patt_cnt} Patterns", cell_right_style)],
+        ]
+        t_fcast = Table(f_rows, colWidths=[3.75 * inch, 3.75 * inch])
+        t_fcast.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(t_fcast)
+        story.append(Spacer(1, 10))
+
     # 6. Integrity Verification Section
     if "integrity" in sections:
         story.append(Paragraph("System Integrity Verification", h1_style))
