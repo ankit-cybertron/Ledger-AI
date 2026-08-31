@@ -1,200 +1,103 @@
-# Ledger AI: Automated Financial Reconciliation & Exception Engine
+# Ledger AI — Autonomous Financial Reconciliation & Forward Cash Controller Platform
 
-Ledger AI is an enterprise-grade financial reconciliation platform designed to automatically match, verify, and reconcile complex transaction datasets across bank statements, payment gateway settlement summaries (Razorpay, PayPal, Stripe, PhonePe, GPay), and internal order registers.
+[![AWS Elastic Beanstalk Deployment](https://img.shields.io/badge/AWS%20Deployment-Live-success?style=for-the-badge&logo=amazon-aws)](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com)
+[![System Guide](https://img.shields.io/badge/Documentation-Interactive%20Guide-blue?style=for-the-badge)](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-The system replaces manual spreadsheet matching with an automated multi-pass matching cascade, an evidence-weighted scoring engine, machine learning confidence evaluation, and Groq LLM semantic reasoning for unresolved exception handling.
-
----
-
-## Architectural Overview
-
-```
-                          [ Ingestion Pipeline ]
-                     Multi-Format (CSV, XLSX, PDF)
-                                   │
-                                   ▼
-                       [ Taxonomy & Deduplication ]
-                  Cross-App Dedupe & Exclusions Filter
-                                   │
-                                   ▼
-                      [ Multi-Pass Matching Engine ]
-    ┌──────────────────────────────┼──────────────────────────────┐
-    │                              │                              │
-[ Pass 1: Exact Match ]   [ Pass 2: Settlement Lag & MDR ]  [ Pass 3: N:1 Split/Aggregate ]
-    │                              │                              │
-    └──────────────────────────────┼──────────────────────────────┘
-                                   │
-                                   ▼
-                   [ Scoring & ML Confidence Model ]
-              Weights: Identifier, Amount, Date, Narration
-                                   │
-                    ┌──────────────┴──────────────┐
-                    ▼                             ▼
-       High Confidence (>= 85%)       Ambiguous Exception (50% - 84%)
-              [ MATCHED ]                         │
-                                                  ▼
-                                       [ Groq LLM Smart Matcher ]
-                                                  │
-                                                  ▼
-                                      [ Exception Ledger & Audit ]
-```
+Ledger AI is an autonomous financial operations platform built to solve the verification bottleneck in corporate finance teams. It replaces manual spreadsheet matching and black-box force-matching with a Deterministic 4-Pass Matching Cascade, 12-Dimensional ML Confidence Matrix, Batch MDR Fee Equation Solver, Groq LLM Ambiguous Match Resolver, and 30-Day Forward Cash Forecaster.
 
 ---
 
-## Key Features & Capabilities
-
-### 1. Multi-Format Ingestion Pipeline
-- **Unified Processing**: Ingests CSV, Microsoft Excel (`.xlsx`, `.xls`), and PDF bank statements/settlement summaries.
-- **Dynamic Header Normalization**: Automatically maps heterogeneous column aliases (e.g., `UTR`, `Auth Code`, `Txn ID`, `Credit`, `Debit`, `Gross Amount`) into a unified canonical schema (`CanonicalTransaction`).
-- **PDF Extraction**: Extracts structured transaction tables from ICICI, SBI, HDFC, and Razorpay summary PDFs, stripping header text and footer totals.
-
-### 2. Multi-Pass Matching Cascade
-- **Pass 1: Clean Exact Match**: High-confidence matching on normalized UTRs, reference IDs, and exact amount/date alignments.
-- **Pass 2: Settlement Lag & Fee/MDR Tolerance**: Net-of-fee matching accounting for settlement delays (1–4 days) and gateway MDR structures (Razorpay 1.8% + GST, PayPal 3.4% + FX, Card 1.9%).
-- **Pass 3: N:1 Split & Aggregate Reconciliation**: Aggregates N individual payment rows to reconcile against single consolidated batch credits in bank statements.
-- **Order Book Cross-Linking**: Cross-links internal order book records against payment processor credits.
-
-### 3. Exception Handling & Discrepancy Taxonomy
-- **Digit Transposition Detection**: Flags potential human typographical errors (e.g., ₹47,097.63 vs ₹47,079.63) as similar candidate matches rather than dropping them.
-- **Duplicate Entry Detection**: Identifies double-booked credit entries and flags duplicate discrepancies.
-- **Cross-App Deduplication**: Deduplicates identical transaction references originating across multiple exports (e.g., GPay and PhonePe).
-- **Automated Exclusions**: Filters non-settlement statuses (`FAILED`, `DECLINED`, `PENDING`) prior to matching to prevent false exception generation.
-- **Parenthetical Negative Parsing**: Handles negative debit formatting conventions across financial statements (e.g., `(1,234.56)` parsed as `-1234.56`).
-
-### 4. Machine Learning & Groq LLM Reasoning
-- **Scoring Engine**: Evaluates evidence scores based on parameter weights (Identifier match, Amount delta, Date proximity, Narration similarity).
-- **Ambiguous Exception Resolution**: Routes unresolved transactions ($0.50 \le \text{Confidence} < 0.85$) to the Groq LLM reasoning engine.
-- **Multi-Key API Rotation**: Uses automated fallback and rotation across Groq API keys to maintain high availability under rate limits.
-
-### 5. Configurable Constants Architecture
-- **Zero Magic Numbers**: All matching thresholds, scoring weights, UI limits, and report parameters are externalized into dedicated JSON configuration files in `/config/`:
-  - `scoring_weights.json`: Core matching weights and incompatibility penalties.
-  - `ui_config.json`: Dashboard buffer limits, truncation lengths, and visual palettes.
-  - `report_config.json`: PDF formatting, font sizes, margins, and branding options.
-
-### 6. Audit & PDF Export Generation
-- **Executive Audit Reports**: Generates downloadable PDF reports with executive summary KPIs, discrepancy breakdowns, and full transaction ledgers via ReportLab.
-- **Data Export**: Supports Excel (`.xlsx`) export of reconciled results.
+![Ledger AI Landing Page & Dashboard](docs/pics/image.png)
 
 ---
 
-## Directory Structure
+## Live AWS Deployment & Interactive Guide
 
-```
-Ledger/
-├── config/                  # Centralized JSON configuration files
-│   ├── matching_config.py   # Matching configuration model & dynamic loader
-│   ├── scoring_weights.json # Matching thresholds & scoring weights
-│   ├── ui_config.json       # UI and dashboard parameters
-│   └── report_config.json   # PDF & report layout styles
-├── frontend/                # Web Dashboard Application
-│   ├── api/                 # Flask REST routes & pipeline tracker
-│   ├── static/              # CSS styles & modular JavaScript
-│   ├── templates/           # Jinja2 HTML templates
-│   ├── app.py               # Flask application factory
-│   └── statement_store.py   # State management & session persistence
-├── ingestion/               # Multi-format ingestion pipeline
-│   ├── column_mapper.py     # Header normalization & alias resolution
-│   ├── file_reader.py       # CSV, Excel, and PDF parser
-│   ├── normalizer.py        # Data type cleaning & canonical adapter
-│   └── dedupe.py            # Deduplication & exclusion rules
-├── matcher/                 # Core matching algorithms
-│   ├── exact_matcher.py     # Pass 1 clean exact matching
-│   ├── tolerance_matcher.py # Pass 2 fee & date gap matching
-│   ├── split_aggregate_matcher.py # Pass 3 N:1 aggregate matching
-│   └── scoring_engine.py    # Evidence-weighted scoring matrix
-├── llm/                     # Groq LLM Integration
-│   └── query_llm.py         # Semantic exception matcher & key rotation
-├── ml/                      # Machine Learning confidence scoring
-│   ├── feature_schema.py    # Feature extraction pipeline
-│   └── feedback_loop.py     # Feedback loop & model updating
-├── reconciler/              # Pipeline runner & orchestration
-│   ├── pipeline_runner.py   # Full reconciliation orchestrator
-│   └── reconcile.py         # Cascade execution runner
-├── reports/                 # Audit & export generators
-│   ├── pdf_generator.py     # ReportLab PDF audit generator
-│   └── excel_generator.py   # Excel export generator
-├── schema/                  # Dataclasses & enums
-│   ├── canonical_transaction.py # Canonical data schema
-│   └── enums.py             # Match status & discrepancy taxonomy
-├── Procfile                 # Cloud WSGI server entrypoint
-├── render.yaml              # Render blueprint specification
-├── Dockerfile               # Container deployment configuration
-├── requirements.txt         # Production dependencies
-└── run.py                   # Main local entrypoint
-```
+- Live Application: [http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com)
+- Interactive System Guide: [http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help)
 
 ---
 
-## Local Installation & Setup
+## Evaluator Key Highlights & System Standards
 
-### Prerequisites
-- Python 3.10 or higher
-- `pip` package manager
-
-### Installation Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/ankit-cybertron/Ledger-AI.git
-   cd Ledger
-   ```
-
-2. Create and activate a virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. Install production dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` to include your Groq API credentials:
-   ```env
-   GROQ_API_KEY=gsk_your_groq_api_key
-   GROQ_MODEL=openai/gpt-oss-120b
-   ```
-
-5. Run the local application:
-   ```bash
-   python run.py
-   ```
-   Open your browser at `http://127.0.0.1:5050`.
+| Evaluation Criteria | Ledger AI Implementation | Verification / Proof |
+|---|---|---|
+| Multi-Source Ingestion | Reads CSV, XLSX, and PDF bank statements, payment gateway settlement summaries, order books, UPI logs, and cash registers. | Ingestion Pipeline (`ingestion/`) with Levenshtein schema mapper and SHA-256 content deduplication. |
+| Deterministic Rule Cascade | 4-Pass reconciliation (Exact UTR -> 4-Factor Weighted Scorer -> N:1 Batch MDR Fee Solver -> Groq LLM Agent). | Reconciler Engine (`reconciler/pipeline_runner.py`). Every match score & rule equation is explainable. |
+| 1-to-N Batch MDR Fee Solver | Reconciles 1 lump-sum bank deposit against N order items minus MDR gateway commissions and GST taxes. | Settlement Equation Solver (`matcher/settlement_equation.py`). Deposit = Sum(Sales) - MDR - GST. |
+| Groq LLM Failover Agent | Deep semantic evaluation for ambiguous names and non-standard narrative text with natural language audit explanations. | Groq API (`llm/query_llm.py`) with multi-key failover rotation (`GROQ_API_KEY`) and Llama-3 fallback. |
+| Measured Accuracy & Honest Exception List | 100% record accounting parity equation (Total = Settled + Matched + Similar + Unmatched). | Discrepancies are never force-matched; unresolved records are cleanly isolated into the Exception Ledger. |
+| Bounded & Gated Money Actions | Human-in-the-loop candidate review drawer, confidence thresholds (>= 0.70), and complete natural language audit trails. | Four-Status Taxonomy (SETTLED, MATCHED, SIMILAR, UNMATCHED). |
+| Forward Cash Forecaster | 30-Day cash flow projection model combining 14-day WMA trends, seasonal decomposition, pending settlement lag (T+2/T+3), and beginning balance state propagation. | Forecasting Engine (`forecasting/engine.py`). |
+| Executive PDF Reporting | Print-ready ReportLab PDF audit export featuring visual KPI cards, Matplotlib charts, itemized match tables, and audit verification logs. | PDF Generator (`reports/pdf_generator.py`). |
+| Pre-Configured Test Benchmark Loader | Built-in UI benchmark scanner for instant loading of test cases (Test1 through Test5). | Dashboard Loader (`frontend/static/js/dashboard.js`). |
 
 ---
 
-## Production Cloud Deployment
+## Four-Status Outcome Taxonomy
 
-### Render Deployment
-
-The repository includes pre-configured `Procfile` and `render.yaml` files for seamless deployment on Render:
-
-1. Connect your repository to Render in the Render Dashboard.
-2. Render will automatically detect the settings:
-   - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120`
-3. Add `GROQ_API_KEY` and `GROQ_MODEL` under **Environment Variables**.
-4. Deploy the service.
+1. **SETTLED (200_SETTLED)**: Primary Bank Statement or Main Cash ledger record reconciled with 100% exact reference parity or verified N:1 batch payout MDR fee equation.
+2. **MATCHED (201_MATCHED)**: Reconciled counterpart-to-counterpart pair (Payment Gateway <-> Order Book) with composite score >= 0.85.
+3. **SIMILAR (300_SIMILAR)**: Candidate match with potential keyword overlap or minor transposition variance (0.50 <= Score < 0.85), queued in the Review Drawer.
+4. **UNMATCHED (400_UNMATCHED)**: Discrepancy or orphan item failing all matching rules (< 0.50). Isolated into the Exception Ledger with transparent failure audit trails.
 
 ---
 
-## Testing
+## Technical Documentation Suite
 
-Run the test suite using `pytest`:
+For complete mathematical formulations, ML feature schemas, status specifications, and developer guides, refer to the local `docs/` directory or the live guide:
 
+- [Developer Reconciliation & Architecture Guide](docs/developer_reconciliation_guide.md)
+- [Canonical Matching Mechanism Specification](docs/reconciliation_matching_mechanism.md)
+- [Multi-Pass Reconciliation Engine Specification](docs/reconciliation_engine.md)
+- [Statement Ingestion Pipeline Specification](docs/ingestion_pipeline.md)
+- [Groq LLM Agent & Failover Specification](docs/llm_matching_agent.md)
+- [Forward Cash Forecaster Specification](docs/forecasting_logic.md)
+- [Reports & PDF Generation Specification](docs/reports_and_pdf_generation.md)
+- [SETTLED Status Specification](docs/status_settled.md)
+- [MATCHED Status Specification](docs/status_matched.md)
+- [SIMILAR Status Specification](docs/status_similar.md)
+- [UNMATCHED Status Specification](docs/status_unmatched.md)
+
+---
+
+## Local Setup & Execution
+
+### 1. Environment Setup
 ```bash
-pytest tests/
+# Clone repository
+git clone https://github.com/ankit-cybertron/Ledger-AI.git
+cd Ledger-AI
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Configure Environment Variables
+Copy `.env.example` to `.env` and set your Groq API credentials:
+```env
+GROQ_API_KEY=gsk_your_primary_groq_key
+GROQ_API_KEY1=gsk_your_secondary_groq_key
+GROQ_API_KEY2=gsk_your_tertiary_groq_key
+```
+
+### 3. Launch Local Server & Run Tests
+```bash
+# Start Flask web server
+python run.py
+# Server will run at http://127.0.0.1:5050
+
+# Run automated test suite
+pytest -q
 ```
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE).
