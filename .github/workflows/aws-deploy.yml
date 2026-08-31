@@ -1,0 +1,123 @@
+name: Deploy Ledger AI to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  EB_APPLICATION_NAME: "Ledger AI"
+  EB_ENVIRONMENT_NAME: "LedgerAI-env"
+
+jobs:
+  deploy:
+    name: Deploy to Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      # ------------------------------------------------------------
+      # 1. Get the latest main commit
+      # ------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------
+      # 2. Authenticate GitHub Actions with AWS using OIDC
+      # ------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ------------------------------------------------------------
+      # 3. Create Elastic Beanstalk deployment ZIP
+      # ------------------------------------------------------------
+      - name: Create deployment bundle
+        run: |
+          zip -r deploy.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x ".venv/*" \
+            -x "venv/*" \
+            -x "__pycache__/*" \
+            -x "*.pyc" \
+            -x "tests/*"
+
+          echo "Deployment bundle created:"
+          ls -lh deploy.zip
+
+      # ------------------------------------------------------------
+      # 4. Get Elastic Beanstalk's S3 bucket
+      # ------------------------------------------------------------
+      - name: Get Elastic Beanstalk S3 bucket
+        run: |
+          BUCKET=$(aws elasticbeanstalk create-storage-location \
+            --query 'S3Bucket' \
+            --output text)
+
+          if [ -z "$BUCKET" ] || [ "$BUCKET" = "None" ]; then
+            echo "Failed to obtain Elastic Beanstalk S3 bucket."
+            exit 1
+          fi
+
+          echo "EB_BUCKET=$BUCKET" >> "$GITHUB_ENV"
+          echo "Using bucket: $BUCKET"
+
+      # ------------------------------------------------------------
+      # 5. Upload source bundle to S3
+      # ------------------------------------------------------------
+      - name: Upload deployment bundle
+        run: |
+          S3_KEY="ledger-ai/${GITHUB_SHA}.zip"
+
+          aws s3 cp \
+            deploy.zip \
+            "s3://${EB_BUCKET}/${S3_KEY}"
+
+          echo "S3_KEY=$S3_KEY" >> "$GITHUB_ENV"
+
+      # ------------------------------------------------------------
+      # 6. Create a new Elastic Beanstalk application version
+      # ------------------------------------------------------------
+      - name: Create Elastic Beanstalk application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "$EB_APPLICATION_NAME" \
+            --version-label "$GITHUB_SHA" \
+            --description "GitHub commit ${GITHUB_SHA}" \
+            --source-bundle \
+              S3Bucket="$EB_BUCKET",S3Key="$S3_KEY"
+
+      # ------------------------------------------------------------
+      # 7. Deploy that version to the existing environment
+      # ------------------------------------------------------------
+      - name: Deploy application version
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "$EB_ENVIRONMENT_NAME" \
+            --version-label "$GITHUB_SHA"
+
+      # ------------------------------------------------------------
+      # 8. Wait until Elastic Beanstalk finishes deployment
+      # ------------------------------------------------------------
+      - name: Wait for deployment
+        run: |
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names "$EB_ENVIRONMENT_NAME"
+
+      # ------------------------------------------------------------
+      # 9. Show deployment result and public URL
+      # ------------------------------------------------------------
+      - name: Deployment result
+        run: |
+          aws elasticbeanstalk describe-environments \
+            --environment-names "$EB_ENVIRONMENT_NAME" \
+            --query 'Environments[0].[Status,Health,CNAME]' \
+            --output table
