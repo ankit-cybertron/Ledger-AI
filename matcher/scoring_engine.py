@@ -55,6 +55,9 @@ def compute_confidence(evidence: MatchEvidence, cfg: Optional[MatchingConfig] = 
         s_amt = 1.00
     elif abs_tol > 0 and amt_diff <= abs_tol:
         s_amt = max(0.50, 1.00 - (amt_diff / (2.0 * abs_tol)))
+    elif id_type in ["exact", "exact_match", "exact_utr", "exact_rrn", "exact_utr_match", "exact_order_id", "exact_order_id_match"]:
+        # Exact identifier match with amount variance represents a gateway fee / MDR deduction
+        s_amt = 0.80
     else:
         s_amt = 0.00
 

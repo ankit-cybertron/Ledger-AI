@@ -82,6 +82,10 @@ def find_similar_candidates(
         if narr_sim >= cfg.narration_similarity_threshold:
             matching_features.append(f"narration_similarity_{narr_sim}")
 
+        # Fee Variance / Deduction Detection
+        if id_type != "none" and amt_diff > 0.0:
+            matching_features.append(f"fee_variance_₹{amt_diff:.2f}")
+
         # Need at least amount closeness or identifier or narration match to be SIMILAR
         if not matching_features:
             continue

@@ -1,44 +1,39 @@
 # Ledger AI — Status Classification Specification: MATCHED
 
 > **Taxonomy Status**: `201_MATCHED`  
-> **Target Outcome**: High-confidence matched transaction pair via rule scoring, ML classifier, or LLM confirmation.
+> **Primary Rule**: High-confidence matched pair between counterpart statement records (neither side is primary).
 
 ---
 
 ## 1. Overview & Definition
 
-A transaction is categorized as **`MATCHED`** when it successfully pairs with a counterpart record under predefined tolerance parameters or high ML/LLM confidence, even if minor text typos, rounding variances ($\le ₹1.00$), or date offsets ($\le 3$ days) exist.
+In Ledger AI, a transaction outcome is categorized as **`MATCHED`** when a valid match is established between **two counterpart statement records** (e.g. Gateway Settlement feed vs Internal Order Book, or Payment Gateway vs UPI log), where **neither record belongs to a Primary Statement source**.
+
+If one or both records in the matched pair belong to a Primary Statement (e.g. Bank Account feed), the status is canonically classified as **`SETTLED`**.
 
 ---
 
-## 2. High-Level Classification Algorithm
+## 2. Decision Architecture & Pool Rule
 
 ```
-  ┌──────────────────────────────────────────────────────────┐
-  │     Records Unmatched in Pass 1 (Exact Matcher)          │
-  └────────────────────────────┬─────────────────────────────┘
-                               │
-                               ▼
-  ┌──────────────────────────────────────────────────────────┐
-  │         Pass 2: Composite Weighted Score Evaluation       │
-  │  Score = 0.40(ID) + 0.30(Amt) + 0.15(Date) + 0.15(Narr)   │
-  └────────────────────────────┬─────────────────────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            │ Score >= 0.85                       │ Score < 0.85
-            ▼                                     ▼
-  ┌───────────────────────────┐         ┌───────────────────────────┐
-  │ Assign MATCHED Status     │         │ Evaluate ML / LLM Window  │
-  │ (Rule Confidence >= 0.85) │         │ (Confidence 0.60 - 0.85)  │
-  └───────────────────────────┘         └─────────────┬─────────────┘
-                                                      │
-                                      ┌───────────────┴───────────────┐
-                                      │ LLM CONFIRMED                 │ LLM REJECTED / LOW SCORE
-                                      ▼                               ▼
-                        ┌──────────────────────────┐    ┌──────────────────────────┐
-                        │ Assign MATCHED Status    │    │ Proceed to SIMILAR or    │
-                        │ (LLM Confidence >= 0.70) │    │ UNMATCHED Exceptions     │
-                        └──────────────────────────┘    └──────────────────────────┘
+                       ┌────────────────────────────────┐
+                       │   Matched Candidate Pair       │
+                       │   (Confidence Score >= 0.85    │
+                       │   or Exact/Tolerance Match)    │
+                       └───────────────┬────────────────┘
+                                       │
+                                       ▼
+                       ┌────────────────────────────────┐
+                       │   Are BOTH records from        │
+                       │   Counterpart Statement feeds? │
+                       │    (is_primary == False)       │
+                       └───────┬────────────────┬───────┘
+                               │                │
+                      YES      │                │  NO (Primary involved)
+                               ▼                ▼
+                     ┌──────────────────┐  ┌──────────────────┐
+                     │ Status: MATCHED  │  │ Status: SETTLED  │
+                     └──────────────────┘  └──────────────────┘
 ```
 
 ---
@@ -52,7 +47,7 @@ $$\text{Composite Score} = (0.40 \cdot S_{\text{id}}) + (0.30 \cdot S_{\text{amt
 | Component Factor | Weight | Score Calculation Metric |
 |---|---|---|
 | **Identifier Similarity ($S_{\text{id}}$)** | **0.40** | Jaro-Winkler & Levenshtein distance on reference tokens. |
-| **Amount Variance ($S_{\text{amt}}$)** | **0.30** | $1.0 - \min\left(1.0, \frac{|A_1 - A_2|}{\text{tolerance}}\right)$ (Tolerance = $₹1.00$). |
+| **Amount Variance ($S_{\text{amt}}$)** | **0.30** | $1.0 - \min\left(1.0, \frac{|A_1 - A_2|}{\text{tolerance}}\right)$ (Tolerance = $₹1.00$ or channel MDR rate). |
 | **Date Proximity ($S_{\text{date}}$)** | **0.15** | Decay function: $1.0$ for same day, $0.8$ for 1 day, $0.5$ for 2–3 days. |
 | **Narration Overlap ($S_{\text{narr}}$)** | **0.15** | Token overlap ratio on cleaned description strings. |
 
@@ -64,13 +59,6 @@ $$\text{Composite Score} = (0.40 \cdot S_{\text{id}}) + (0.30 \cdot S_{\text{amt
 |---|---|---|
 | `matcher/tolerance_matcher.py` | `match_tolerance()` | Runs Stage 2 tolerance matching across candidate statements. |
 | `matcher/scoring_engine.py` | `calculate_pair_score()` | Implements the 4-factor composite weighted score equation. |
-| `ml/feedback_loop.py` | `predict_match_confidence()` | Evaluates 12-dimensional ML feature vector using Random Forest. |
-| `llm/ambiguous_matcher.py` | `run_llm_match()` | Gemini LLM Agent recommendation for ambiguous score pairs. |
+| `reconciler/reconcile.py` | `reconcile()` | Applies the Primary vs Counterpart rule to set `SETTLED` or `MATCHED`. |
 | `frontend/api/routes.py` | `_build_dashboard_run()` | Deduplicates matched pairs and builds `MATCHED` table rows. |
 
----
-
-## 5. User Interface Representation
-
-- **Table Status Pill**: `<span class="status-pill status-matched">MATCHED</span>` (Blue / Vibrant Cyan)
-- **Comparison Modal**: Displays match score percentage (e.g. `92% Match Confidence`), source badges, and parameter variance breakdown.

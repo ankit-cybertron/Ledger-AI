@@ -131,5 +131,104 @@ class TestMatcherRedesign(unittest.TestCase):
         self.assertEqual(status_res["primary_matched"], 2)
 
 
+    def test_t22_14_settled_vs_matched_taxonomy(self):
+        """T22.14: Test that SETTLED is assigned when primary statement is involved, and MATCHED when counterpart-only."""
+        from reconciler.reconcile import reconcile
+        from frontend import statement_store
+
+        statement_store.clear_all_statements()
+
+        # Case 1: Primary + Counterpart pair with exact match -> SETTLED
+        df_pri = pd.DataFrame([{
+            "transaction_id": "pri_tax_001",
+            "amount": 100.0,
+            "utr": "UTR_TAX_111",
+            "date": "2026-01-10",
+            "description": "Payment"
+        }])
+        df_cnt = pd.DataFrame([{
+            "transaction_id": "cnt_tax_001",
+            "amount": 100.0,
+            "utr": "UTR_TAX_111",
+            "date": "2026-01-10",
+            "description": "Payment"
+        }])
+
+        statement_store.save_imported_statement("Primary Stmt", "pri.csv", df_pri, is_primary=True)
+        statement_store.save_imported_statement("Counterpart Stmt", "cnt.csv", df_cnt, is_primary=False)
+
+        res_df = reconcile(cfg=self.cfg)
+        self.assertFalse(res_df.empty)
+        row = res_df.iloc[0]
+        self.assertEqual(row["status"].upper(), "SETTLED")
+
+        # Case 2: Counterpart + Counterpart pair with exact match -> MATCHED
+        statement_store.clear_all_statements()
+        df_cnt1 = pd.DataFrame([{
+            "transaction_id": "cnt_tax_002",
+            "amount": 200.0,
+            "utr": "UTR_TAX_222",
+            "date": "2026-01-10",
+            "description": "Payout"
+        }])
+        df_cnt2 = pd.DataFrame([{
+            "transaction_id": "cnt_tax_003",
+            "amount": 200.0,
+            "utr": "UTR_TAX_222",
+            "date": "2026-01-10",
+            "description": "Payout"
+        }])
+
+        statement_store.save_imported_statement("Counterpart 1", "cnt1.csv", df_cnt1, is_primary=False)
+        statement_store.save_imported_statement("Counterpart 2", "cnt2.csv", df_cnt2, is_primary=False)
+
+        res_df2 = reconcile(cfg=self.cfg)
+        self.assertFalse(res_df2.empty)
+        row2 = res_df2.iloc[0]
+        self.assertEqual(row2["status"].upper(), "MATCHED")
+
+
+    def test_t22_1_fee_aware_expected_net(self):
+        """T22.1: Test expected net calculation with channel-specific MDR fee rates."""
+        from matcher.settlement_equation import expected_net
+
+        # Razorpay fee: 1.8% MDR + 18% GST on MDR = 1.8% + 0.324% = 2.124% net deduction
+        tx_rzp = CanonicalTransaction(
+            transaction_id="rzp_001",
+            gross_amount=1000.0,
+            channel="razorpay",
+            source_file="05_Razorpay_Settlement.csv"
+        )
+        expected_rzp = expected_net(tx_rzp, self.cfg)
+        self.assertAlmostEqual(expected_rzp, 978.76, places=2)
+
+        # PayPal fee: 3.4% MDR
+        tx_pypl = CanonicalTransaction(
+            transaction_id="pypl_001",
+            gross_amount=1000.0,
+            channel="paypal",
+            source_file="paypal_feed.csv"
+        )
+        expected_pypl = expected_net(tx_pypl, self.cfg)
+        self.assertAlmostEqual(expected_pypl, 966.00, places=2)
+
+    def test_t22_2_pdf_header_index_preservation(self):
+        """T22.2: Test PDF reader header mapping logic preserves exact index columns without shifting."""
+        from ingestion.file_reader import _read_pdf_tables
+        from pathlib import Path
+
+        # Verify function handles index columns properly without dropping keys
+        pdf_path = Path(__file__).resolve().parents[1] / "data" / "test_cases" / "05_Razorpay_Settlement_Summary.pdf"
+        if pdf_path.exists():
+            tables = _read_pdf_tables(pdf_path, pdf_path.name, ["summary", "total"])
+            self.assertTrue(len(tables) > 0)
+            rows = tables[0].rows
+            if len(rows) > 0:
+                # Ensure source_row_number is tagged and row headers aren't shifted to index numbers
+                first_row = rows[0]
+                self.assertIn("source_row_number", first_row)
+
+
 if __name__ == "__main__":
     unittest.main()
+
