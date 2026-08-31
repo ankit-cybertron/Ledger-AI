@@ -638,6 +638,86 @@ def _get_or_build_run(run_id: Optional[str] = None) -> Dict[str, Any]:
     return run
 
 
+def compute_transaction_feature_flags(txn, counterpart=None, raw_row=None, match_info=None):
+    """
+    Computes a comprehensive array of feature flags and primary transaction type tag.
+    Flags:
+      1. International Txn ("International Txn"): Non-INR currency or foreign currency terms (USD, EUR, GBP, FX, SWIFT, PayPal).
+      2. Internal Transfer ("Internal Transfer"): Same UTR or inter-account transfer between primary bank/UPI accounts with date/amount tolerance.
+      3. Manual Override ("Manual Override"): Manually edited or status overridden by human reviewer.
+      4. Exact UTR Match ("Exact UTR Match"): Matched via exact UTR/reference key parity.
+      5. Unmatched UTR ("Unmatched UTR"): Missing or unresolved reference key.
+      6. Batch MDR Payout ("Batch MDR Payout"): Part of 1-to-N batch payout fee equation solving.
+      7. Groq LLM Assisted ("Groq LLM Assisted"): Resolved or validated via Groq LLM agent.
+      8. Digit Transposition ("Digit Transposition"): Transposition or minor numeric variance.
+      9. Duplicate Discrepancy ("Duplicate Discrepancy"): Double booking or duplicate signature across imports.
+    """
+    flags = []
+    
+    # 1. International Currency Check
+    currency = str(txn.get("currency") or (raw_row and raw_row.get("currency")) or "INR").upper().strip()
+    desc = (str(txn.get("description") or "") + " " + str(raw_row and (raw_row.get("narration") or raw_row.get("details")) or "")).upper()
+    intl_keywords = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "FX", "SWIFT", "FOREX", "PAYPAL", "INTERNATIONAL", "OVERSEAS", "CROSS BORDER", "CONVERSION"]
+    if currency not in ["INR", "RS", "RUPEES", ""] or any(k in desc for k in intl_keywords):
+        flags.append("International Txn")
+
+    # 2. Internal Transfer Check
+    st_type = str(txn.get("source_type") or "").lower()
+    c_type = str(counterpart and counterpart.get("source_type") or "").lower() if counterpart else ""
+    s_name = str(txn.get("source_name") or "").lower()
+    c_name = str(counterpart and counterpart.get("source_name") or "").lower() if counterpart else ""
+    transfer_keywords = ["INTERNAL TRANSFER", "SELF TRANSFER", "BANK TRANSFER", "INTER ACCOUNT", "ACCOUNT TRANSFER", "UPI TRANSFER", "SWEEP", "CONTRA"]
+    is_bank_to_bank = ("bank" in st_type and "bank" in c_type) or ("bank" in s_name and "bank" in c_name)
+    if any(k in desc for k in transfer_keywords) or is_bank_to_bank or (txn.get("is_primary") and counterpart and counterpart.get("is_primary")):
+        flags.append("Internal Transfer")
+
+    # 3. Manual Override Check
+    rule_str = str(txn.get("evidence", {}).get("rule") or (match_info and match_info.get("rule")) or "").lower()
+    status_str = str(txn.get("status") or "").lower()
+    if "manual" in rule_str or "override" in rule_str or status_str in ["manual", "manually_edited", "manual_override"] or txn.get("manually_edited"):
+        flags.append("Manual Override")
+
+    # 4. Exact UTR Match
+    if "exact" in rule_str or "pass 1" in rule_str or "reference match" in rule_str or (txn.get("utr") and str(txn.get("utr")).strip() not in ["—", "", "nan"] and status_str in ["settled", "matched"] and "manual" not in rule_str):
+        flags.append("Exact UTR Match")
+
+    # 5. Unmatched Reference
+    utr_val = str(txn.get("utr") or "").strip().lower()
+    if (not utr_val or utr_val in ["—", "nan", "none", "null", ""]) or status_str in ["unreconciled", "exception", "unmatched"]:
+        flags.append("Unmatched UTR")
+
+    # 6. Batch MDR Payout
+    if "mdr" in rule_str or "batch" in rule_str or "1-to-n" in rule_str or "fee" in rule_str or "solver" in rule_str:
+        flags.append("Batch MDR Payout")
+
+    # 7. Groq LLM Assisted
+    if "llm" in rule_str or "groq" in rule_str or "llama" in rule_str or status_str == "llm":
+        flags.append("Groq LLM Assisted")
+
+    # 8. Digit Transposition
+    if "transposition" in rule_str or "digit" in rule_str or "tolerance" in rule_str:
+        flags.append("Digit Transposition")
+
+    # 9. Existing Duplicate Discrepancy flag
+    if "Duplicate Discrepancy" in (txn.get("evidence", {}).get("flags") or []):
+        if "Duplicate Discrepancy" not in flags:
+            flags.append("Duplicate Discrepancy")
+
+    # Fallback default flag
+    if not flags:
+        flags.append("Standard Commercial")
+
+    # Derive primary transaction type string
+    priority_order = ["Manual Override", "International Txn", "Internal Transfer", "Batch MDR Payout", "Groq LLM Assisted", "Exact UTR Match", "Digit Transposition", "Duplicate Discrepancy", "Unmatched UTR", "Standard Commercial"]
+    primary_type = "Standard Commercial"
+    for p in priority_order:
+        if p in flags:
+            primary_type = p
+            break
+
+    return flags, primary_type
+
+
 def _build_dashboard_run(period_label="Current Period"):
     """
     Constructs an authoritative reconciliation run dictionary from disk CSVs.
@@ -691,6 +771,24 @@ def _build_dashboard_run(period_label="Current Period"):
     raw_exceptions = read_csv_rows("results/exception_ledger.csv")
 
     # Helper functions for robust value extraction from dicts/rows
+    def _extract_currency(row, desc=""):
+        if not isinstance(row, dict):
+            row = {}
+        for k in ["currency", "ccy", "curr"]:
+            v = row.get(k)
+            if v and str(v).strip() and str(v).strip().lower() not in ["nan", "none", "null"]:
+                c_str = str(v).strip().upper()
+                if c_str in ["USD", "EUR", "GBP", "INR", "JPY", "CAD", "AUD"]:
+                    return c_str
+        d_upper = str(desc or "").upper()
+        if "$" in d_upper or "USD" in d_upper or "DOLLAR" in d_upper:
+            return "USD"
+        elif "EUR" in d_upper or "€" in d_upper or "EURO" in d_upper:
+            return "EUR"
+        elif "GBP" in d_upper or "£" in d_upper or "POUND" in d_upper:
+            return "GBP"
+        return "INR"
+
     def _extract_numeric_amount(row):
         for k in ["amount", "net_amount", "gross_amount", "credit", "credit_amount", "debit", "debit_amount"]:
             v = row.get(k)
@@ -740,11 +838,13 @@ def _build_dashboard_run(period_label="Current Period"):
             utr_val = str(row.get("utr") or row.get("auth_code") or row.get("bank_transaction_id") or "")
             tx_id = str(row.get("transaction_id") or row.get("serial_no") or "").strip()
 
+            curr_val = _extract_currency(row, desc_val)
             item_info = {
                 "id": tx_id,
                 "amount": amt_val,
                 "date": dt_val,
                 "description": desc_val,
+                "currency": curr_val,
                 "utr": utr_val,
                 "statement_id": st_id,
                 "source_name": st_name,
@@ -965,6 +1065,7 @@ def _build_dashboard_run(period_label="Current Period"):
                                 "source_type": m_type,
                                 "is_primary": m_is_pri,
                                 "amount": m_rec.get("amount"),
+                                "currency": m_rec.get("currency", "INR"),
                                 "date": m_rec.get("date"),
                                 "utr": m_rec.get("utr"),
                                 "description": m_rec.get("description")
@@ -976,6 +1077,7 @@ def _build_dashboard_run(period_label="Current Period"):
                 "date": dt_val,
                 "description": desc_val,
                 "amount": amt_val,
+                "currency": curr_val,
                 "utr": utr_val,
                 "status": status_val,
                 "confidence": conf_val,
@@ -1053,6 +1155,9 @@ def _build_dashboard_run(period_label="Current Period"):
             if not exc_item.get("status") or exc_item.get("status") == "exception":
                 exc_item["status"] = matched_tx.get("status") or exc_item.get("status")
 
+        if not exc_item.get("currency"):
+            exc_item["currency"] = info.get("currency") or (matched_tx.get("currency") if matched_tx else None) or _extract_currency(exc_item, exc_item.get("description"))
+
         exceptions.append(exc_item)
 
     # Ensure all automated unmatched transactions from engine are listed in exceptions
@@ -1072,6 +1177,7 @@ def _build_dashboard_run(period_label="Current Period"):
                 "settlement_id": sid,
                 "bank_transaction_id": cp_obj.get("id") if cp_obj else "UNLINKED",
                 "amount": t.get("amount", 0.0),
+                "currency": t.get("currency") or _extract_currency(t, t.get("description")),
                 "date": t.get("date", ""),
                 "description": t.get("description", ""),
                 "source_name": t.get("source_name", "Automated Engine"),
@@ -1091,6 +1197,21 @@ def _build_dashboard_run(period_label="Current Period"):
             existing_exc_sids.add(sid.lower())
 
     transactions = raw_transactions
+
+    # Enrich all transactions and exceptions with canonical feature flags & primary transaction type
+    for t in transactions:
+        flags, p_type = compute_transaction_feature_flags(t, t.get("counterpart"))
+        t["feature_flags"] = flags
+        t["transaction_type"] = p_type
+        t["type"] = p_type
+        if "evidence" in t and isinstance(t["evidence"], dict):
+            t["evidence"]["flags"] = flags
+
+    for exc in exceptions:
+        flags, p_type = compute_transaction_feature_flags(exc, exc.get("counterpart"))
+        exc["feature_flags"] = flags
+        exc["transaction_type"] = p_type
+        exc["type"] = p_type
 
     def _format_ddmmyyyy(d_str):
         if not d_str:
@@ -1115,12 +1236,17 @@ def _build_dashboard_run(period_label="Current Period"):
     matched_count = len([t for t in transactions if (t.get("status") or "").lower() in {"matched", "auto", "exact", "tolerance"}])
     similar_count = len([t for t in transactions if (t.get("status") or "").lower() in {"similar", "proposed", "ml", "ambiguous"}])
     llm_count = len([t for t in transactions if (t.get("status") or "").lower() == "llm"])
-    exceptions_count = len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched"}])
-    unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() == "unreconciled"])
-
     # Reconciled count & percentage (T22.10: SIMILAR is excluded from reconciled count/percentage)
     reconciled_count = settled_count + matched_count + llm_count
     percent = round((reconciled_count / total * 100), 1) if total > 0 else 0.0
+
+    exceptions_count = len(exceptions) if exceptions else len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched", "unreconciled", "similar", "review"}])
+    unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() in {"unreconciled", "unmatched", "exception"}])
+    if unreconciled_count == 0 and total > reconciled_count:
+        unreconciled_count = total - reconciled_count
+    unmatched_count = max(len(exceptions), unreconciled_count, total - reconciled_count)
+    if exceptions_count == 0 and unmatched_count > 0:
+        exceptions_count = unmatched_count
 
     pos_amounts = [t["amount"] for t in transactions if t["amount"] > 0]
     neg_amounts = [abs(t["amount"]) for t in transactions if t["amount"] < 0]
@@ -1132,6 +1258,8 @@ def _build_dashboard_run(period_label="Current Period"):
 
     # Net Variance is sum of UNMATCHED/exception amounts (T22.9)
     unmatched_amount_sum = sum(abs(float(t.get("amount") or 0.0)) for t in transactions if (t.get("status") or "").lower() in {"exception", "unmatched", "unreconciled"})
+    if unmatched_amount_sum == 0.0 and exceptions:
+        unmatched_amount_sum = sum(abs(float(e.get("amount") or 0.0)) for e in exceptions)
     variance = round(unmatched_amount_sum, 2)
     period_settled = bool(total > 0 and exceptions_count == 0 and unreconciled_count == 0)
 
@@ -1150,14 +1278,14 @@ def _build_dashboard_run(period_label="Current Period"):
             "settled_count": settled_count,
             "matched_count": matched_count,
             "similar_count": similar_count,
-            "unmatched_count": exceptions_count + unreconciled_count,
-            "auto_matched": matched_count,
+            "unmatched_count": unmatched_count,
+            "auto_matched": settled_count + matched_count + llm_count,
             "auto": matched_count,
             "llm_matched": llm_count,
             "manual_matched": exceptions_count,
             "manual": exceptions_count,
             "exceptions_count": exceptions_count,
-            "unreconciled": unreconciled_count,
+            "unreconciled": unmatched_count,
             "percent_reconciled": percent,
             "beginning_balance": _BEGINNING_BALANCE,
             "payments_total": payments_total,
@@ -1982,6 +2110,27 @@ def close_period(run_id=None):
     if not period_label or period_label == "N/A":
         period_label = _format_ddmmyyyy(datetime.utcnow().isoformat())
 
+    # Gather forecast data for closed period snapshot BEFORE clearing statement store
+    forecast_summary = {}
+    try:
+        from forecasting.engine import build_forecast as _build_forecast
+        all_txns = []
+        stmt_metas = statement_store.list_statements()
+        for meta in stmt_metas:
+            stmt = statement_store.get_statement(meta["id"])
+            if not stmt:
+                continue
+            rows = stmt.get("rows") or stmt.get("data") or []
+            stmt_name = stmt.get("name", "")
+            for row in rows:
+                row_copy = dict(row)
+                row_copy.setdefault("source_name", stmt_name)
+                all_txns.append(row_copy)
+        fc_res = _build_forecast(all_txns, forecast_days=30, beginning_balance=_BEGINNING_BALANCE)
+        forecast_summary = fc_res.get("summary", {})
+    except Exception as exc:
+        current_app.logger.warning(f"Failed to snapshot forecast during period close: {exc}")
+
     # Build permanent vault record
     period_record = {
         "period_id": period_id,
@@ -1997,6 +2146,11 @@ def close_period(run_id=None):
         "unmatched_count": summary.get("unmatched_count", 0),
         "percent_reconciled": round(float(summary.get("percent_reconciled", 0.0)), 1),
         "variance": round(float(summary.get("variance", 0.0)), 2),
+        "current_balance": round(float(forecast_summary.get("current_balance", 0.0)), 2),
+        "forecast_30d_projected": round(float(forecast_summary.get("forecast_30d_projected", 0.0)), 2),
+        "pending_count": int(forecast_summary.get("pending_count", 0)),
+        "detected_patterns": int(forecast_summary.get("detected_patterns", 0)),
+        "forecast_summary": forecast_summary,
         "pdf_available": os.path.exists(pdf_path),
         "xlsx_available": os.path.exists(xlsx_path),
         "pdf_url": f"/api/closed_periods/{period_id}/download/pdf",

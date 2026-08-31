@@ -121,7 +121,7 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
     ws2 = wb.create_sheet(title="Transactions Ledger")
     ws2.views.sheetView[0].showGridLines = True
 
-    tx_headers = ["Date", "Primary ID / Settlement ID", "Counterpart Bank ID", "Description", "Source Statement", "Amount (₹)", "Status", "Stage / Rule"]
+    tx_headers = ["Date", "Primary ID / Settlement ID", "Counterpart Bank ID", "Description", "Source Statement", "Amount (₹)", "Type / Flags", "Status", "Stage / Rule"]
     ws2.append(tx_headers)
     ws2.row_dimensions[1].height = 24
 
@@ -129,7 +129,7 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
         cell = ws2.cell(row=1, column=col_idx)
         cell.font = font_header
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 7] else "left", vertical="center")
+        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 8] else "left", vertical="center")
 
     for t in transactions:
         dt = t.get("date", "")
@@ -138,14 +138,15 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
         desc = str(t.get("description") or "")
         src = t.get("source_name") or t.get("source_type") or "Primary Statement"
         amt = float(t.get("amount") or 0.0)
+        flags_val = str(t.get("transaction_type") or (", ".join(t.get("feature_flags", [])) if t.get("feature_flags") else "Standard Commercial"))
         st = (t.get("taxonomy_status") or t.get("status") or "UNMATCHED").upper()
         rule = t.get("reason") or t.get("stage") or "Engine Match"
 
-        ws2.append([dt, sid, bid, desc, src, amt, st, rule])
+        ws2.append([dt, sid, bid, desc, src, amt, flags_val, st, rule])
         r = ws2.max_row
         ws2.cell(row=r, column=1).alignment = Alignment(horizontal="center")
         ws2.cell(row=r, column=6).number_format = currency_fmt
-        ws2.cell(row=r, column=7).font = font_bold
+        ws2.cell(row=r, column=8).font = font_bold
 
         for col_idx in range(1, len(tx_headers) + 1):
             ws2.cell(row=r, column=col_idx).border = thin_border
@@ -156,7 +157,7 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
     ws3 = wb.create_sheet(title="Exception Audit Log")
     ws3.views.sheetView[0].showGridLines = True
 
-    exc_headers = ["Exception ID", "Settlement ID", "Bank Transaction ID", "Source Statement", "Amount (₹)", "Exception Type", "Status", "Audit Note"]
+    exc_headers = ["Exception ID", "Settlement ID", "Bank Transaction ID", "Source Statement", "Amount (₹)", "Type / Flags", "Exception Type", "Status", "Audit Note"]
     ws3.append(exc_headers)
     ws3.row_dimensions[1].height = 24
 
@@ -164,7 +165,7 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
         cell = ws3.cell(row=1, column=col_idx)
         cell.font = font_header
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 7] else "left", vertical="center")
+        cell.alignment = Alignment(horizontal="center" if col_idx in [1, 8] else "left", vertical="center")
 
     for exc in exceptions:
         eid = exc.get("exception_id") or exc.get("id") or "EXC-001"
@@ -172,14 +173,15 @@ def generate_excel_report(data: Optional[Dict[str, Any]] = None, filters: Option
         bid = exc.get("bank_transaction_id") or "N/A"
         src = exc.get("source_name") or exc.get("source") or "Automated Engine"
         amt = float(exc.get("amount") or 0.0)
+        flags_val = str(exc.get("transaction_type") or (", ".join(exc.get("feature_flags", [])) if exc.get("feature_flags") else "Unmatched UTR"))
         etype = exc.get("exception_type") or "automated_unmatched"
         st = (exc.get("resolution_status") or exc.get("status") or "open").upper()
         note = exc.get("reason") or "Flagged by reconciliation pipeline."
 
-        ws3.append([eid, sid, bid, src, amt, etype, st, note])
+        ws3.append([eid, sid, bid, src, amt, flags_val, etype, st, note])
         r = ws3.max_row
         ws3.cell(row=r, column=5).number_format = currency_fmt
-        ws3.cell(row=r, column=7).font = font_bold
+        ws3.cell(row=r, column=8).font = font_bold
         for col_idx in range(1, len(exc_headers) + 1):
             ws3.cell(row=r, column=col_idx).border = thin_border
 

@@ -641,7 +641,7 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
                     Paragraph("ID", header_cell_style),
                     Paragraph("Settlement ID", header_cell_style),
                     Paragraph("Bank Txn ID", header_cell_style),
-                    Paragraph("Type", header_cell_style),
+                    Paragraph("Type / Flags", header_cell_style),
                     Paragraph("Priority", header_cell_style),
                     Paragraph("Conf.", header_cell_right),
                     Paragraph("Status", header_cell_style)
@@ -651,13 +651,14 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
                 eid = Paragraph(str(exc.get("exception_id") or exc.get("id") or "EXC-1"), cell_bold_style)
                 sid = Paragraph(str(exc.get("settlement_id") or "N/A"), cell_style)
                 btid = Paragraph(str(exc.get("bank_transaction_id") or "N/A"), cell_style)
-                etype = Paragraph(str(exc.get("exception_type") or "review"), cell_style)
+                etype_val = str(exc.get("transaction_type") or (", ".join(exc.get("feature_flags", [])) if exc.get("feature_flags") else (exc.get("exception_type") or "Unmatched UTR")))
+                etype = Paragraph(etype_val, cell_style)
                 pri = Paragraph(str(exc.get("priority") or "medium").upper(), cell_style)
                 conf = Paragraph(f"{float(exc.get('confidence') or 0.0):.2f}", cell_right_style)
                 st = Paragraph(str(exc.get("resolution_status") or "open").upper(), cell_bold_style)
                 exc_table_data.append([eid, sid, btid, etype, pri, conf, st])
 
-            t_exc = Table(exc_table_data, colWidths=[0.9 * inch, 1.4 * inch, 1.4 * inch, 1.2 * inch, 0.8 * inch, 0.6 * inch, 1.2 * inch], repeatRows=1)
+            t_exc = Table(exc_table_data, colWidths=[0.85 * inch, 1.35 * inch, 1.35 * inch, 1.35 * inch, 0.8 * inch, 0.6 * inch, 1.2 * inch], repeatRows=1)
             t_exc.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
@@ -716,6 +717,7 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
                         Paragraph("Description", header_cell_style),
                         Paragraph("Source", header_cell_style),
                         Paragraph("Amount", header_cell_right),
+                        Paragraph("Type / Flags", header_cell_style),
                         Paragraph("Status", header_cell_style),
                         Paragraph("Engine Decision", header_cell_style)
                     ]
@@ -723,19 +725,22 @@ def generate_pdf_report(data: Optional[Dict[str, Any]] = None, filters: Optional
 
                 for t in group_items[:100]:  # Cap per status table for printable document layout
                     dt = Paragraph(str(t.get("date", "")), cell_style)
-                    desc = Paragraph(str(t.get("description", ""))[:32], cell_style)
-                    src = Paragraph(str(t.get("source_name") or t.get("source_type") or "Primary")[:18], cell_style)
+                    desc = Paragraph(str(t.get("description", ""))[:28], cell_style)
+                    src = Paragraph(str(t.get("source_name") or t.get("source_type") or "Primary")[:16], cell_style)
                     
                     amt_num = float(t.get("amount") or 0.0)
                     amt_str = f"Rs. {amt_num:,.2f}"
                     amt = Paragraph(amt_str, cell_right_style)
                     
+                    flags_str = str(t.get("transaction_type") or (", ".join(t.get("feature_flags", [])) if t.get("feature_flags") else "Standard Commercial"))
+                    flag_p = Paragraph(flags_str, cell_style)
+
                     tax_p = Paragraph(f"<font color='{badge_color}'><b>{st_code}</b></font>", cell_style)
                     decision_text = format_engine_decision(t)
                     dec = Paragraph(decision_text, cell_style)
-                    txn_rows.append([dt, desc, src, amt, tax_p, dec])
+                    txn_rows.append([dt, desc, src, amt, flag_p, tax_p, dec])
 
-                t_sub = Table(txn_rows, colWidths=[0.85 * inch, 2.1 * inch, 1.1 * inch, 1.15 * inch, 0.95 * inch, 1.35 * inch], repeatRows=1)
+                t_sub = Table(txn_rows, colWidths=[0.75 * inch, 1.6 * inch, 1.0 * inch, 1.05 * inch, 1.1 * inch, 0.8 * inch, 1.2 * inch], repeatRows=1)
                 t_sub.setStyle(TableStyle([
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
