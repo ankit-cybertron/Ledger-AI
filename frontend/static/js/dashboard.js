@@ -163,25 +163,27 @@
 
     // ── Real-time tab data refresh on activate (T13.1) ─────────────────
     try {
-      if (subId === "sub-overview") {
-        _loadOverviewPanel(true).catch(() => {});
-      } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
-        if (currentRunId) {
-          loadRun(currentRunId).catch(() => {});
-        } else {
-          hydrateExistingRun().catch(() => {});
-        }
-      } else if (subId === "sub-current-period" || subId === "sub-upload-bank") {
-        loadSidebarSources().catch(() => {});
-        loadStatementsTable().catch(() => {});
-      } else if (subId === "sub-reports") {
-        _loadReportsPanel(true).catch(() => {});
-      } else if (subId === "sub-config") {
-        _loadConfigPanel(true).catch(() => {});
-      } else if (subId === "sub-forecast") {
-        if (typeof window.loadForecastTab === "function") {
-          const res = window.loadForecastTab(true);
-          if (res && typeof res.catch === "function") res.catch(() => {});
+      if (stateManager.isStale) {
+        if (subId === "sub-overview") {
+          _loadOverviewPanel(true).catch(() => {});
+        } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
+          if (currentRunId) {
+            loadRun(currentRunId).catch(() => {});
+          } else {
+            hydrateExistingRun().catch(() => {});
+          }
+        } else if (subId === "sub-current-period" || subId === "sub-upload-bank") {
+          loadSidebarSources().catch(() => {});
+          loadStatementsTable().catch(() => {});
+        } else if (subId === "sub-reports") {
+          _loadReportsPanel(true).catch(() => {});
+        } else if (subId === "sub-config") {
+          _loadConfigPanel(true).catch(() => {});
+        } else if (subId === "sub-forecast") {
+          if (typeof window.loadForecastTab === "function") {
+            const res = window.loadForecastTab(true);
+            if (res && typeof res.catch === "function") res.catch(() => {});
+          }
         }
       }
     } catch (_) {}
@@ -230,6 +232,27 @@
   };
 
   window.stateManager = stateManager;
+
+  window.refreshAndPreloadAllTabs = async function refreshAndPreloadAllTabs() {
+    stateManager.invalidate();
+    try {
+      await Promise.allSettled([
+        loadSidebarSources(),
+        loadStatementsTable(),
+        currentRunId ? loadRun(currentRunId) : hydrateExistingRun()
+      ]);
+
+      await new Promise(r => setTimeout(r, 50));
+
+      Promise.allSettled([
+        _loadOverviewPanel(true),
+        _loadReportsPanel(true),
+        _loadConfigPanel(true),
+        (typeof window.loadForecastTab === "function") ? window.loadForecastTab(true) : Promise.resolve()
+      ]).catch(() => {});
+    } catch (_) {}
+    stateManager.isStale = false;
+  };
 
   function _loadReportsPanel(force, expandVault = false) {
     if (_panelLoaded.reports && !force) return;
@@ -1033,16 +1056,18 @@
     const wrap = document.getElementById("overviewPanelContent");
     if (!wrap) return;
 
-    wrap.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:240px;color:var(--text-muted);gap:10px;font-size:var(--text-sm);">
-        <svg class="spin-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-        Loading executive overview...
-      </div>`;
+    if (!wrap.children || wrap.children.length === 0) {
+      wrap.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:240px;color:var(--text-muted);gap:10px;font-size:var(--text-sm);">
+          <svg class="spin-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          Loading executive overview...
+        </div>`;
+    }
 
     Promise.all([
       fetch("/api/reconciliation").then(r => r.ok ? r.json() : {}).catch(() => ({})),
       fetch("/api/statements").then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      fetch("/api/forecast?days=30").then(r => r.ok ? r.json() : {}).catch(() => ({}))
+      fetch("/api/forecast?days=30").then(r => r.ok ? r.json() : {})
     ]).then(([reconRes, stmtRes, forecastRes]) => {
       _panelLoaded.overview = true;
       const run = reconRes.run || {};
@@ -1055,7 +1080,8 @@
       const totalMatched = s.settled_count !== undefined ? (settledCount + matchedCount + (s.llm_matched || 0)) : (autoMatched + manualMatched);
       const excCount = s.unmatched_count !== undefined ? s.unmatched_count : (s.exceptions_count || (run.exceptions ? run.exceptions.length : 0));
       const unmatched = excCount > 0 ? excCount : Math.max(0, total - totalMatched);
-      const pct = s.percent_reconciled !== undefined ? s.percent_reconciled.toFixed(1) : (total ? ((totalMatched / total) * 100).toFixed(1) : "0.0");
+      const rawPct = s.percent_reconciled !== undefined ? Number(s.percent_reconciled) : (total ? ((totalMatched / total) * 100) : 0.0);
+      const pct = Math.min(100.0, Math.max(0.0, rawPct)).toFixed(1);
       const variance = s.variance !== undefined ? s.variance : 0;
       const deposits = s.deposits_total || 0;
       const payments = s.payments_total || 0;
@@ -1979,21 +2005,6 @@
       return;
     }
 
-    const masterItem = document.createElement("a");
-    masterItem.className = "topbar-dropdown-item";
-    masterItem.href = "javascript:void(0)";
-    masterItem.onclick = (e) => {
-      e.preventDefault();
-      if (typeof window.openUnifiedSourceView === "function") window.openUnifiedSourceView();
-    };
-    masterItem.innerHTML = `
-      <span style="font-weight:700; color:#3b82f6; display:flex; align-items:center; gap:6px;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        All Sources (Master Table)
-      </span>
-    `;
-    topbarSourcesEl.appendChild(masterItem);
-
     statements.forEach((stmt, idx) => {
       const dotColor = getStatementColor(stmt, idx);
       const item = document.createElement("a");
@@ -2368,7 +2379,6 @@
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
           ${isSuccess ? `<span style="font-weight: 500; color: var(--text-secondary);">${res.row_count} rows detected</span>` : `<span style="color: #dc2626; font-weight: 600;">${escapeHtml(res.error_message || "Parse failed")}</span>`}
-          ${isSuccess && res.statement_id ? `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="openStatementView('${res.statement_id}')" style="padding: 3px 10px; font-size: 0.78rem; font-weight: 600;">View</button>` : ""}
         </div>
       `;
       container.appendChild(row);
@@ -2467,12 +2477,10 @@
         if (nameInput) nameInput.value = "";
         if (rulesEl) rulesEl.value = "";
 
-        await pollPipelineStatus();
-        stopPipelineMonitoring();
+        if (importBtn) importBtn.disabled = false;
+        if (btnImportAI) btnImportAI.disabled = false;
 
-        stateManager.invalidate();
-        await loadSidebarSources();
-        await loadStatementsTable();
+        await pollPipelineStatus();
 
       } catch (err) {
         stopPipelineMonitoring();
@@ -2589,7 +2597,7 @@
     pipelinePollInterval = setInterval(pollPipelineStatus, 300);
   }
 
-  function stopPipelineMonitoring() {
+  async function stopPipelineMonitoring() {
     if (pipelinePollInterval) {
       clearInterval(pipelinePollInterval);
       pipelinePollInterval = null;
@@ -2601,6 +2609,9 @@
     if (fillEl) fillEl.style.width = "100%";
     if (stageEl && !stageEl.textContent.includes("Complete")) {
       stageEl.textContent = "Pipeline Execution Complete ✓";
+    }
+    if (typeof window.refreshAndPreloadAllTabs === "function") {
+      await window.refreshAndPreloadAllTabs();
     }
   }
 
@@ -2846,175 +2857,9 @@
   let isEditingStatementRows = false;
   let unifiedMasterRows = [];
 
-  window.openUnifiedSourceView = async function() {
-    activateSub("sub-unified-sources");
-    const bodyEl = document.getElementById("unifiedMasterTableBody");
-    if (bodyEl) {
-      bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px 10px; border:none; background:transparent;">${createSleekLoadingHTML("Loading Unified Master Source Table", "Compiling multi-statement raw transaction entries...")}</td></tr>`;
-    }
-
-    try {
-      const res = await window.LedgerApi.getStatements();
-      const stmts = res.statements || [];
-      const sourceSelect = document.getElementById("unifiedSourceFilterSelect");
-      if (sourceSelect) {
-        sourceSelect.innerHTML = '<option value="all" selected>All Sources</option>';
-        stmts.forEach((s) => {
-          sourceSelect.innerHTML += `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`;
-        });
-      }
-
-      const allRows = [];
-      let totalSettled = 0;
-      let totalMatched = 0;
-      let totalUnmatched = 0;
-
-      for (let i = 0; i < stmts.length; i++) {
-        const s = stmts[i];
-        try {
-          const detail = await window.LedgerApi.getStatementDetail(s.id);
-          const stmtData = detail.statement || s;
-          const rows = stmtData.rows || [];
-          const color = getStatementColor(stmtData, i);
-
-          rows.forEach((r) => {
-            const tax = (r.status || "UNMATCHED").toUpperCase();
-            if (tax === "SETTLED") totalSettled++;
-            else if (tax === "MATCHED") totalMatched++;
-            else totalUnmatched++;
-
-            allRows.push({
-              source_id: s.id,
-              source_name: s.name,
-              source_color: color,
-              date: r.date || r.transaction_date || r.Date || r["Value Date"] || "",
-              description: r.description || r.narration || r.Details || r.Description || "",
-              utr: r.utr || r.transaction_id || r.reference_number || r.rrn || r.id || "—",
-              amount: parseFloat(r.amount || r.net_amount || r.gross_amount || 0),
-              currency: r.currency || "INR",
-              taxonomy_status: tax
-            });
-          });
-        } catch (e) {
-          console.warn("Failed loading detail for statement:", s.id, e);
-        }
-      }
-
-      unifiedMasterRows = allRows;
-
-      const statSources = document.getElementById("unifiedStatSourcesCount");
-      const statTotal = document.getElementById("unifiedStatTotalRows");
-      const statSettled = document.getElementById("unifiedStatSettledRows");
-      const statMatched = document.getElementById("unifiedStatMatchedRows");
-      const statUnmatched = document.getElementById("unifiedStatUnmatchedRows");
-
-      if (statSources) statSources.textContent = stmts.length;
-      if (statTotal) statTotal.textContent = allRows.length.toLocaleString();
-      if (statSettled) statSettled.textContent = totalSettled.toLocaleString();
-      if (statMatched) statMatched.textContent = totalMatched.toLocaleString();
-      if (statUnmatched) statUnmatched.textContent = totalUnmatched.toLocaleString();
-
-      filterAndRenderUnifiedTable();
-      initUnifiedTableFilterListeners();
-    } catch (err) {
-      console.error("Error building unified master table:", err);
-      if (bodyEl) {
-        bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load unified table: ${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
+  window.openUnifiedSourceView = function() {
+    activateSub("sub-upload-bank");
   };
-
-  function initUnifiedTableFilterListeners() {
-    const sInput = document.getElementById("unifiedSearchInput");
-    const srcSelect = document.getElementById("unifiedSourceFilterSelect");
-    const stSelect = document.getElementById("unifiedStatusFilterSelect");
-
-    if (sInput && !sInput._bound) {
-      sInput._bound = true;
-      sInput.addEventListener("input", filterAndRenderUnifiedTable);
-    }
-    if (srcSelect && !srcSelect._bound) {
-      srcSelect._bound = true;
-      srcSelect.addEventListener("change", filterAndRenderUnifiedTable);
-    }
-    if (stSelect && !stSelect._bound) {
-      stSelect._bound = true;
-      stSelect.addEventListener("change", filterAndRenderUnifiedTable);
-    }
-  }
-
-  function filterAndRenderUnifiedTable() {
-    const bodyEl = document.getElementById("unifiedMasterTableBody");
-    const countText = document.getElementById("unifiedFilteredCountText");
-    if (!bodyEl) return;
-
-    const query = (document.getElementById("unifiedSearchInput")?.value || "").toLowerCase().trim();
-    const sourceFilter = document.getElementById("unifiedSourceFilterSelect")?.value || "all";
-    const statusFilter = document.getElementById("unifiedStatusFilterSelect")?.value || "all";
-
-    const filtered = unifiedMasterRows.filter((r) => {
-      if (sourceFilter !== "all" && r.source_id !== sourceFilter) return false;
-      if (statusFilter !== "all" && r.taxonomy_status !== statusFilter) return false;
-      if (query) {
-        const text = `${r.source_name} ${r.date} ${r.description} ${r.utr} ${r.amount} ${r.taxonomy_status}`.toLowerCase();
-        if (!text.includes(query)) return false;
-      }
-      return true;
-    });
-
-    if (countText) {
-      countText.textContent = `Showing ${filtered.length.toLocaleString()} of ${unifiedMasterRows.length.toLocaleString()} rows`;
-    }
-
-    if (filtered.length === 0) {
-      bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">No transaction records match the current filter selection.</td></tr>';
-      return;
-    }
-
-    bodyEl.innerHTML = filtered.map((r) => {
-      let badgeBg = "rgba(239, 68, 68, 0.15)";
-      let badgeColor = "#f87171";
-      let badgeBorder = "rgba(239, 68, 68, 0.4)";
-      if (r.taxonomy_status === "SETTLED") {
-        badgeBg = "rgba(16, 185, 129, 0.15)";
-        badgeColor = "#34d399";
-        badgeBorder = "rgba(16, 185, 129, 0.4)";
-      } else if (r.taxonomy_status === "MATCHED") {
-        badgeBg = "rgba(59, 130, 246, 0.15)";
-        badgeColor = "#60a5fa";
-        badgeBorder = "rgba(59, 130, 246, 0.4)";
-      } else if (r.taxonomy_status === "SIMILAR") {
-        badgeBg = "rgba(245, 158, 11, 0.15)";
-        badgeColor = "#fbbf24";
-        badgeBorder = "rgba(245, 158, 11, 0.4)";
-      }
-
-      const amtColor = r.amount >= 0 ? "#10b981" : "#ef4444";
-      const amtSign = r.amount >= 0 ? "+" : "";
-
-      return `
-        <tr style="border-bottom:1px solid var(--border); transition:background-color 0.15s ease;">
-          <td style="padding:10px 14px;">
-            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border);">
-              <span style="width:7px; height:7px; border-radius:50%; background:${r.source_color}; display:inline-block;"></span>
-              <span style="font-weight:600; font-size:0.78rem; color:var(--text-primary);">${escapeHtml(r.source_name)}</span>
-            </div>
-          </td>
-          <td style="padding:10px 14px; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary); white-space:nowrap;">${escapeHtml(formatDateDDMMYYYY(r.date))}</td>
-          <td style="padding:10px 14px;">
-            <div style="font-size:0.83rem; font-weight:500; color:var(--text-primary); max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</div>
-          </td>
-          <td style="padding:10px 14px; font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted); font-weight:600;">${escapeHtml(r.utr)}</td>
-          <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:0.85rem; font-weight:700; color:${amtColor};">
-            <span style="font-size:0.7rem; color:var(--text-muted); margin-right:4px;">${r.currency}</span>${amtSign}${r.amount.toFixed(2)}
-          </td>
-          <td style="padding:10px 14px; text-align:center;">
-            <span style="display:inline-block; padding:3px 10px; border-radius:12px; font-weight:700; font-size:0.72rem; letter-spacing:0.04em; background:${badgeBg}; color:${badgeColor}; border:1px solid ${badgeBorder};">${r.taxonomy_status}</span>
-          </td>
-        </tr>
-      `;
-    }).join("");
-  }
 
   async function openStatementView(statementId, searchQuery = "") {
     if (!statementId) return;
@@ -3026,82 +2871,85 @@
     if (subTabStatementView) subTabStatementView.style.display = "inline-flex";
 
     activateSub("sub-statement-view");
-    await loadSidebarSources();
 
-    let attempts = 0;
-    while (attempts < 3) {
-      try {
-        const res = await window.LedgerApi.getStatementDetail(statementId);
-        if (res && res.statement) {
-          const stmt = res.statement;
-          activeStatementLoadedRows = stmt.rows || [];
+    const bodyEl = document.getElementById("stmtViewTableBody");
+    if (bodyEl) {
+      bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);"><span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Loading statement records...</td></tr>';
+    }
 
-          document.getElementById("stmtViewTitle").textContent = stmt.name;
-          const typeBadge = document.getElementById("stmtViewTypeBadge");
-          if (typeBadge) {
-            const badgeLabel = getSourceTypeBadgeLabel(stmt);
-            typeBadge.textContent = badgeLabel;
-            if (badgeLabel.includes("RAZORPAY")) {
-              typeBadge.style.background = "rgba(168, 85, 247, 0.18)";
-              typeBadge.style.color = "#c084fc";
-              typeBadge.style.border = "1px solid rgba(168, 85, 247, 0.4)";
-            } else if (badgeLabel.includes("INTERNAL")) {
-              typeBadge.style.background = "rgba(16, 185, 129, 0.18)";
-              typeBadge.style.color = "#34d399";
-              typeBadge.style.border = "1px solid rgba(16, 185, 129, 0.4)";
-            } else if (badgeLabel.includes("CASH")) {
-              typeBadge.style.background = "rgba(245, 158, 11, 0.18)";
-              typeBadge.style.color = "#fbbf24";
-              typeBadge.style.border = "1px solid rgba(245, 158, 11, 0.4)";
-            } else {
-              typeBadge.style.background = "rgba(59, 130, 246, 0.18)";
-              typeBadge.style.color = "#60a5fa";
-              typeBadge.style.border = "1px solid rgba(59, 130, 246, 0.4)";
-            }
+    try {
+      const res = await window.LedgerApi.getStatementDetail(statementId);
+      if (statementId !== activeStatementId) return;
+      if (res && res.statement) {
+        const stmt = res.statement;
+        activeStatementLoadedRows = stmt.rows || [];
+
+        const titleEl = document.getElementById("stmtViewTitle");
+        if (titleEl) titleEl.textContent = stmt.name;
+        const typeBadge = document.getElementById("stmtViewTypeBadge");
+        if (typeBadge) {
+          const badgeLabel = getSourceTypeBadgeLabel(stmt);
+          typeBadge.textContent = badgeLabel;
+          if (badgeLabel.includes("RAZORPAY")) {
+            typeBadge.style.background = "rgba(168, 85, 247, 0.18)";
+            typeBadge.style.color = "#c084fc";
+            typeBadge.style.border = "1px solid rgba(168, 85, 247, 0.4)";
+          } else if (badgeLabel.includes("INTERNAL")) {
+            typeBadge.style.background = "rgba(16, 185, 129, 0.18)";
+            typeBadge.style.color = "#34d399";
+            typeBadge.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+          } else if (badgeLabel.includes("CASH")) {
+            typeBadge.style.background = "rgba(245, 158, 11, 0.18)";
+            typeBadge.style.color = "#fbbf24";
+            typeBadge.style.border = "1px solid rgba(245, 158, 11, 0.4)";
+          } else {
+            typeBadge.style.background = "rgba(59, 130, 246, 0.18)";
+            typeBadge.style.color = "#60a5fa";
+            typeBadge.style.border = "1px solid rgba(59, 130, 246, 0.4)";
           }
-
-          document.getElementById("stmtViewCountBadge").textContent = `${stmt.row_count} rows`;
-
-          const btnSetPrimary = document.getElementById("btnStmtHeaderSetPrimary");
-          const btnSetPrimaryText = document.getElementById("btnStmtHeaderSetPrimaryText");
-          if (btnSetPrimary && btnSetPrimaryText) {
-            const isPrimary = Boolean(stmt.is_primary);
-            btnSetPrimaryText.textContent = isPrimary ? "Primary Source" : "Set as Primary";
-            if (isPrimary) {
-              btnSetPrimary.classList.add("is-primary");
-            } else {
-              btnSetPrimary.classList.remove("is-primary");
-            }
-            btnSetPrimary.onclick = async (e) => {
-              e.stopPropagation();
-              await handleSetPrimaryStatement(statementId, btnSetPrimary);
-            };
-          }
-
-          const settledBadge = document.getElementById("stmtViewSettledBadge");
-          if (settledBadge) {
-            settledBadge.style.display = stmt.period_settled ? "inline-block" : "none";
-          }
-
-          renderStatementRows(activeStatementLoadedRows);
-
-          if (searchQuery) {
-            const searchInput = document.getElementById("stmtSearchInput");
-            if (searchInput) {
-              searchInput.value = searchQuery;
-              searchInput.dispatchEvent(new Event("input"));
-            }
-          }
-          return;
         }
-      } catch (err) {
-        console.warn(`Attempt ${attempts + 1} loading statement details failed:`, err);
+
+        const countBadge = document.getElementById("stmtViewCountBadge");
+        if (countBadge) countBadge.textContent = `${stmt.row_count || activeStatementLoadedRows.length} rows`;
+
+        const btnSetPrimary = document.getElementById("btnStmtHeaderSetPrimary");
+        const btnSetPrimaryText = document.getElementById("btnStmtHeaderSetPrimaryText");
+        if (btnSetPrimary && btnSetPrimaryText) {
+          const isPrimary = Boolean(stmt.is_primary);
+          btnSetPrimaryText.textContent = isPrimary ? "Primary Source" : "Set as Primary";
+          if (isPrimary) {
+            btnSetPrimary.classList.add("is-primary");
+          } else {
+            btnSetPrimary.classList.remove("is-primary");
+          }
+          btnSetPrimary.onclick = async (e) => {
+            e.stopPropagation();
+            await handleSetPrimaryStatement(statementId, btnSetPrimary);
+          };
+        }
+
+        const settledBadge = document.getElementById("stmtViewSettledBadge");
+        if (settledBadge) {
+          settledBadge.style.display = stmt.period_settled ? "inline-block" : "none";
+        }
+
+        renderStatementRows(activeStatementLoadedRows);
+
+        if (searchQuery) {
+          const searchInput = document.getElementById("stmtSearchInput");
+          if (searchInput) {
+            searchInput.value = searchQuery;
+            searchInput.dispatchEvent(new Event("input"));
+          }
+        }
       }
-      attempts++;
-      await new Promise(r => setTimeout(r, 200));
+    } catch (err) {
+      console.warn("Error loading statement details:", err);
+      if (bodyEl && statementId === activeStatementId) {
+        bodyEl.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#ef4444;">Failed to load statement details: ${escapeHtml(err.message || String(err))}</td></tr>`;
+      }
     }
   }
-
 
   function resetEditStatementButtonState() {
     const editBtn = document.getElementById("btnEditStmtEntries");
@@ -3120,9 +2968,12 @@
     "content_hash"
   ]);
 
+  const INITIAL_STATEMENT_RENDER_LIMIT = 100;
+
   function renderStatementRows(rows, editable = false) {
     const headEl = document.getElementById("stmtTableHead");
     const bodyEl = document.getElementById("stmtTableBody");
+    if (!headEl || !bodyEl) return;
     headEl.innerHTML = "";
     bodyEl.innerHTML = "";
 
@@ -3134,20 +2985,20 @@
     const rawKeys = Object.keys(rows[0]);
     const lowerKeys = new Set(rawKeys.map(k => k.toLowerCase()));
 
-    // Filter out system metadata keys, duplicate legacy aliases, and columns with 100% empty values
+    // Sample first 50 rows for non-empty column check to make column detection blazing fast (O(50*C))
+    const sampleRows = rows.slice(0, 50);
     const seenColNames = new Set();
     const columns = rawKeys.filter((col) => {
       const colLower = col.toLowerCase();
       if (IGNORED_SYSTEM_KEYS.has(colLower)) return false;
 
-      // Deduplicate redundant legacy duplicate keys if canonical counterpart is present
       if (colLower === "bank_transaction_id" && lowerKeys.has("transaction_id")) return false;
       if (colLower === "date" && lowerKeys.has("transaction_date")) return false;
       if (colLower === "amount" && (lowerKeys.has("net_amount") || lowerKeys.has("gross_amount"))) return false;
 
       if (seenColNames.has(colLower)) return false;
 
-      const hasVal = rows.some((r) => {
+      const hasVal = sampleRows.some((r) => {
         const v = r[col];
         if (v === null || v === undefined) return false;
         const s = String(v).trim().toLowerCase();
@@ -3172,65 +3023,96 @@
     });
     headEl.appendChild(headRow);
 
-    // Render Rows
-    rows.forEach((row, rIdx) => {
-      const tr = document.createElement("tr");
-      tr.dataset.rowIndex = rIdx;
-      displayCols.forEach((col) => {
-        const td = document.createElement("td");
-        td.dataset.colKey = col;
-        const val = row[col];
+    // Chunked rendering helper using DocumentFragment
+    const renderChunk = (startIdx, count) => {
+      const fragment = document.createDocumentFragment();
+      const endIdx = Math.min(rows.length, startIdx + count);
 
-        if (editable) {
-          const inp = document.createElement("input");
-          inp.type = "text";
-          inp.className = "form-input cell-edit-input";
-          inp.value = val != null ? String(val) : "";
-          inp.style.width = "100%";
-          inp.style.minWidth = "80px";
-          inp.style.padding = "4px 8px";
-          inp.style.fontSize = "13px";
-          inp.style.background = "var(--bg-card, #ffffff)";
-          inp.style.border = "1px solid var(--border-color, #cbd5e1)";
-          inp.style.borderRadius = "4px";
-          inp.style.color = "var(--text-primary, #0f172a)";
-          td.appendChild(inp);
-        } else {
-          td.textContent = val != null ? String(val) : "";
-          const colLower = col.toLowerCase();
-          if (colLower.includes("amount") || colLower.includes("debit") || colLower.includes("credit") || colLower.includes("dr")) {
-            const num = Number(val);
-            if (!isNaN(num) && val !== "" && val !== null) {
-              const isDebitCol = colLower.includes("debit") || colLower.includes("dr") || colLower.includes("withdrawal") || colLower.includes("refund") || colLower.includes("fee");
-              const isCreditCol = colLower.includes("credit") || colLower.includes("cr") || colLower.includes("deposit");
+      for (let rIdx = startIdx; rIdx < endIdx; rIdx++) {
+        const row = rows[rIdx];
+        const tr = document.createElement("tr");
+        tr.dataset.rowIndex = rIdx;
 
-              if (isDebitCol) {
-                td.classList.add("amount-negative");
-                td.textContent = formatMoney(-Math.abs(num), true);
-              } else if (isCreditCol) {
-                td.classList.add("amount-positive");
-                td.textContent = formatMoney(Math.abs(num), true);
-              } else if (num < 0) {
-                td.classList.add("amount-negative");
-                td.textContent = formatMoney(num, true);
-              } else if (num > 0) {
-                td.classList.add("amount-positive");
-                td.textContent = formatMoney(num, true);
+        displayCols.forEach((col) => {
+          const td = document.createElement("td");
+          td.dataset.colKey = col;
+          const val = row[col];
+
+          if (editable) {
+            const inp = document.createElement("input");
+            inp.type = "text";
+            inp.className = "form-input cell-edit-input";
+            inp.value = val != null ? String(val) : "";
+            inp.style.width = "100%";
+            inp.style.minWidth = "80px";
+            inp.style.padding = "4px 8px";
+            inp.style.fontSize = "13px";
+            inp.style.background = "var(--bg-card, #ffffff)";
+            inp.style.border = "1px solid var(--border-color, #cbd5e1)";
+            inp.style.borderRadius = "4px";
+            inp.style.color = "var(--text-primary, #0f172a)";
+            td.appendChild(inp);
+          } else {
+            td.textContent = val != null ? String(val) : "";
+            const colLower = col.toLowerCase();
+            if (colLower.includes("amount") || colLower.includes("debit") || colLower.includes("credit") || colLower.includes("dr")) {
+              const num = Number(val);
+              if (!isNaN(num) && val !== "" && val !== null) {
+                const isDebitCol = colLower.includes("debit") || colLower.includes("dr") || colLower.includes("withdrawal") || colLower.includes("refund") || colLower.includes("fee");
+                const isCreditCol = colLower.includes("credit") || colLower.includes("cr") || colLower.includes("deposit");
+
+                if (isDebitCol) {
+                  td.classList.add("amount-negative");
+                  td.textContent = formatMoney(-Math.abs(num), true);
+                } else if (isCreditCol) {
+                  td.classList.add("amount-positive");
+                  td.textContent = formatMoney(Math.abs(num), true);
+                } else if (num < 0) {
+                  td.classList.add("amount-negative");
+                  td.textContent = formatMoney(num, true);
+                } else if (num > 0) {
+                  td.classList.add("amount-positive");
+                  td.textContent = formatMoney(num, true);
+                }
               }
             }
           }
-        }
-        tr.appendChild(td);
-      });
-      bodyEl.appendChild(tr);
-    });
+          tr.appendChild(td);
+        });
+        fragment.appendChild(tr);
+      }
+      return fragment;
+    };
 
-    // Setup filter
+    // Fast initial render (100 items or all if editable/small)
+    const initialCount = (editable || rows.length <= INITIAL_STATEMENT_RENDER_LIMIT) ? rows.length : INITIAL_STATEMENT_RENDER_LIMIT;
+    bodyEl.appendChild(renderChunk(0, initialCount));
+
+    // Show "Load All" button if there are remaining unrendered rows
+    if (!editable && rows.length > INITIAL_STATEMENT_RENDER_LIMIT) {
+      const loadMoreTr = document.createElement("tr");
+      loadMoreTr.id = "btnLoadMoreStmtRowsRow";
+      loadMoreTr.innerHTML = `
+        <td colspan="${displayCols.length}" style="text-align:center; padding:14px; background:var(--bg-surface, rgba(255,255,255,0.02));">
+          <button type="button" class="btn btn-sm btn-outline-primary" style="padding:6px 20px; font-weight:600; cursor:pointer;" id="btnLoadMoreStmtRows">
+            Show All ${rows.length.toLocaleString()} Rows (${(rows.length - INITIAL_STATEMENT_RENDER_LIMIT).toLocaleString()} more)
+          </button>
+        </td>
+      `;
+      bodyEl.appendChild(loadMoreTr);
+
+      document.getElementById("btnLoadMoreStmtRows")?.addEventListener("click", () => {
+        document.getElementById("btnLoadMoreStmtRowsRow")?.remove();
+        bodyEl.appendChild(renderChunk(INITIAL_STATEMENT_RENDER_LIMIT, rows.length - INITIAL_STATEMENT_RENDER_LIMIT));
+      });
+    }
+
+    // Setup search filter
     const searchInput = document.getElementById("stmtSearchInput");
     if (searchInput) {
       searchInput.oninput = () => {
         const query = searchInput.value.toLowerCase().trim();
-        const trs = bodyEl.querySelectorAll("tr");
+        const trs = bodyEl.querySelectorAll("tr:not(#btnLoadMoreStmtRowsRow)");
         trs.forEach((tr) => {
           const text = tr.textContent.toLowerCase();
           tr.style.display = text.includes(query) ? "" : "none";
@@ -3295,9 +3177,13 @@
           } else if (hasSeenRunning || (Date.now() - startTime > 3000)) {
             clearInterval(pipelinePollerInterval);
             pipelinePollerInterval = null;
+            showNotificationToast("[Pipeline Step 6/6] Finalizing & Pre-rendering Dashboard Views... (95%)", "loading");
+            if (typeof window.refreshAndPreloadAllTabs === "function") {
+              await window.refreshAndPreloadAllTabs();
+            }
             showNotificationToast("Reconciliation pipeline completed successfully!", "success");
             if (typeof onComplete === "function") {
-              onComplete();
+              await onComplete();
             }
           }
         }
@@ -4200,8 +4086,8 @@
       cpCloseBtn.disabled = !!run.closed;
     }
 
-    const reconciledCount = settled + auto + llmCount;
-    const calculatedPercent = total > 0 ? ((reconciledCount / total) * 100).toFixed(1) : "0.0";
+    const reconciledCount = Math.min(total, auto > 0 ? (auto + llmCount) : (settled + (s.matched_count || 0) + llmCount));
+    const calculatedPercent = total > 0 ? Math.min(100.0, Math.max(0.0, (reconciledCount / total) * 100)).toFixed(1) : "0.0";
 
     const labelEl = document.getElementById("progressLabel");
     if (labelEl) labelEl.textContent = `${calculatedPercent}% Reconciled`;
@@ -4209,7 +4095,7 @@
     const fracEl = document.getElementById("progressFraction");
     if (fracEl) fracEl.textContent = `${reconciledCount}/${total}`;
 
-    const pct = (n) => (total > 0 ? (n / total) * 100 : 0);
+    const pct = (n) => (total > 0 ? Math.min(100.0, Math.max(0.0, (n / total) * 100)) : 0);
     const segAutoEl = document.getElementById("segAuto");
     if (segAutoEl) {
       segAutoEl.style.width = `${pct(reconciledCount)}%`;
@@ -4975,8 +4861,10 @@
     }
     empty.style.display = "none";
 
+    const displayList = transactions.slice(0, 100);
     const fragment = document.createDocumentFragment();
-    transactions.forEach((tx) => {
+    
+    function createTxRow(tx) {
       const tr = document.createElement("tr");
       tr.style.cursor = "pointer";
       tr.title = "Click to view side-by-side comparison & record details";
@@ -5049,9 +4937,33 @@
         openRecordComparisonModal(tx);
       });
 
-      fragment.appendChild(tr);
+      return tr;
+    }
+
+    displayList.forEach((tx) => {
+      fragment.appendChild(createTxRow(tx));
     });
     body.appendChild(fragment);
+
+    if (transactions.length > 100) {
+      const loadMoreTr = document.createElement("tr");
+      loadMoreTr.innerHTML = `
+        <td colspan="9" style="text-align:center; padding:12px; background:rgba(255,255,255,0.02);">
+          <button type="button" class="btn btn-sm btn-outline-primary" style="padding:6px 20px; font-weight:600;" id="${targetBodyId}_btnLoadMore">
+            Show All ${transactions.length.toLocaleString()} Items (${transactions.length - 100} more)
+          </button>
+        </td>
+      `;
+      body.appendChild(loadMoreTr);
+      document.getElementById(`${targetBodyId}_btnLoadMore`)?.addEventListener("click", () => {
+        loadMoreTr.remove();
+        const restFragment = document.createDocumentFragment();
+        transactions.slice(100).forEach((tx) => {
+          restFragment.appendChild(createTxRow(tx));
+        });
+        body.appendChild(restFragment);
+      });
+    }
   }
 
   function renderExceptionsTable(exceptions) {
@@ -5317,11 +5229,14 @@
         if (navBtn) navBtn.innerHTML = '<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>Processing...</span>';
 
         try {
-          startPipelineProgressPoller("Running 4-Pass Cascade Reconciliation...");
           const result = await window.LedgerApi.runReconciliation();
-          currentRunId = result.run_id;
-          stateManager.invalidate();
-          await loadRun(currentRunId);
+          if (result && result.run_id) currentRunId = result.run_id;
+
+          await new Promise((resolve) => {
+            startPipelineProgressPoller("Running 4-Pass Cascade Reconciliation...", async () => {
+              resolve();
+            });
+          });
         } catch (err) {
           const detail = (err && err.message) ? err.message : String(err || "Reconciliation run failed.");
           alert(`Reconciliation Error:\n\n${detail}`);
