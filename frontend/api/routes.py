@@ -888,8 +888,12 @@ def _build_dashboard_run(period_label="Current Period"):
 
             if p_id:
                 tx_status_map[p_id] = {"status_raw": status_raw, "confidence": conf, "rule": rule}
+                if p_id.endswith(".0"):
+                    tx_status_map[p_id[:-2]] = {"status_raw": status_raw, "confidence": conf, "rule": rule}
             if c_id and c_id != "unmatched":
                 tx_status_map[c_id] = {"status_raw": status_raw, "confidence": conf, "rule": rule}
+                if c_id.endswith(".0"):
+                    tx_status_map[c_id[:-2]] = {"status_raw": status_raw, "confidence": conf, "rule": rule}
 
             if c_id and c_id != "unmatched" and status_raw not in {"unmatched", "unreconciled", "rejected", "exception"}:
                 item_p = {"matched_id": c_id, "confidence": conf, "rule": rule, "status_raw": status_raw}
@@ -922,7 +926,15 @@ def _build_dashboard_run(period_label="Current Period"):
             desc_val = _extract_desc_str(row)
             utr_val = str(row.get("utr") or row.get("auth_code") or "")
 
-            direct_st_info = tx_status_map.get(tx_id)
+            direct_st_info = (
+                tx_status_map.get(tx_id) or
+                (tx_status_map.get(tx_id + ".0") if not tx_id.endswith(".0") else None) or
+                tx_status_map.get(utr_val) or
+                tx_status_map.get(str(row.get("settlement_id") or "").strip()) or
+                tx_status_map.get(str(row.get("order_id") or "").strip()) or
+                tx_status_map.get(str(row.get("bank_transaction_id") or "").strip()) or
+                tx_status_map.get(str(row.get("primary_transaction_id") or "").strip())
+            )
             matches_list = match_map.get(tx_id, [])
             matched_sources = []
             counterpart_obj = None
@@ -955,7 +967,7 @@ def _build_dashboard_run(period_label="Current Period"):
                 else:
                     status_val = "exception" if conf_val == 0.0 else ("settled" if is_pri else "matched")
 
-            if status_val in {"unreconciled", "exception"} and conf_val == 0.0:
+            if status_val == "exception" and conf_val == 0.0:
                 # Fallback similarity scan across all other uploaded statement sources
                 cfg = MatchingConfig()
                 target_dict = {
@@ -1246,11 +1258,12 @@ def _build_dashboard_run(period_label="Current Period"):
     raw_pct = (reconciled_count / total * 100) if total > 0 else 0.0
     percent = min(100.0, max(0.0, round(raw_pct, 1)))
 
-    exceptions_count = len(exceptions) if exceptions else len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched", "unreconciled", "similar", "review"}])
-    unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() in {"unreconciled", "unmatched", "exception"}])
-    if unreconciled_count == 0 and total > reconciled_count:
-        unreconciled_count = total - reconciled_count
-    unmatched_count = max(len(exceptions), unreconciled_count, total - reconciled_count)
+    exceptions_count = len(exceptions) if exceptions else len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched", "similar", "review"}])
+    # UNRECONCILED is strictly for records manually set/unlinked to 'unreconciled' by user action. Starts at 0 after auto-match.
+    unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() == "unreconciled"])
+    unmatched_count = len([t for t in transactions if (t.get("status") or "").lower() in {"unmatched", "exception"}])
+    if unmatched_count == 0 and total > (reconciled_count + similar_count + unreconciled_count):
+        unmatched_count = total - (reconciled_count + similar_count + unreconciled_count)
     if exceptions_count == 0 and unmatched_count > 0:
         exceptions_count = unmatched_count
 
@@ -1291,7 +1304,7 @@ def _build_dashboard_run(period_label="Current Period"):
             "manual_matched": exceptions_count,
             "manual": exceptions_count,
             "exceptions_count": exceptions_count,
-            "unreconciled": unmatched_count,
+            "unreconciled": unreconciled_count,
             "percent_reconciled": percent,
             "beginning_balance": _BEGINNING_BALANCE,
             "payments_total": payments_total,
@@ -2452,12 +2465,16 @@ def _apply_manual_status_override(settlement_id, bank_transaction_id=None, targe
             res_df = pd.read_csv(results_path)
             if not res_df.empty:
                 mask = pd.Series([False] * len(res_df))
-                if "settlement_id" in res_df.columns:
-                    mask = mask | (res_df["settlement_id"].astype(str).str.strip().str.lower() == s_id_str.lower())
-                if b_id_str and "bank_transaction_id" in res_df.columns:
-                    mask = mask | (res_df["bank_transaction_id"].astype(str).str.strip().str.lower() == b_id_str.lower())
-                if b_id_str and "settlement_id" in res_df.columns:
-                    mask = mask | (res_df["settlement_id"].astype(str).str.strip().str.lower() == b_id_str.lower())
+                id_cols = [c for c in ["primary_transaction_id", "counterpart_transaction_id", "settlement_id", "bank_transaction_id", "utr", "transaction_id", "order_id", "id"] if c in res_df.columns]
+                s_clean = s_id_str.lower().rstrip(".0")
+                b_clean = b_id_str.lower().rstrip(".0") if b_id_str else ""
+
+                for col in id_cols:
+                    col_vals = res_df[col].astype(str).str.strip().str.lower().str.rstrip(".0")
+                    if s_clean:
+                        mask = mask | (col_vals == s_clean)
+                    if b_clean and b_clean != "unmatched":
+                        mask = mask | (col_vals == b_clean)
 
                 matches = res_df.index[mask].tolist()
                 if matches:
@@ -2496,12 +2513,15 @@ def _apply_manual_status_override(settlement_id, bank_transaction_id=None, targe
             exc_df = pd.read_csv(ledger_path)
             if not exc_df.empty:
                 e_mask = pd.Series([False] * len(exc_df))
-                for col in ["exception_id", "settlement_id", "bank_transaction_id"]:
+                s_clean = s_id_str.lower().rstrip(".0")
+                b_clean = b_id_str.lower().rstrip(".0") if b_id_str else ""
+                for col in ["exception_id", "settlement_id", "bank_transaction_id", "utr", "transaction_id", "primary_transaction_id"]:
                     if col in exc_df.columns:
-                        if s_id_str:
-                            e_mask = e_mask | (exc_df[col].astype(str).str.strip().str.lower() == s_id_str.lower())
-                        if b_id_str:
-                            e_mask = e_mask | (exc_df[col].astype(str).str.strip().str.lower() == b_id_str.lower())
+                        c_vals = exc_df[col].astype(str).str.strip().str.lower().str.rstrip(".0")
+                        if s_clean:
+                            e_mask = e_mask | (c_vals == s_clean)
+                        if b_clean:
+                            e_mask = e_mask | (c_vals == b_clean)
                 
                 e_matches = exc_df.index[e_mask].tolist()
                 if e_matches:
@@ -2554,6 +2574,9 @@ def _apply_manual_status_override(settlement_id, bank_transaction_id=None, targe
                         exact_df.to_csv(exact_path, index=False)
         except Exception as exc:
             current_app.logger.warning(f"Error updating exact_matches: {exc}")
+
+    _RUNS.clear()
+    invalidate_dashboard_cache()
 
 
 @api_bp.route("/exceptions/<exception_id>/resolve", methods=["POST"])
@@ -3069,6 +3092,7 @@ def override_transaction_status():
 
 
     _RUNS.clear()
+    invalidate_dashboard_cache()
     run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
     _RUNS[run["run_id"]] = run
 

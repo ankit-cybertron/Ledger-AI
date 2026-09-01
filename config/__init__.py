@@ -5,6 +5,6 @@ Contains matching engine configuration dataclass and default parameters.
 
 from config.matching_config import MatchingConfig
 
-APP_VERSION = "v2.10"
+APP_VERSION = "v2.11"
 
 __all__ = ["MatchingConfig", "APP_VERSION"]

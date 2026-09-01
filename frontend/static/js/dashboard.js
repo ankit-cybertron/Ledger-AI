@@ -4145,9 +4145,11 @@
     document.getElementById("closePeriodBtn").textContent = run.closed ? "Period Closed ✓" : "Close Period";
     document.getElementById("closePeriodBtn").disabled = !!run.closed;
 
+    const openAuditTotal = (s.unmatched_count != null ? s.unmatched_count : (exceptionsCount || 0)) + (s.unreconciled || 0);
+
     const hdrBadge = document.getElementById("hdrManualBadge");
     if (hdrBadge) {
-      hdrBadge.textContent = exceptionsCount;
+      hdrBadge.textContent = openAuditTotal;
       hdrBadge.style.display = "inline-flex";
     }
 
@@ -4234,19 +4236,25 @@
     const settledEl = document.getElementById("countSettled");
     if (settledEl) settledEl.textContent = settled;
 
-    document.getElementById("countAuto").textContent = auto;
+    const standaloneMatched = s.matched_count != null ? s.matched_count : (auto > settled ? auto - settled : auto);
+    const countAutoEl = document.getElementById("countAuto");
+    if (countAutoEl) countAutoEl.textContent = standaloneMatched;
 
     // Calculate Similar count from current transactions list
     const txList = currentTransactions || [];
     const similarCount = txList.filter(t => (t.status || "").toLowerCase() === "similar").length;
     const countSimilarEl = document.getElementById("countSimilar");
-    if (countSimilarEl) countSimilarEl.textContent = similarCount;
+    if (countSimilarEl) countSimilarEl.textContent = s.similar_count != null ? s.similar_count : similarCount;
 
     const llmEl = document.getElementById("countLlm");
     if (llmEl) llmEl.textContent = llmCount;
 
-    document.getElementById("countManual").textContent = exceptionsCount;
-    document.getElementById("countUnreconciled").textContent = unreconciled;
+    const unmatchedCount = s.unmatched_count != null ? s.unmatched_count : (exceptionsCount || 0);
+    const countManualEl = document.getElementById("countManual");
+    if (countManualEl) countManualEl.textContent = unmatchedCount;
+
+    const countUnreconciledEl = document.getElementById("countUnreconciled");
+    if (countUnreconciledEl) countUnreconciledEl.textContent = unreconciled;
 
     // Executive Overview (Current Period) Updates
     const cpSubtitle = document.getElementById("cpSubtitle");
@@ -4265,14 +4273,14 @@
     if (cpStatMatchedPct) cpStatMatchedPct.textContent = `${percent.toFixed ? percent.toFixed(1) : percent}%`;
 
     const cpStatUnmatched = document.getElementById("cpStatUnmatched");
-    if (cpStatUnmatched) cpStatUnmatched.textContent = unreconciled.toLocaleString();
+    if (cpStatUnmatched) cpStatUnmatched.textContent = openAuditTotal.toLocaleString();
 
     const cpStatUnmatchedPct = document.getElementById("cpStatUnmatchedPct");
-    const unPcnt = total > 0 ? (unreconciled / total * 100).toFixed(1) : "0.0";
+    const unPcnt = total > 0 ? (openAuditTotal / total * 100).toFixed(1) : "0.0";
     if (cpStatUnmatchedPct) cpStatUnmatchedPct.textContent = `${unPcnt}%`;
 
     const cpStatExceptions = document.getElementById("cpStatExceptions");
-    if (cpStatExceptions) cpStatExceptions.textContent = manual.toLocaleString();
+    if (cpStatExceptions) cpStatExceptions.textContent = openAuditTotal.toLocaleString();
 
     const cpProgressFill = document.getElementById("cpProgressFill");
     if (cpProgressFill) cpProgressFill.style.width = `${percent.toFixed ? percent.toFixed(1) : percent}%`;
@@ -4282,7 +4290,7 @@
 
     const cpProgressCaption = document.getElementById("cpProgressCaption");
     if (cpProgressCaption) {
-      cpProgressCaption.innerHTML = `${matchedCount.toLocaleString()} matched &bull; ${unreconciled.toLocaleString()} unmatched &bull; ${manual.toLocaleString()} need review`;
+      cpProgressCaption.innerHTML = `${matchedCount.toLocaleString()} matched &bull; ${openAuditTotal.toLocaleString()} open exceptions &bull; ${(s.similar_count || similarCount).toLocaleString()} similar`;
     }
 
     const cpAttUnmatched = document.getElementById("cpAttUnmatched");
@@ -5440,6 +5448,7 @@
           if (res && res.ok && res.run_id) {
             if (backdrop) backdrop.style.display = "none";
             stateManager.invalidate();
+            for (const k in _panelLoaded) delete _panelLoaded[k];
             await loadRun(res.run_id);
           }
         } catch (err) {
