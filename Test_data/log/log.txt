@@ -1,0 +1,86 @@
+# Ledger AI - Issue & Optimization Resolution Log
+
+---
+
+### Commit: `fix(dashboard): resolve 111.1% reconciliation percentage display bug`
+* **Problem**: 
+  The progress bar on the Explorer view displayed an impossible `111.1% Reconciled` (and fraction like `230/207`), whereas the Overview page displayed the correct percentage. In `renderSummary()`, `reconciledCount` was being calculated as `settled + auto + llmCount`. Since `settled` records are already a subset of `auto` matched records, adding both resulted in double-counting reconciled transactions.
+* **How We Fixed It**: 
+  Updated `renderSummary` in `frontend/static/js/dashboard.js` to calculate `reconciledCount` strictly as `Math.min(total, auto > 0 ? (auto + llmCount) : (settled + matched_count + llmCount))` and clamped the calculated percentage using `Math.min(100.0, Math.max(0.0, ...))`. Now Explorer and Overview display consistent percentage metrics capped accurately at 100.0%.
+
+---
+
+### Commit: `refactor(dashboard): safely remove legacy Unified Master Source Table`
+* **Problem**: 
+  Clicking "Sources" or attempting to view data triggered `openUnifiedSourceView()`. This function fetched statement details sequentially for every uploaded statement, compiled thousands of raw entries into a single array (`unifiedMasterRows`), and rendered them into `unifiedMasterTable`. This caused severe browser lag, thread locking, and delayed tab switching by up to 5 minutes.
+* **How We Fixed It**: 
+  1. Removed `openUnifiedSourceView()`, `filterAndRenderUnifiedTable()`, and filtering logic from `frontend/static/js/dashboard.js`.
+  2. Deleted the `<section id="sub-unified-sources">` panel and its associated DOM nodes from `frontend/templates/dashboard.html`.
+  3. Updated the topbar "Sources" click handler in `frontend/templates/_topbar.html` and `dashboard.js` (`renderTopbarSources`) to navigate directly to the lightweight Data Sources view (`sub-upload-bank`) without triggering background fetches.
+
+---
+
+### Commit: `perf(dashboard): optimize statement source table loading with chunked rendering`
+* **Problem**: 
+  Opening individual statement source tables with thousands of transactions froze the UI because:
+  1. `renderStatementRows()` scanned every single row across all columns to filter empty fields, scaling linearly with file size (O(N * C)).
+  2. All `<tr>` DOM elements were created and appended synchronously into `bodyEl`, triggering thousands of DOM reflows.
+  3. `openStatementView()` executed an artificial retry loop with sleeping timeouts.
+* **How We Fixed It**: 
+  1. Implemented **Chunked Rendering** in `renderStatementRows()` (`INITIAL_STATEMENT_RENDER_LIMIT = 100`) using `DocumentFragment` for single-pass DOM insertion, adding a "Show All Rows" button for larger files.
+  2. Optimized column presence checking by sampling only the first 50 rows of data.
+  3. Streamlined `openStatementView()` to fetch statement details directly in a single async pass.
+
+---
+
+### Commit: `fix(pipeline): resolve progress bar freeze on re-upload & tab switching lag`
+* **Problem**: 
+  Uploading additional data batches left the ingestion progress bar stuck at 100%. Switch tabs rapidly during or after pipeline runs left tab views empty for several seconds due to data race conditions and unhandled promises.
+* **How We Fixed It**: 
+  1. Added `activeStatementId` guard checks inside `openStatementView()` to reject stale network responses from previous tab switches.
+  2. Integrated state invalidation hooks inside `stateManager` and wrapped tab background hydration in non-blocking `Promise.allSettled` calls.
+  3. Reset upload progress UI state whenever new files are dropped or ingestion pipeline executes.
+
+---
+
+### Commit: `style(dashboard): clean up import results UI & remove redundant dropdown items`
+* **Problem**: 
+  The "View" button on multi-file import result cards had poor text contrast in dark theme, and the topbar dropdown still included a legacy "All Sources (Master Table)" link.
+* **How We Fixed It**: 
+  1. Removed the redundant "View" button from multi-file import result cards in `renderMultiFileImportResults()`.
+  2. Cleaned up `renderTopbarSources()` to display only active statement sources, removing the Master Table dropdown option.
+
+---
+
+### Commit: `perf(reports): decouple report generation from pipeline to prevent 504 gateway timeouts`
+* **Problem**: 
+  Automatic background pipeline execution included synchronous generation of heavy PDF and Excel reports during file ingestion and initial loads. Under large datasets, this triggered 504 Gateway Timeout errors on cloud servers (AWS).
+* **How We Fixed It**: 
+  1. Decoupled PDF/Excel report rendering from the automatic ingestion pipeline (`_run_backend_pipeline`).
+  2. Moved report generation to an interactive, user-triggered model on the Reports panel ("⚡ Generate Executive Report").
+  3. Fixed JavaScript syntax and template literal structures in `frontend/static/js/dashboard.js`, ensuring fast, non-blocking tab rendering and robust end-to-end performance under heavy data loads.
+
+---
+
+### Commit: `perf(pipeline): decouple ingestion & test benchmark data, implement progressive 5-layer matching`
+* **Problem**: 
+  1. Status tracker overlay was detached from the main action triggers and not always visible.
+  2. When statements/benchmark data were ingested without prior reconciliation, Explorer table remained empty instead of displaying ingested transactions in an `UNMATCHED` state.
+* **How We Fixed It**: 
+  1. Integrated live pipeline status tracking directly into the **Auto Match button** (and topbar action button), dynamically rendering active layer text (e.g. `Layer 1/5: Exact Match...`, `Layer 2/5: Tolerance...`).
+  2. Implemented `clear_reconciliation_results()` on ingestion and test benchmark loading to clear old result CSVs, allowing `_build_dashboard_run()` to immediately populate the Explorer table with all ingested transactions marked `UNMATCHED`.
+  3. Hydrated the initial un-reconciled run upon data loading so Explorer displays all ingested records before and during Auto Match layer execution.
+
+---
+
+### Commit: `feat(v2.12): optimize side-by-side record comparison, keyword intelligence, and kill switch reset`
+* **Problem**: 
+  1. The Side-by-Side Record Comparison modal had overflow layout issues and displayed empty visualization panels for unmatched records without a counterpart.
+  2. The space under the interactive multi-parameter visualization suite was unutilized.
+  3. Clicking the Clear / Delete Data button did not immediately cancel active backend pipeline executions or reset the application state.
+* **How We Fixed It**: 
+  1. **Adaptive Grid Modal System (`.is-unmatched`)**: Implemented responsive dual-column grid (`1160px` for matched transactions) and automatic single-column compact mode (`760px`) for unmatched records, hiding empty chart/keyword columns.
+  2. **Radar Chart Default**: Set Radar/Spider chart as default for multi-parameter comparison across 5 dimensions.
+  3. **Shared Keywords & Field Overlaps Engine**: Added `populateCompareKeywordIntelligence` below the chart section to dynamically extract shared tokens (`kw-pill-shared`), filter financial stop words, and display verified field overlap breakdown chips (`chip-exact`, `chip-linked`).
+  4. **Delete & Clear Data Kill Switch**: Integrated `pipeline_tracker.finish_pipeline()` and `reset_tracker()` into `/api/clear_all_data` and statement deletion handlers. On frontend, clear buttons abort client polling loops and force a complete page reload (`window.location.reload()`) for a clean session reset.
+
