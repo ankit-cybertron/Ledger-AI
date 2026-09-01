@@ -165,28 +165,28 @@
     try {
       if (stateManager.isStale) {
         if (subId === "sub-overview") {
-          _loadOverviewPanel(true).catch(() => {});
+          _loadOverviewPanel(true).catch(() => { });
         } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
           if (currentRunId) {
-            loadRun(currentRunId).catch(() => {});
+            loadRun(currentRunId).catch(() => { });
           } else {
-            hydrateExistingRun().catch(() => {});
+            hydrateExistingRun().catch(() => { });
           }
         } else if (subId === "sub-current-period" || subId === "sub-upload-bank") {
-          loadSidebarSources().catch(() => {});
-          loadStatementsTable().catch(() => {});
+          loadSidebarSources().catch(() => { });
+          loadStatementsTable().catch(() => { });
         } else if (subId === "sub-reports") {
-          _loadReportsPanel(true).catch(() => {});
+          _loadReportsPanel(true).catch(() => { });
         } else if (subId === "sub-config") {
-          _loadConfigPanel(true).catch(() => {});
+          _loadConfigPanel(true).catch(() => { });
         } else if (subId === "sub-forecast") {
           if (typeof window.loadForecastTab === "function") {
             const res = window.loadForecastTab(true);
-            if (res && typeof res.catch === "function") res.catch(() => {});
+            if (res && typeof res.catch === "function") res.catch(() => { });
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // ── Shared Reconciliation & System State Manager (T13.3) ────────────────
@@ -246,15 +246,14 @@
 
       Promise.allSettled([
         _loadOverviewPanel(true),
-        _loadReportsPanel(true),
         _loadConfigPanel(true),
         (typeof window.loadForecastTab === "function") ? window.loadForecastTab(true) : Promise.resolve()
-      ]).catch(() => {});
-    } catch (_) {}
+      ]).catch(() => { });
+    } catch (_) { }
     stateManager.isStale = false;
   };
 
-  function _loadReportsPanel(force, expandVault = false) {
+  function _loadReportsPanel(force, expandVault = false, autoGenerateLive = false) {
     if (_panelLoaded.reports && !force) return;
     const el = document.getElementById("reportsContent");
     if (!el) return;
@@ -262,26 +261,20 @@
 
     Promise.all([
       fetch("/api/closed_periods").then(r => r.json()).catch(() => ({ periods: [] })),
-      fetch("/api/report-html").then(r => r.json()).catch(() => ({})),
       fetch("/api/statements").then(r => r.json()).catch(() => ({ statements: [] })),
       fetch("/api/forecast?days=30").then(r => r.json()).catch(() => ({}))
-    ]).then(([closedRes, reportRes, stData, forecastRes]) => {
+    ]).then(([closedRes, stData, forecastRes]) => {
       _panelLoaded.reports = true;
+      window._cachedReportsStatements = stData.statements || [];
       const closedPeriods = closedRes.periods || [];
-      const reportData = reportRes.data || {};
-      const summary = reportData.summary || {};
-      const transactions = reportData.transactions || [];
-      const exceptions = reportData.exceptions || [];
-      const integrity = reportData.integrity || {};
       const fSum = forecastRes.summary || {};
       const latestClosed = closedPeriods.length > 0 ? closedPeriods[0] : null;
 
-      // Extract display metrics with fallback to latest closed period snapshot when active statements were cleared
       const activeHasData = (fSum.current_balance || 0) > 0 || (fSum.forecast_30d_projected || 0) > 0;
       const displayCurrentBal = activeHasData
         ? (fSum.current_balance || 0)
         : (latestClosed ? (latestClosed.current_balance || (latestClosed.forecast_summary && latestClosed.forecast_summary.current_balance) || latestClosed.variance || 0) : 0);
-      
+
       const displayProjected = activeHasData
         ? (fSum.forecast_30d_projected || 0)
         : (latestClosed ? (latestClosed.forecast_30d_projected || (latestClosed.forecast_summary && latestClosed.forecast_summary.forecast_30d_projected) || displayCurrentBal) : 0);
@@ -315,11 +308,11 @@
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Current Settled Balance</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#10b981; margin-top:2px;">${displayCurrentBal.toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#10b981; margin-top:2px;">${displayCurrentBal.toLocaleString(undefined, { minimumFractionDigits: 2 })} INR</div>
             </div>
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">30D Projected Ending Cash</div>
-              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#8b5cf6; margin-top:2px;">${displayProjected.toLocaleString(undefined, {minimumFractionDigits:2})} INR</div>
+              <div style="font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:#8b5cf6; margin-top:2px;">${displayProjected.toLocaleString(undefined, { minimumFractionDigits: 2 })} INR</div>
             </div>
             <div>
               <div style="font-size:0.7rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Pending Settlement Batches</div>
@@ -474,10 +467,9 @@
         `;
       }
 
-      // Collapsible Vault Wrapper Container (Collapsed by default!)
       const isExpandedInitially = !!expandVault;
       let vaultHtml = `
-        <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin-bottom:28px; box-shadow:var(--shadow-sm); overflow:hidden;">
+        <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin-bottom:24px; box-shadow:var(--shadow-sm); overflow:hidden;">
           <div id="vaultAccordionHeader" style="display:flex; align-items:center; justify-content:space-between; padding:18px 24px; background:var(--bg-elevated); cursor:pointer; user-select:none;">
             <div style="display:flex; align-items:center; gap:12px;">
               <span style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:var(--radius-md); background:rgba(37,99,235,0.1); color:var(--accent-blue);">
@@ -503,14 +495,75 @@
         </div>
       `;
 
-      // Populate statements dropdown
-      const stList = stData.statements || [];
+      const headerActionUI = `
+        <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; box-shadow:var(--shadow-sm);">
+          <div>
+            <h2 style="font-size:1.2rem; font-weight:700; color:var(--text-primary); margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              <span>Reconciliation Reports & Period Closure</span>
+            </h2>
+            <p style="font-size:0.83rem; color:var(--text-muted); margin:0;">
+              Generate live audit reports on demand, or lock period records to create archived PDF/Excel audit reports.
+            </p>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button type="button" onclick="window.generateLiveReport()" style="padding:9px 18px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(37,99,235,0.25);">
+              <span>Generate Report</span>
+            </button>
+            <button type="button" onclick="if(window.openClosePeriodModal){window.openClosePeriodModal();}else{alert('Run a reconciliation first to close period.');}" style="padding:9px 18px; background:#10b981; color:#fff; border:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.25);">
+              <span>Close & Lock Period</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      const initialPlaceholderUI = `
+        <div id="liveReportContainer">
+          <div style="background:var(--bg-surface); border:1px dashed var(--border); border-radius:var(--radius-lg); padding:36px 28px; text-align:center; box-shadow:var(--shadow-sm);">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" style="margin:0 auto 12px; display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-primary); margin:0 0 6px;">Live Reconciliation Report</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); max-width:550px; margin:0 auto 20px;">
+              Click below to calculate period parity, interactive audit tables, and download custom Excel/PDF/CSV/Markdown reports.
+            </p>
+            <button type="button" onclick="window.generateLiveReport()" style="padding:10px 22px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius-md); font-size:0.88rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(37,99,235,0.3);">
+              <span>Generate Report</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      el.innerHTML = headerActionUI + vaultHtml + initialPlaceholderUI;
+      initVaultHeaderListeners();
+
+      if (autoGenerateLive) {
+        window.generateLiveReport();
+      }
+    }).catch(err => {
+      console.error(err);
+      el.innerHTML = '<div style="color:var(--color-danger);padding:20px;text-align:center;">Failed to load audit report. Check server connection.</div>';
+    });
+  }
+
+  window.generateLiveReport = async function generateLiveReport() {
+    const container = document.getElementById("liveReportContainer");
+    if (!container) return;
+
+    container.innerHTML = createSleekLoadingHTML("Generating Live Executive Audit Report", "Analyzing reconciliation entries, calculating period parity, and building interactive audit breakdown...");
+
+    try {
+      const reportRes = await fetch("/api/report-html").then(r => r.json());
+      const reportData = reportRes.data || {};
+      const summary = reportData.summary || {};
+      const transactions = reportData.transactions || [];
+      const exceptions = reportData.exceptions || [];
+      const integrity = reportData.integrity || {};
+
+      const stList = window._cachedReportsStatements || [];
       let stOptionsHtml = '<option value="all">All Statement Sources (Default)</option>';
       stList.forEach(s => {
         stOptionsHtml += `<option value="${s.id}">${s.name || s.id} (${(s.source_type || 'statement').toUpperCase()})</option>`;
       });
 
-      // Filter Options UI Header
       const exportOptionsUI = `
         <div style="background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px 26px; margin-bottom:24px; box-shadow:var(--shadow-sm);">
           <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border);">
@@ -519,7 +572,6 @@
               <span>Export & Reporting Configuration</span>
             </h3>
             
-            <!-- View Mode Switcher -->
             <div style="display:flex; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:3px;">
               <button type="button" id="btnViewReportExec" onclick="window.switchReportViewMode('exec')" style="padding:6px 14px; border:none; border-radius:var(--radius-sm); background:var(--accent-blue); color:#fff; font-size:0.8rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -533,7 +585,6 @@
           </div>
           
           <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:18px;">
-            <!-- Status Filter -->
             <div>
               <label style="font-size:0.82rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Included Statuses</label>
               <div style="display:flex; flex-wrap:wrap; gap:10px;">
@@ -544,7 +595,6 @@
               </div>
             </div>
 
-            <!-- Statement Source Filter -->
             <div>
               <label style="font-size:0.82rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Statement Source Filter</label>
               <select id="exportSourceSelect" style="width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-primary); font-size:0.82rem;">
@@ -552,55 +602,54 @@
               </select>
             </div>
 
-            <!-- Date Range Picker -->
             <div>
               <label style="font-size:0.82rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Date Range Filter</label>
-              <div style="display:flex; gap:6px; align-items:center;">
-                <input type="date" id="exportStartDate" style="flex:1; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-primary); font-size:0.78rem;">
-                <span style="color:var(--text-muted); font-size:0.78rem;">to</span>
-                <input type="date" id="exportEndDate" style="flex:1; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-primary); font-size:0.78rem;">
+              <div style="display:flex; gap:8px;">
+                <input type="date" id="exportStartDate" style="width:50%; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-primary); font-size:0.8rem;">
+                <input type="date" id="exportEndDate" style="width:50%; padding:6px 8px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-elevated); color:var(--text-primary); font-size:0.8rem;">
               </div>
             </div>
           </div>
 
-          <!-- Included Sections -->
           <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--border);">
-            <label style="font-size:0.82rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Included Report Sections</label>
-            <div style="display:flex; flex-wrap:wrap; gap:16px;">
-              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="summary" checked> Executive Summary</label>
-              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="charts" checked> Analytics Data</label>
-              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="transactions" checked> Transaction Table</label>
-              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="exceptions" checked> Exception Ledger</label>
-              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="integrity" checked> System Integrity</label>
+            <label style="font-size:0.82rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:8px;">Include Report Sections</label>
+            <div style="display:flex; flex-wrap:wrap; gap:14px;">
+              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="summary" checked> Summary KPIs</label>
+              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="charts" checked> Executive Charts</label>
+              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="transactions" checked> Full Transaction Ledger</label>
+              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="exceptions" checked> Unmatched Exceptions</label>
+              <label style="font-size:0.8rem; color:var(--text-primary); cursor:pointer;"><input type="checkbox" class="export-section-cb" value="integrity" checked> System Audit Trail</label>
             </div>
           </div>
 
-          <!-- Multi-Format Export Action Bar -->
-          <div style="margin-top:18px; padding:14px 18px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-            <div id="exportPreviewSummary" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">
-              Filter Scope: <b>All 4 statuses</b>, <b>All statements</b>, <b>5 sections</b> selected.
+          <div style="margin-top:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-top:14px; border-top:1px solid var(--border);">
+            <div id="exportPreviewSummary" style="font-size:0.82rem; color:var(--text-muted);">
+              Select filters and export formatted audit workbooks below.
             </div>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <button type="button" onclick="window.downloadReportExport('xlsx')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:#10b981; color:#fff; border:none; border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
                 <span>Export Excel (.xlsx)</span>
               </button>
+
               <button type="button" onclick="window.downloadReportExport('pdf')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span>Download PDF</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span>Export PDF (.pdf)</span>
               </button>
+
               <button type="button" onclick="window.downloadReportExport('csv')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border); border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>CSV</span>
               </button>
+
               <button type="button" onclick="window.downloadReportExport('markdown')" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border); border-radius:var(--radius-md); font-size:0.82rem; font-weight:600; cursor:pointer;">
                 <span>Markdown</span>
               </button>
             </div>
           </div>
-        </div>`;
+        </div>
+      `;
 
-      // Formatted Executive Dashboard Card & Table View HTML
       const totalTxns = summary.total_transactions || 0;
       const matchPct = (summary.percent_reconciled || 0).toFixed(1);
       const varAmt = (summary.variance || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
@@ -805,20 +854,19 @@
               </button>
             </div>
           </div>
-          <object id="reportPdfObject" data="/api/reports/export?format=pdf&inline=true#toolbar=1&navpanes=0&view=FitH" type="application/pdf" style="width:100%; height:820px; border:1px solid var(--border); border-radius:var(--radius-lg); background:#0f172a;">
-            <iframe id="reportPdfIframe" src="/api/reports/export?format=pdf&inline=true#toolbar=1&navpanes=0&view=FitH" style="width:100%; height:820px; border:none; border-radius:var(--radius-lg); background:#0f172a;"></iframe>
+          <object id="reportPdfObject" type="application/pdf" style="width:100%; height:820px; border:1px solid var(--border); border-radius:var(--radius-lg); background:#0f172a;">
+            <iframe id="reportPdfIframe" style="width:100%; height:820px; border:none; border-radius:var(--radius-lg); background:#0f172a;"></iframe>
           </object>
         </div>
       `;
 
-      el.innerHTML = vaultHtml + (summary.total_transactions > 0 ? (exportOptionsUI + reportExecUI) : '');
-      initVaultHeaderListeners();
+      container.innerHTML = exportOptionsUI + reportExecUI;
       _bindExportPreviewEvents();
-    }).catch(err => {
+    } catch (err) {
       console.error(err);
-      el.innerHTML = '<div style="color:var(--color-danger);padding:20px;text-align:center;">Failed to load audit report. Check server connection.</div>';
-    });
-  }
+      container.innerHTML = '<div style="color:var(--color-danger);padding:20px;text-align:center;">Failed to generate live report. Check server connection.</div>';
+    }
+  };
 
   function initVaultHeaderListeners() {
     const clearPastBtn = document.getElementById("btnClearPastRecords");
@@ -1705,9 +1753,9 @@
                 grid: { color: gridColor },
                 ticks: {
                   color: textColor,
-                  callback: function(val) {
+                  callback: function (val) {
                     const d = new Date(val);
-                    return isNaN(d.getTime()) ? '' : `${d.getDate()}/${d.getMonth()+1}`;
+                    return isNaN(d.getTime()) ? '' : `${d.getDate()}/${d.getMonth() + 1}`;
                   }
                 }
               },
@@ -2857,7 +2905,7 @@
   let isEditingStatementRows = false;
   let unifiedMasterRows = [];
 
-  window.openUnifiedSourceView = function() {
+  window.openUnifiedSourceView = function () {
     activateSub("sub-upload-bank");
   };
 
@@ -4274,7 +4322,7 @@
         const st = (tx.status || "").toLowerCase().trim();
         const curr = String(tx.currency || "").toUpperCase();
         const desc = (String(tx.description || "") + " " + String(tx.reason || "") + " " + String(ev.rule || "")).toUpperCase();
-        
+
         if (curr && curr !== "INR" && curr !== "RS" && curr !== "RUPEES") {
           rawFlags.push("International Txn");
         }
@@ -4863,7 +4911,7 @@
 
     const displayList = transactions.slice(0, 100);
     const fragment = document.createDocumentFragment();
-    
+
     function createTxRow(tx) {
       const tr = document.createElement("tr");
       tr.style.cursor = "pointer";
@@ -5257,12 +5305,12 @@
       closeBtn.disabled = true;
       try {
         const result = await window.LedgerApi.closePeriod(currentRunId);
-        
+
         // Invalidate state and reset current run pointer and panel cache
         stateManager.invalidate();
         currentRunId = null;
         for (const k in _panelLoaded) delete _panelLoaded[k];
-        
+
         // Trigger direct file downloads for PDF & Excel without blank tabs
         const triggerDownload = (url) => {
           const a = document.createElement("a");
@@ -5283,7 +5331,7 @@
           const reportsBtn = document.getElementById("topbarReportsBtn");
           if (reportsBtn) reportsBtn.click();
         }
-        
+
         // Force refresh reports panel and auto-expand vault section
         _loadReportsPanel(true, true);
 
@@ -5375,7 +5423,7 @@
     }
   }
 
-  window.toggleBenchmarkSection = function() {
+  window.toggleBenchmarkSection = function () {
     const body = document.getElementById("benchmarkBody");
     const chevron = document.getElementById("benchmarkChevron");
     if (!body) return;
@@ -5473,10 +5521,10 @@
       // Update KPI Cards
       const curBalEl = document.getElementById("forecastCurrentBalance");
       if (curBalEl) curBalEl.textContent = (data.summary.current_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      
+
       const projBalEl = document.getElementById("forecastProjectedBalance");
       if (projBalEl) projBalEl.textContent = (data.summary.forecast_30d_projected || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      
+
       const pendingAmtEl = document.getElementById("forecastPendingSettlements");
       if (pendingAmtEl) {
         const sumPending = (data.pending_settlements || []).reduce((acc, curr) => acc + (curr.amount || 0), 0);
@@ -5670,7 +5718,7 @@
             mode: 'index',
             intersect: false,
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 let label = context.dataset.label || '';
                 if (context.parsed.y !== null) {
                   label += ': ' + context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -5758,7 +5806,7 @@
               badgeColor = "#f59e0b";
             }
 
-            const formatAmt = (val) => val && val !== 0 ? val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : "-";
+            const formatAmt = (val) => val && val !== 0 ? val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
             const rowCurr = t.currency || "INR";
 
             tr.innerHTML = `
@@ -5777,17 +5825,17 @@
           tbody.innerHTML = `<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--text-muted);">No active transactions recorded for this day.</td></tr>`;
         }
 
-        document.getElementById("fdModalSettledToday").innerHTML = `${settledToday.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
-        document.getElementById("fdModalPendingToday").innerHTML = `${pendingToday.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
-        document.getElementById("fdModalCumSettled").innerHTML = `${(data.total_settled_cumulative || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
-        document.getElementById("fdModalCumPending").innerHTML = `${(data.total_pending_cumulative || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalSettledToday").innerHTML = `${settledToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalPendingToday").innerHTML = `${pendingToday.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalCumSettled").innerHTML = `${(data.total_settled_cumulative || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
+        document.getElementById("fdModalCumPending").innerHTML = `${(data.total_pending_cumulative || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span style="font-size:0.7rem; color:var(--text-muted);">${mainCurrency}</span>`;
       })
       .catch(err => {
         tbody.innerHTML = `<tr><td colspan="6" style="padding:20px; text-align:center; color:#ef4444;">Error loading details: ${err.message}</td></tr>`;
       });
   }
 
-  window.editBeginningBalance = function() {
+  window.editBeginningBalance = function () {
     const statEl = document.getElementById("statBeginning");
     const current = statEl ? statEl.textContent.replace(/,/g, '') : "0.00";
     const input = prompt("Enter Beginning Balance amount:", current || "0.00");

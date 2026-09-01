@@ -1237,8 +1237,9 @@ def _build_dashboard_run(period_label="Current Period"):
     similar_count = len([t for t in transactions if (t.get("status") or "").lower() in {"similar", "proposed", "ml", "ambiguous"}])
     llm_count = len([t for t in transactions if (t.get("status") or "").lower() == "llm"])
     # Reconciled count & percentage (T22.10: SIMILAR is excluded from reconciled count/percentage)
-    reconciled_count = settled_count + matched_count + llm_count
-    percent = round((reconciled_count / total * 100), 1) if total > 0 else 0.0
+    reconciled_count = min(total, settled_count + matched_count + llm_count)
+    raw_pct = (reconciled_count / total * 100) if total > 0 else 0.0
+    percent = min(100.0, max(0.0, round(raw_pct, 1)))
 
     exceptions_count = len(exceptions) if exceptions else len([t for t in transactions if (t.get("status") or "").lower() in {"exception", "manual", "unmatched", "unreconciled", "similar", "review"}])
     unreconciled_count = len([t for t in transactions if (t.get("status") or "").lower() in {"unreconciled", "unmatched", "exception"}])
@@ -1525,9 +1526,19 @@ def import_statement():
                 "Syncing statement database and starting multi-pass reconciliation engine...",
                 level="INFO"
             )
-            _run_backend_pipeline()
-            run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
-            _RUNS[run["run_id"]] = run
+            def _async_import_pipeline():
+                try:
+                    _run_backend_pipeline()
+                    run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+                    _RUNS[run["run_id"]] = run
+                    _RUNS["latest"] = run
+                except Exception as exc:
+                    current_app.logger.warning(f"Auto pipeline run on import note: {exc}")
+
+            if current_app.config.get("TESTING"):
+                _async_import_pipeline()
+            else:
+                threading.Thread(target=_async_import_pipeline, daemon=True).start()
         except Exception as exc:
             current_app.logger.warning(f"Auto pipeline run on import note: {exc}")
 
@@ -2001,24 +2012,31 @@ def _handle_upload(source):
 @api_bp.route("/reconcile", methods=["POST"])
 def trigger_reconciliation():
     invalidate_dashboard_cache()
+    from frontend.api import pipeline_tracker
+    pipeline_tracker.start_pipeline("Initializing 4-Pass Cascade Reconciliation...")
+
     payload = request.get_json(silent=True) or {}
     period_label = payload.get("period_label", datetime.utcnow().strftime("%B %Y"))
+    run_id = f"run_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 
-    try:
-        _run_backend_pipeline()
-        run = _build_dashboard_run(period_label)
-    except FileNotFoundError as exc:
-        current_app.logger.exception("Ledger data file is missing")
-        return _error(str(exc), 500)
-    except Exception as exc:
-        current_app.logger.exception("Failed to build dashboard data")
-        return _error(f"Could not load Ledger data: {exc}", 500)
+    def _async_reconcile_job():
+        try:
+            _run_backend_pipeline()
+            run = _build_dashboard_run(period_label)
+            _RUNS[run["run_id"]] = run
+            _RUNS["latest"] = run
+        except Exception as exc:
+            current_app.logger.exception(f"Background reconciliation run error: {exc}")
 
-    _RUNS[run["run_id"]] = run
+    if current_app.config.get("TESTING"):
+        _async_reconcile_job()
+    else:
+        threading.Thread(target=_async_reconcile_job, daemon=True).start()
+
     return jsonify({
         "ok": True,
-        "run_id": run["run_id"],
-        "status": run.get("status", "completed"),
+        "run_id": run_id,
+        "status": "started",
     })
 
 
