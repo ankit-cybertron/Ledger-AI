@@ -1901,20 +1901,24 @@
       closeStmtViewBtn.addEventListener("click", () => activateSub("sub-upload-bank"));
     }
 
-    document.querySelectorAll("#btnClearAllData, #btnClearAllDataSidebar, .btn-dustbin-expand").forEach((clearBtn) => {
+    document.querySelectorAll("#btnClearAllData, #btnClearAllDataSidebar, .btn-dustbin-expand, .btn-dustbin-topbar").forEach((clearBtn) => {
       if (clearBtn.dataset.hasClearListener) return;
       clearBtn.dataset.hasClearListener = "true";
 
       clearBtn.addEventListener("click", async () => {
         const confirmed = confirm(
-          "Are you sure you want to clear ALL imported statement data and reconciliation results?\n\nThis action cannot be undone."
+          "Kill Switch & Reset:\n\nAre you sure you want to stop all active backend pipeline operations and clear ALL imported statement data?\n\nThis action will stop all processing and reload the page."
         );
         if (!confirmed) return;
+
+        // Immediately kill client-side polling loops
+        if (window.pipelinePollInterval) clearInterval(window.pipelinePollInterval);
+        if (window.pipelinePollerInterval) clearInterval(window.pipelinePollerInterval);
 
         clearBtn.disabled = true;
         clearBtn.classList.add("btn-clearing");
         const originalHtml = clearBtn.innerHTML;
-        clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Clearing...</span>';
+        clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Killing & Clearing...</span>';
 
         try {
           const res = await fetch("/api/clear_all_data", { method: "POST" });
@@ -1926,7 +1930,7 @@
             alert(data.message || data.error || "Failed to clear data.");
           }
         } catch (err) {
-          alert("Error clearing data: " + err.message);
+          alert("Error executing kill switch & clearing data: " + err.message);
         } finally {
           clearBtn.disabled = false;
           clearBtn.classList.remove("btn-clearing");
@@ -4494,8 +4498,14 @@
     const secondaryEmptyState = document.getElementById("cmpSecondaryEmptyState");
     const matrixWrap = document.getElementById("cmpMatrixWrap");
     const tbody = document.getElementById("compareTableBody");
+    const modalCard = document.getElementById("compareModalCard");
 
-    if (hasCounterpart && counterpart) {
+    const isMatchState = Boolean(hasCounterpart && counterpart);
+    if (modalCard) {
+      modalCard.classList.toggle("is-unmatched", !isMatchState);
+    }
+
+    if (isMatchState) {
       if (secondaryHeader) secondaryHeader.style.display = "flex";
       if (secondaryParamList) secondaryParamList.style.display = "flex";
       if (secondaryEmptyState) secondaryEmptyState.style.display = "none";
@@ -4667,7 +4677,275 @@
       statusSelect.value = "";
     }
 
+    // Render Interactive Multi-Parameter Comparison Visualization (Radar Chart Default)
+    renderCompareModalChart(tx, counterpart, hasCounterpart);
+
     modalBackdrop.style.display = "flex";
+  }
+
+  let currentCmpChartType = "radar";
+
+  function renderCompareModalChart(tx, counterpart, hasCounterpart) {
+    const canvas = document.getElementById("cmpModalChartCanvas");
+    const chartSection = document.getElementById("cmpModalChartSection");
+    if (!canvas || !window.Chart) return;
+
+    populateCompareKeywordIntelligence(tx, counterpart, hasCounterpart);
+
+    if (!hasCounterpart || !counterpart) {
+      if (chartSection) chartSection.style.display = "none";
+      return;
+    }
+    if (chartSection) chartSection.style.display = "flex";
+
+    // Attach selector handlers
+    const selectors = document.querySelectorAll(".btn-cmp-chart-type");
+    selectors.forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        selectors.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCmpChartType = btn.dataset.cmpChart || "radar";
+        drawCmpChart();
+      };
+    });
+
+    drawCmpChart();
+
+    function drawCmpChart() {
+      if (window.cmpModalChartInstance) {
+        window.cmpModalChartInstance.destroy();
+        window.cmpModalChartInstance = null;
+      }
+
+      const pAmt = tx.amount || 1;
+      const cpAmt = counterpart.amount !== undefined && counterpart.amount !== null ? counterpart.amount : (tx.counterpart_amount || tx.amount);
+      const amtDiff = Math.abs(pAmt - cpAmt);
+      const amtMatchPct = Math.max(0, Math.min(100, Math.round(100 - (amtDiff / pAmt) * 100)));
+
+      const ev = tx.evidence || {};
+      const dateGap = ev.date_difference_days !== undefined ? ev.date_difference_days : 0;
+      const dateProxPct = Math.max(0, Math.min(100, Math.round(100 - dateGap * 15)));
+
+      const utrMatchPct = (tx.utr && counterpart.utr && String(tx.utr).trim() === String(counterpart.utr).trim()) ? 100 : 40;
+      const confPct = Math.round((tx.confidence || 0.95) * 100);
+      const entityMatchPct = tx.status === "settled" || tx.status === "matched" ? 95 : 70;
+
+      const labels = ["Amount Match %", "Date Proximity %", "UTR Reference %", "Reconcile Confidence %", "Entity Symmetry %"];
+      const primaryData = [100, 100, 100, 100, 100];
+      const counterpartData = [amtMatchPct, dateProxPct, utrMatchPct, confPct, entityMatchPct];
+
+      const pLabel = tx.source_name || "Primary Record";
+      const cLabel = counterpart.source_name || "Counterpart Record";
+
+      if (currentCmpChartType === "radar") {
+        window.cmpModalChartInstance = new window.Chart(canvas, {
+          type: "radar",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: pLabel,
+                data: primaryData,
+                backgroundColor: "rgba(59, 130, 246, 0.22)",
+                borderColor: "#3b82f6",
+                pointBackgroundColor: "#3b82f6",
+                borderWidth: 2
+              },
+              {
+                label: cLabel,
+                data: counterpartData,
+                backgroundColor: "rgba(16, 185, 129, 0.22)",
+                borderColor: "#10b981",
+                pointBackgroundColor: "#10b981",
+                borderWidth: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { color: "#94a3b8", font: { size: 11, weight: "600" } } }
+            },
+            scales: {
+              r: {
+                angleLines: { color: "rgba(255,255,255,0.1)" },
+                grid: { color: "rgba(255,255,255,0.1)" },
+                pointLabels: { color: "#94a3b8", font: { size: 10, weight: "600" } },
+                min: 0,
+                max: 100
+              }
+            }
+          }
+        });
+      } else if (currentCmpChartType === "bar") {
+        window.cmpModalChartInstance = new window.Chart(canvas, {
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              { label: pLabel, data: primaryData, backgroundColor: "#3b82f6", borderRadius: 4 },
+              { label: cLabel, data: counterpartData, backgroundColor: "#10b981", borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { color: "#94a3b8", font: { size: 11, weight: "600" } } }
+            },
+            scales: {
+              x: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8" } },
+              y: { grid: { color: "rgba(255,255,255,0.08)" }, ticks: { color: "#94a3b8" }, min: 0, max: 100 }
+            }
+          }
+        });
+      } else {
+        window.cmpModalChartInstance = new window.Chart(canvas, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: pLabel,
+                data: labels.map((l, i) => ({ x: i + 1, y: primaryData[i] })),
+                backgroundColor: "#3b82f6",
+                pointRadius: 6
+              },
+              {
+                label: cLabel,
+                data: labels.map((l, i) => ({ x: i + 1, y: counterpartData[i] })),
+                backgroundColor: "#10b981",
+                pointRadius: 6
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom", labels: { color: "#94a3b8", font: { size: 11, weight: "600" } } }
+            },
+            scales: {
+              x: {
+                grid: { color: "rgba(255,255,255,0.05)" },
+                ticks: {
+                  color: "#94a3b8",
+                  callback: (val) => labels[val - 1] || ""
+                }
+              },
+              y: { grid: { color: "rgba(255,255,255,0.08)" }, ticks: { color: "#94a3b8" }, min: 0, max: 100 }
+            }
+          }
+        });
+      }
+    }
+  }
+
+  function populateCompareKeywordIntelligence(tx, counterpart, hasCounterpart) {
+    const container = document.getElementById("cmpKwTagsContainer");
+    const breakdown = document.getElementById("cmpKwFieldBreakdown");
+    const badge = document.getElementById("cmpKwCountBadge");
+    const section = document.getElementById("cmpKeywordsSection");
+    if (!container || !section) return;
+
+    if (!hasCounterpart || !counterpart) {
+      section.style.display = "none";
+      return;
+    }
+    section.style.display = "flex";
+
+    const STOP_WORDS = new Set([
+      "the", "and", "for", "with", "ref", "txn", "card", "setl", "upi", "bank",
+      "settlement", "payment", "inc", "ltd", "pvt", "corp", "org", "transfer",
+      "neft", "rtgs", "imps", "from", "to", "via", "val", "date", "inr", "cr", "dr",
+      "record", "summary", "statement", "details", "status", "settled", "matched"
+    ]);
+
+    function extractTokens(obj) {
+      const tokens = new Set();
+      if (!obj) return tokens;
+
+      const values = [
+        obj.bank_description, obj.description, obj.primary_id, obj.utr,
+        obj.settlement_id, obj.order_id, obj.payment_id, obj.id, obj.source_name,
+        obj.source_label, obj.reason
+      ];
+
+      values.forEach(v => {
+        if (v) {
+          String(v).toLowerCase().replace(/[^a-z0-9\s_-]/g, " ").split(/[\s_-]+/).forEach(w => {
+            if (w.length >= 2 && !STOP_WORDS.has(w)) {
+              tokens.add(w.toUpperCase());
+            }
+          });
+        }
+      });
+
+      return tokens;
+    }
+
+    const pTokens = extractTokens(tx);
+    const cTokens = extractTokens(counterpart);
+
+    const sharedTokens = [];
+    pTokens.forEach(tok => {
+      if (cTokens.has(tok)) {
+        sharedTokens.push(tok);
+      }
+    });
+
+    // Collect key field matches
+    const fieldMatches = [];
+    if (tx.amount !== undefined && counterpart.amount !== undefined && Math.abs(Number(tx.amount) - Number(counterpart.amount)) < 0.01) {
+      fieldMatches.push({ label: "Amount", val: formatMoney(tx.amount), exact: true });
+    }
+    if (tx.date && counterpart.date && formatDateDDMMYYYY(tx.date) === formatDateDDMMYYYY(counterpart.date)) {
+      fieldMatches.push({ label: "Transaction Date", val: formatDateDDMMYYYY(tx.date), exact: true });
+    }
+    if (tx.utr && counterpart.utr && String(tx.utr).trim() === String(counterpart.utr).trim()) {
+      fieldMatches.push({ label: "UTR / Ref", val: tx.utr, exact: true });
+    } else if (tx.utr || counterpart.utr) {
+      fieldMatches.push({ label: "Reference Link", val: "Linked via Rule Pipeline", exact: false });
+    }
+
+    // Render Keyword Badges
+    let tagsHtml = "";
+    if (sharedTokens.length > 0) {
+      sharedTokens.forEach(t => {
+        tagsHtml += `<span class="kw-pill kw-pill-shared"><span class="kw-dot"></span> ${escapeHtml(t)}</span>`;
+      });
+    }
+
+    // Also include distinct tokens if direct overlap is sparse
+    if (sharedTokens.length === 0) {
+      pTokens.forEach(t => {
+        if (tagsHtml.split("kw-pill").length < 6) {
+          tagsHtml += `<span class="kw-pill kw-pill-primary">${escapeHtml(t)}</span>`;
+        }
+      });
+      cTokens.forEach(t => {
+        if (tagsHtml.split("kw-pill").length < 10) {
+          tagsHtml += `<span class="kw-pill kw-pill-counterpart">${escapeHtml(t)}</span>`;
+        }
+      });
+    }
+
+    container.innerHTML = tagsHtml;
+    if (badge) {
+      badge.textContent = `${sharedTokens.length} Shared Token${sharedTokens.length === 1 ? '' : 's'}`;
+    }
+
+    // Render Field Overlaps Summary List
+    let bdHtml = "";
+    if (fieldMatches.length > 0) {
+      bdHtml += `<div class="kw-breakdown-title">Verified Field Overlaps:</div><div class="kw-breakdown-items">`;
+      fieldMatches.forEach(m => {
+        bdHtml += `<div class="kw-breakdown-chip ${m.exact ? 'chip-exact' : 'chip-linked'}">✓ <strong>${m.label}:</strong> ${escapeHtml(m.val)}</div>`;
+      });
+      bdHtml += `</div>`;
+    }
+    breakdown.innerHTML = bdHtml;
   }
 
   async function triggerModalLlmSmartMatch(tx, triggerBtn) {
@@ -5007,7 +5285,7 @@
         askBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
-          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId);
+          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId, tx.status || tx.reconciliation_status);
         });
       }
 
@@ -5123,7 +5401,7 @@
         excAskBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
-          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId);
+          if (window.askLedgerAiAboutTx) window.askLedgerAiAboutTx(primaryTxId, exStatus);
         });
       }
 

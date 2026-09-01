@@ -603,124 +603,173 @@
               </div>
 
               <div class="compare-modal-body">
-                <!-- Side by Side Source Record Cards -->
-                <div class="compare-sources-grid">
-                  <!-- Primary Source Record Card -->
-                  <div class="compare-source-card source-primary" id="cmpPrimaryCard">
-                    <div class="compare-source-header">
-                      <div>
-                        <span class="compare-source-tag" id="cmpPrimaryTag">SOURCE RECORD</span>
-                        <span class="compare-source-id" id="cmpSettlementId">—</span>
+                <div class="compare-modal-layout-grid">
+                  <!-- Left Column: Source Cards & Parameter Match Matrix -->
+                  <div class="compare-modal-left-col">
+                    <!-- Side by Side Source Record Cards -->
+                    <div class="compare-sources-grid">
+                      <!-- Primary Source Record Card -->
+                      <div class="compare-source-card source-primary" id="cmpPrimaryCard">
+                        <div class="compare-source-header">
+                          <div>
+                            <span class="compare-source-tag" id="cmpPrimaryTag">SOURCE RECORD</span>
+                            <span class="compare-source-id" id="cmpSettlementId">—</span>
+                          </div>
+                          <button type="button" class="btn-cmp-view-source" id="cmpLeftViewSourceBtn"
+                            title="View in Source Table">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="11" cy="11" r="8" />
+                              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            View Source
+                          </button>
+                        </div>
+                        <div class="compare-param-list" id="cmpPrimaryParamList">
+                          <div class="cmp-param-item"><span class="cmp-label">Source Type:</span><span class="cmp-val"
+                              id="cmpSettlementSource">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">UTR / Reference:</span><span
+                              class="cmp-val font-mono" id="cmpSettlementUtr">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Transaction ID:</span><span
+                              class="cmp-val font-mono" id="cmpSettlementPaymentId">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
+                              id="cmpSettlementDate">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
+                              class="cmp-val font-mono" id="cmpSettlementCurrency">INR</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
+                              class="cmp-val font-mono val-amount" id="cmpSettlementAmount">0.00</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Status:</span><span class="cmp-val"
+                              id="cmpSettlementStatus">—</span></div>
+                        </div>
                       </div>
-                      <button type="button" class="btn-cmp-view-source" id="cmpLeftViewSourceBtn"
-                        title="View in Source Table">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="11" cy="11" r="8" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                        View Source
-                      </button>
-                    </div>
-                    <div class="compare-param-list" id="cmpPrimaryParamList">
-                      <div class="cmp-param-item"><span class="cmp-label">Source Type:</span><span class="cmp-val"
-                          id="cmpSettlementSource">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">UTR / Reference:</span><span
-                          class="cmp-val font-mono" id="cmpSettlementUtr">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Transaction ID:</span><span
-                          class="cmp-val font-mono" id="cmpSettlementPaymentId">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
-                          id="cmpSettlementDate">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
-                          class="cmp-val font-mono" id="cmpSettlementCurrency">INR</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
-                          class="cmp-val font-mono val-amount" id="cmpSettlementAmount">0.00</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Status:</span><span class="cmp-val"
-                          id="cmpSettlementStatus">—</span></div>
-                    </div>
-                  </div>
 
-                  <!-- Vs Badge Divider -->
-                  <div class="compare-vs-badge">VS</div>
+                      <!-- Vs Badge Divider -->
+                      <div class="compare-vs-badge">VS</div>
 
-                  <!-- Secondary Source Record Card / Empty State -->
-                  <div class="compare-source-card source-secondary" id="cmpSecondaryCard">
-                    <div class="compare-source-header" id="cmpSecondaryHeader">
-                      <div>
-                        <span class="compare-source-tag" id="cmpSecondaryTag">COUNTERPART SOURCE</span>
-                        <span class="compare-source-id" id="cmpBankId">—</span>
-                      </div>
-                      <button type="button" class="btn-cmp-view-source" id="cmpRightViewSourceBtn"
-                        title="View in Source Table">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="11" cy="11" r="8" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                        View Source
-                      </button>
-                    </div>
+                      <!-- Secondary Source Record Card / Empty State -->
+                      <div class="compare-source-card source-secondary" id="cmpSecondaryCard">
+                        <div class="compare-source-header" id="cmpSecondaryHeader">
+                          <div>
+                            <span class="compare-source-tag" id="cmpSecondaryTag">COUNTERPART SOURCE</span>
+                            <span class="compare-source-id" id="cmpBankId">—</span>
+                          </div>
+                          <button type="button" class="btn-cmp-view-source" id="cmpRightViewSourceBtn"
+                            title="View in Source Table">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="11" cy="11" r="8" />
+                              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            View Source
+                          </button>
+                        </div>
 
-                    <div class="compare-param-list" id="cmpSecondaryParamList">
-                      <div class="cmp-param-item"><span class="cmp-label">Source Type:</span><span class="cmp-val"
-                          id="cmpBankSource">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">UTR / Reference:</span><span
-                          class="cmp-val font-mono" id="cmpBankUtr">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Transaction ID:</span><span
-                          class="cmp-val font-mono" id="cmpBankTxId">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
-                          id="cmpBankDate">—</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
-                          class="cmp-val font-mono" id="cmpBankCurrency">INR</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
-                          class="cmp-val font-mono val-amount" id="cmpBankAmount">0.00</span></div>
-                      <div class="cmp-param-item"><span class="cmp-label">Description:</span><span
-                          class="cmp-val text-muted" id="cmpBankDesc">—</span></div>
-                    </div>
+                        <div class="compare-param-list" id="cmpSecondaryParamList">
+                          <div class="cmp-param-item"><span class="cmp-label">Source Type:</span><span class="cmp-val"
+                              id="cmpBankSource">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">UTR / Reference:</span><span
+                              class="cmp-val font-mono" id="cmpBankUtr">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Transaction ID:</span><span
+                              class="cmp-val font-mono" id="cmpBankTxId">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Date:</span><span class="cmp-val"
+                              id="cmpBankDate">—</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Currency:</span><span
+                              class="cmp-val font-mono" id="cmpBankCurrency">INR</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Amount:</span><span
+                              class="cmp-val font-mono val-amount" id="cmpBankAmount">0.00</span></div>
+                          <div class="cmp-param-item"><span class="cmp-label">Description:</span><span
+                              class="cmp-val text-muted" id="cmpBankDesc">—</span></div>
+                        </div>
 
-                    <!-- Empty State Container when Unmatched -->
-                    <div class="cmp-empty-state" id="cmpSecondaryEmptyState" style="display:none;">
-                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        style="color: #64748b; margin-bottom: 8px;">
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        <line x1="8" y1="11" x2="14" y2="11" />
-                      </svg>
-                      <div class="cmp-empty-title">NO MATCH FOUND</div>
-                      <div class="cmp-empty-subtitle">No corresponding bank statement or order book payout credit was
-                        reconciled for this transaction.</div>
-                      <div
-                        style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
-                        <button type="button" class="btn-cmp-find-similar" id="btnFindSimilarPayments">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Empty State Container when Unmatched -->
+                        <div class="cmp-empty-state" id="cmpSecondaryEmptyState" style="display:none;">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                            style="color: #64748b; margin-bottom: 8px;">
                             <circle cx="11" cy="11" r="8" />
                             <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            <line x1="8" y1="11" x2="14" y2="11" />
                           </svg>
-                          Find Similar Payments
-                        </button>
+                          <div class="cmp-empty-title">NO MATCH FOUND</div>
+                          <div class="cmp-empty-subtitle">No corresponding bank statement or order book payout credit was
+                            reconciled for this transaction.</div>
+                          <div
+                            style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" class="btn-cmp-find-similar" id="btnFindSimilarPayments">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                              </svg>
+                              Find Similar Payments
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Parameter Differences Breakdown Table -->
+                    <div class="compare-table-wrap" id="cmpMatrixWrap">
+                      <h4 class="compare-table-heading" id="cmpMatrixHeading">Parameter Match Matrix</h4>
+                      <table class="compare-table">
+                        <thead>
+                          <tr>
+                            <th>Parameter / Field</th>
+                            <th id="cmpMatrixColLeft">Primary Record</th>
+                            <th id="cmpMatrixColRight">Counterpart Record</th>
+                            <th>Status &amp; Variance</th>
+                          </tr>
+                        </thead>
+                        <tbody id="compareTableBody">
+                          <!-- Dynamic parameter comparison rows -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Right Column: Interactive Comparison Visualizations & Keyword Overlaps -->
+                  <div class="compare-modal-right-col">
+                    <div class="compare-chart-section" id="cmpModalChartSection">
+                      <div class="compare-chart-header">
+                        <div class="compare-chart-title">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M18 9l-4 4-3-3-4 4"/>
+                          </svg>
+                          <span>Multi-Parameter Visuals</span>
+                        </div>
+                        <div class="compare-chart-selector">
+                          <button type="button" class="btn-cmp-chart-type active" data-cmp-chart="radar" id="btnCmpRadar">Radar</button>
+                          <button type="button" class="btn-cmp-chart-type" data-cmp-chart="bar" id="btnCmpBar">Bar</button>
+                          <button type="button" class="btn-cmp-chart-type" data-cmp-chart="scatter" id="btnCmpScatter">Scatter</button>
+                        </div>
+                      </div>
+                      <div class="compare-chart-box">
+                        <canvas id="cmpModalChartCanvas"></canvas>
+                      </div>
+                    </div>
+
+                    <!-- Cross-Record Keyword & Field Overlaps Section -->
+                    <div class="compare-keywords-section" id="cmpKeywordsSection">
+                      <div class="compare-keywords-header">
+                        <div class="compare-keywords-title">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                          </svg>
+                          <span>Shared Keywords &amp; Overlaps</span>
+                        </div>
+                        <span class="kw-count-badge" id="cmpKwCountBadge">0 Matched Tokens</span>
+                      </div>
+                      <div class="compare-keywords-body">
+                        <div class="kw-tags-container" id="cmpKwTagsContainer">
+                          <!-- Dynamically populated keyword badges -->
+                        </div>
+                        <div class="kw-field-breakdown" id="cmpKwFieldBreakdown">
+                          <!-- Dynamically populated field overlap summary -->
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <!-- Parameter Differences Breakdown Table -->
-                <div class="compare-table-wrap" id="cmpMatrixWrap">
-                  <h4 class="compare-table-heading" id="cmpMatrixHeading">Parameter Match Matrix</h4>
-                  <table class="compare-table">
-                    <thead>
-                      <tr>
-                        <th>Parameter / Field</th>
-                        <th id="cmpMatrixColLeft">Primary Record</th>
-                        <th id="cmpMatrixColRight">Counterpart Record</th>
-                        <th>Status &amp; Variance</th>
-                      </tr>
-                    </thead>
-                    <tbody id="compareTableBody">
-                      <!-- Dynamic parameter comparison rows -->
-                    </tbody>
-                  </table>
                 </div>
 
                 <!-- Similar Payments Drawer / Panel -->
