@@ -26,6 +26,7 @@ Ledger AI is an autonomous financial operations platform built to solve the veri
 | Multi-Source Ingestion | Reads CSV, XLSX, and PDF bank statements, payment gateway settlement summaries, order books, UPI logs, and cash registers. | Ingestion Pipeline (`ingestion/`) with Levenshtein schema mapper and SHA-256 content deduplication. |
 | Deterministic Rule Cascade | 4-Pass reconciliation (Exact UTR -> 4-Factor Weighted Scorer -> N:1 Batch MDR Fee Solver -> Groq LLM Agent). | Reconciler Engine (`reconciler/pipeline_runner.py`). Every match score & rule equation is explainable. |
 | 1-to-N Batch MDR Fee Solver | Reconciles 1 lump-sum bank deposit against N order items minus MDR gateway commissions and GST taxes. | Settlement Equation Solver (`matcher/settlement_equation.py`). Deposit = Sum(Sales) - MDR - GST. |
+| Side-by-Side Record Comparison | Executive 1160px grid modal, adaptive compact unmatched mode (760px), multi-parameter Chart.js visuals (Radar/Bar/Scatter), and real-time token overlap intelligence. | Comparison Modal UI (`frontend/templates/dashboard.html`, `frontend/static/js/dashboard.js`). |
 | Groq LLM Failover Agent | Deep semantic evaluation for ambiguous names and non-standard narrative text with natural language audit explanations. | Groq API (`llm/query_llm.py`) with multi-key failover rotation (`GROQ_API_KEY`) and Llama-3 fallback. |
 | Measured Accuracy & Honest Exception List | 100% record accounting parity equation (Total = Settled + Matched + Similar + Unmatched). | Discrepancies are never force-matched; unresolved records are cleanly isolated into the Exception Ledger. |
 | Bounded & Gated Money Actions | Human-in-the-loop candidate review drawer, confidence thresholds (>= 0.70), and complete natural language audit trails. | Four-Status Taxonomy (SETTLED, MATCHED, SIMILAR, UNMATCHED). |
@@ -46,19 +47,17 @@ Ledger AI is an autonomous financial operations platform built to solve the veri
 
 ## Technical Documentation Suite
 
-For complete mathematical formulations, ML feature schemas, status specifications, and developer guides, refer to the local `docs/` directory or the live guide:
+For complete mathematical formulations, ML feature schemas, status specifications, and developer guides, refer to the canonical `docs/` directory index or individual technical specifications:
 
-- [Developer Reconciliation & Architecture Guide](docs/developer_reconciliation_guide.md)
-- [Canonical Matching Mechanism Specification](docs/reconciliation_matching_mechanism.md)
-- [Multi-Pass Reconciliation Engine Specification](docs/reconciliation_engine.md)
-- [Statement Ingestion Pipeline Specification](docs/ingestion_pipeline.md)
-- [Groq LLM Agent & Failover Specification](docs/llm_matching_agent.md)
-- [Forward Cash Forecaster Specification](docs/forecasting_logic.md)
-- [Reports & PDF Generation Specification](docs/reports_and_pdf_generation.md)
-- [SETTLED Status Specification](docs/status_settled.md)
-- [MATCHED Status Specification](docs/status_matched.md)
-- [SIMILAR Status Specification](docs/status_similar.md)
-- [UNMATCHED Status Specification](docs/status_unmatched.md)
+- **Documentation Index**: [docs/README.md](docs/README.md)
+- **Features & Import Engine**: [docs/01_features/01_features_overview.txt](docs/01_features/01_features_overview.txt)
+- **Forward Cash Forecaster**: [docs/01_features/02_forward_cash_forecasting.txt](docs/01_features/02_forward_cash_forecasting.txt)
+- **Side-by-Side Record Comparison & Keyword Analytics**: [docs/01_features/03_side_by_side_record_comparison_and_keyword_analytics.txt](docs/01_features/03_side_by_side_record_comparison_and_keyword_analytics.txt)
+- **Taxonomy & Reconciliation Tags**: [docs/03_tags_and_taxonomy/01_taxonomy_and_tags.txt](docs/03_tags_and_taxonomy/01_taxonomy_and_tags.txt)
+- **System Architecture & Subsystem Map**: [docs/04_architecture/01_system_architecture_overview.txt](docs/04_architecture/01_system_architecture_overview.txt) & [docs/04_architecture/02_code_map_and_file_structure.txt](docs/04_architecture/02_code_map_and_file_structure.txt)
+- **Scaling & Performance Challenges**: [docs/05_scaling_challenges/01_scaling_and_performance_challenges.txt](docs/05_scaling_challenges/01_scaling_and_performance_challenges.txt)
+- **Deployment & Cloud Hosting**: [docs/06_deployment/01_deployment_and_cloud_hosting.txt](docs/06_deployment/01_deployment_and_cloud_hosting.txt)
+- **Technical Mechanics**: [docs/07_technical_mechanics/](docs/07_technical_mechanics/)
 
 ---
 

@@ -11,6 +11,7 @@ The documentation is organized into clear, sequential, numbered text (`.txt`) fi
 ### 1. Product Features (`docs/01_features/`)
 - **`01_features_overview.txt`**: Standard Import, Smart Import (Groq AI header mapping & alias registry), Load Pre-configured Test Benchmark Data, and advantages of preloaded benchmark feeds.
 - **`02_forward_cash_forecasting.txt`**: Technical and mathematical specification of the 30-to-90 day Forward Cash Forecaster.
+- **`03_side_by_side_record_comparison_and_keyword_analytics.txt`**: Executive 1160px grid comparison modal, adaptive unmatched compact mode (760px), multi-parameter Chart.js visuals (Radar/Bar/Scatter), and cross-record keyword token overlap intelligence.
 
 ### 2. Pipeline Layers (`docs/02_pipeline_layers/`)
 - **`01_ingestion/`**: Multi-format parser, numeric/currency normalizer, schema AI mapper, SHA-256 deduplication, and Primary/Counterpart separator.

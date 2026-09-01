@@ -1,0 +1,79 @@
+===============================================================================
+LEDGER AI - SIDE-BY-SIDE RECORD COMPARISON & KEYWORD ANALYTICS
+===============================================================================
+
+1. OVERVIEW & PURPOSE
+-------------------------------------------------------------------------------
+The Side-by-Side Record Comparison modal (`#compareModalBackdrop`) provides an 
+interactive, executive-grade analysis interface for deep inspection of transaction 
+pairs, parameter match matrices, multi-parameter radar visualisations, and cross-record 
+keyword token overlaps.
+
+It bridges raw transactional data with engine reconciliation intelligence, 
+allowing financial auditors to verify why two records matched or investigate 
+unmatched exception items.
+
+
+2. ARCHITECTURE & LAYOUT GRID SYSTEM
+-------------------------------------------------------------------------------
+The modal features a responsive dual-column grid system (`.compare-modal-layout-grid`):
+
+a) Executive Wide Mode (1160px width / 84vh height):
+   Used when inspecting Matched, Settled, or Potential Match records with valid 
+   counterparts.
+   - Left Column (1.35fr): Displays the Primary vs Counterpart Source Cards and 
+     the 4-column Parameter Match Matrix Table.
+   - Right Column (1.0fr): Displays the Interactive Multi-Parameter Chart Suite 
+     (Radar/Bar/Scatter) and the Shared Keyword & Field Overlaps Card.
+
+b) Compact Unmatched Adaptive Mode (`.is-unmatched`):
+   When inspecting an Unmatched / Exception record (where no counterpart exists):
+   - Modal dynamically resizes to a compact 760px width with automatic height.
+   - Hides the right column entirely (`display: none`) to eliminate empty space.
+   - Shows the Primary Record Card on the left and the "NO MATCH FOUND" empty 
+     state card with "Find Similar Payments" trigger on the right.
+
+
+3. INTERACTIVE VISUALIZATION SUITE (`cmpModalChartSection`)
+-------------------------------------------------------------------------------
+The right-hand column features an in-modal Chart.js visualization engine supporting 
+3 switchable modes:
+- Radar / Spider Chart (Default): Best for overall multi-parameter symmetry 
+  comparison across 5 core dimensions (Amount Parity, Date Proximity, UTR Linkage, 
+  Description Fuzzy Score, and Source Independence).
+- Grouped Bar Chart: Compares raw numerical values side-by-side.
+- Scatter Plot: Maps transaction timestamp proximity against amount variance.
+
+
+4. CROSS-RECORD KEYWORD & FIELD OVERLAP ENGINE (`populateCompareKeywordIntelligence`)
+-------------------------------------------------------------------------------
+Positioned cleanly below the visualization chart section in the right column, the 
+Keyword Intelligence module performs real-time token extraction and overlap detection:
+
+a) Token Extraction & Filtering:
+   - Extracts alphanumeric text tokens from descriptions, UTRs, order/payment IDs, 
+     source names, and audit reasons across both records.
+   - Filters out non-informative financial stop words (e.g., "bank", "settlement", 
+     "neft", "transfer", "record", "inr", "date").
+
+b) Shared Keyword Badges (`.kw-pill-shared`):
+   - Highlights exact overlapping tokens in distinct blue monospace pills with 
+     an active indicator dot.
+   - Displays a count badge (`.kw-count-badge`) reflecting total shared tokens.
+
+c) Verified Field Overlaps Breakdown (`.kw-breakdown-chip`):
+   - Renders exact match chips for verified parameters (Amount, Date, UTR).
+   - Distinguishes exact value matches (green border) from rule-linked pipeline 
+     references (blue border).
+
+
+5. USER ACTIONS & WORKFLOW INTEGRATION
+-------------------------------------------------------------------------------
+- View Source Statement (`#cmpLeftViewSourceBtn`): Instant filter-jump to the 
+  underlying raw statement view.
+- Find Similar Payments (`#btnFindSimilarPayments`): Opens the candidate drawer 
+  filtered strictly across opposing source types.
+- Groq LLM Smart Match (`#btnModalLlmSmartMatch`): Invokes the Layer 4 AI agent 
+  for real-time exception resolution.
+- Override Status (`#cmpChangeStatusSelect`): Direct manual status override with 
+  audit vault persistence.

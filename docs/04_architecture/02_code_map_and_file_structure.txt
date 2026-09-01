@@ -70,21 +70,23 @@ To prevent duplicate row entries when Record A (Bank) matches Record B (Gateway)
       # Consolidated single row rendered in dashboard table
 
 
-3. UI KEYWORD EXTRACTION & COMPARISON LOGIC
+3. UI KEYWORD EXTRACTION & FIELD OVERLAP LOGIC
 -------------------------------------------------------------------------------
-When a user clicks any row to view the side-by-side Comparison Modal (`openRecordComparisonModal`), 
-`dashboard.js` dynamically extracts shared keywords:
+When a user opens the side-by-side Comparison Modal (`openRecordComparisonModal`), 
+`dashboard.js` invokes `populateCompareKeywordIntelligence(tx, counterpart, hasCounterpart)` 
+to populate `#cmpKeywordsSection`:
 
-  function extractSharedKeywords(str1, str2) {
-    if (!str1 || !str2) return [];
-    const STOP_WORDS = new Set(["the", "and", "for", "with", "ref", "txn", "card", "setl", "upi", "bank", "settlement", "payment", "inc", "ltd", "pvt", "corp", "org", "transfer", "neft", "rtgs", "imps", "from", "to", "via", "val", "date"]);
-    const cleanTokens = (s) => String(s).toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
-    
-    const set1 = new Set(cleanTokens(str1));
-    const set2 = cleanTokens(str2);
-    const shared = new Set();
-    set2.forEach(w => {
-      if (set1.has(w)) shared.add(w.toUpperCase());
+  function populateCompareKeywordIntelligence(tx, counterpart, hasCounterpart) {
+    if (!hasCounterpart || !counterpart) {
+      section.style.display = "none";
+      return;
+    }
+    const pTokens = extractTokens(tx);
+    const cTokens = extractTokens(counterpart);
+    const sharedTokens = [];
+    pTokens.forEach(tok => {
+      if (cTokens.has(tok)) sharedTokens.push(tok);
     });
-    return Array.from(shared);
+
+    // Render shared token badges (.kw-pill-shared) and field overlap chips (.chip-exact, .chip-linked)
   }

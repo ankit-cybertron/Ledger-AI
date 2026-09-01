@@ -16,8 +16,7 @@ Paytm), and ERP order books vary wildly in column naming conventions (e.g.,
 Import unifies these diverse schemas into a standard internal data format.
 
 What It Solves:
-It eliminates the tedious manual task of reformatting spreadsheet columns before 
-uploading statements into financial software.
+It eliminates the tedious manual task of reformatting spreadsheet columns before uploading statements into financial software. 
 
 How It Is Useful & When Used:
 Used during routine daily or monthly file uploads when statement column formats 
