@@ -1639,6 +1639,10 @@ def update_statement_color_endpoint(statement_id):
 @api_bp.route("/statements/<statement_id>", methods=["DELETE"])
 def delete_statement_endpoint(statement_id):
     invalidate_dashboard_cache()
+    from frontend.api import pipeline_tracker
+    pipeline_tracker.finish_pipeline(success=False, error_msg=f"Statement {statement_id} deleted.")
+    pipeline_tracker.reset_tracker()
+
     success = statement_store.delete_statement(statement_id)
     if not success:
         return _error("Statement not found.", 404)
@@ -1646,7 +1650,9 @@ def delete_statement_endpoint(statement_id):
     try:
         stmts = statement_store.list_statements()
         if not stmts:
+            clear_reconciliation_results()
             _RUNS.clear()
+            _RUN_LOG.clear()
         else:
             _run_backend_pipeline()
             run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
@@ -1660,13 +1666,26 @@ def delete_statement_endpoint(statement_id):
 @api_bp.route("/data/clear", methods=["POST"])
 @api_bp.route("/clear_all_data", methods=["POST"])
 def clear_all_data_endpoint():
-    """Clear all statements, generated CSVs, and reconciliation runs (T6.3, T12.2)."""
+    """Clear all statements, generated CSVs, reconciliation runs, and activate kill switch (T6.3, T12.2)."""
     try:
+        from frontend.api import pipeline_tracker
+        pipeline_tracker.finish_pipeline(success=False, error_msg="Kill switch activated by user delete data request.")
+        pipeline_tracker.reset_tracker()
+
+        clear_reconciliation_results()
         statement_store.clear_all_statements()
         invalidate_dashboard_cache()
         _RUNS.clear()
         _RUN_LOG.clear()
-        return jsonify({"ok": True, "message": "All statement data and reconciliation results have been cleared."})
+
+        global _BEGINNING_BALANCE
+        _BEGINNING_BALANCE = 0.0
+
+        return jsonify({
+            "ok": True,
+            "success": True,
+            "message": "Kill switch activated: All backend operations stopped, statement data cleared, and session reset."
+        })
     except Exception as e:
         return _error(f"Failed to clear data: {str(e)}")
 
