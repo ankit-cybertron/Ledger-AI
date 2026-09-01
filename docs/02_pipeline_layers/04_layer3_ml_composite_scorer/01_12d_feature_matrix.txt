@@ -1,0 +1,27 @@
+===============================================================================
+STAGE 04 - LAYER 3: ML COMPOSITE SCORER | STEP 01: 12D FEATURE VECTOR MATRIX
+===============================================================================
+
+1. WHAT IT DOES:
+Computes a composite multi-vector similarity score S in [0.0, 1.0] using 
+12 dimensional features weighted as:
+  S = 0.40 * S_identifier + 0.30 * S_amount + 0.15 * S_date + 0.15 * S_narration
+
+Scores map to outcomes:
+  - S >= 0.85 -> SETTLED / MATCHED (High Confidence Match)
+  - 0.50 <= S < 0.85 -> SIMILAR (Candidate queued for Review)
+  - S < 0.50 -> UNMATCHED (Exception)
+
+2. WHY IT DOES IT:
+When exact UTR codes are missing or altered, single-field matching fails. A 
+composite multi-vector evaluation determines similarity holistically.
+
+3. WHAT IT SOLVES:
+Solves fuzzy transaction pairing where identifiers are partial, dates are 
+delayed, or narrations contain minor typographical differences.
+
+4. HOW IT IS USEFUL:
+Reduces manual audit overhead by identifying high-probability matches automatically.
+
+5. WHEN IT IS USED:
+Executed in Pass 2 across all remaining un-paired records.

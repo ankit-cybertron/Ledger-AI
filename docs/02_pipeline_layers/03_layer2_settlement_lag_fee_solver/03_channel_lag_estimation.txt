@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 03 - LAYER 2: FEE SOLVER | STEP 03: CHANNEL SETTLEMENT LAG ESTIMATION
+===============================================================================
+
+1. WHAT IT DOES:
+Estimates channel-specific settlement lags based on payment instrument:
+  - UPI / IMPS: T+0 (Same-day settlement)
+  - Razorpay / PayU: T+2 business days
+  - International Cards / Stripe: T+3 to T+5 business days
+
+2. WHY IT DOES IT:
+Customer payments collected on Friday might not hit the bank account until 
+Tuesday. Without lag estimation, date-matching algorithms fail due to weekend 
+or holiday offsets.
+
+3. WHAT IT SOLVES:
+Solves date mismatch issues for weekend transactions and holiday batches.
+
+4. HOW IT IS USEFUL:
+Provides accurate date alignment for liquidity modeling and cash forecasting.
+
+5. WHEN IT IS USED:
+Applied when matching batch payout dates against bank deposit dates.

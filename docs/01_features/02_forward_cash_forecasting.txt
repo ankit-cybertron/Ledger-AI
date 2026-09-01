@@ -1,0 +1,94 @@
+===============================================================================
+LEDGER AI - FORWARD CASH FORECASTER TECHNICAL SPECIFICATION
+===============================================================================
+
+1. EXECUTIVE SUMMARY & ARCHITECTURAL PHILOSOPHY
+-------------------------------------------------------------------------------
+The Forward Cash Forecaster (`forecasting/engine.py`) predicts 30-to-90 day cash 
+flow trajectories, estimates settlement dates for open payment gateway batches, 
+overlays recurring cash flow patterns, and computes liquid cash availability 
+starting from the Beginning Balance ($B_0$).
+
+Core Philosophy:
+  1. Observed Historical Settlement Lag: Near-term expected gateway settlements are 
+     computed using empirical channel settlement cycles (e.g. Razorpay T+2 lag, 
+     Stripe T+3 lag) derived from historical statement data.
+  2. Deterministic Pattern Detection: Recurring cash debits/credits (payroll, 
+     retainers, subscription batches) are identified using string similarity 
+     and calendar interval matching.
+  3. Seasonal Decomposition & WMA Projection: Baseline daily cash flows are 
+     decomposed into trend and weekly seasonal components, projected using a 14-day 
+     weighted moving average with confidence bands.
+  4. Beginning Balance Integration: Cumulative cash balance series start from 
+     the globally configured Beginning Balance ($B_0$).
+
+
+2. MATHEMATICAL SPECIFICATIONS & FORMULAS
+-------------------------------------------------------------------------------
+a) Daily Net Cash Flow & Cumulative Balance:
+   Transactions are aggregated by calendar day d:
+     Net Cash Flow(d) = Sum(Deposits(d)) - Sum(|Payments(d)|)
+
+   Cumulative liquid cash balance C(d) starts from Beginning Balance B_0:
+     C(d) = B_0 + Sum_{k=d_0}^{d} Net Cash Flow(k)
+
+b) Pending Gateway Settlement Estimation:
+   For open gateway batches, expected settlement date d_expected is computed as:
+     d_expected = d_batch + L_channel
+
+   Default channel lags L_channel:
+     - Razorpay: T + 2 business days
+     - Stripe / Card Gateways: T + 3 business days
+     - UPI Direct: T + 0 / T + 1 business days
+
+c) Seasonal Decomposition & Moving Average Forecasting:
+   Daily net inflows are decomposed into trend T(d) and weekly seasonal component 
+   S(d) (7-day period):
+     Trend(d) = RollingMean_7(NetInflow(d))
+
+   Future projections for day t > today combine last trend level, seasonal component, 
+   recurring pattern overlay, and expected pending settlements:
+     Projected(t) = T_last + S(t mod 7) + PatternOverlay(t) + PendingSettlement(t)
+
+   Confidence bands are calculated using standard deviation of residuals sigma:
+     Upper Band(t) = Projected(t) + 1.5 * sigma * sqrt(t / 7)
+     Lower Band(t) = Projected(t) - 1.5 * sigma * sqrt(t / 7)
+
+
+3. API ENDPOINTS & SCHEMAS
+-------------------------------------------------------------------------------
+a) GET /api/forecast
+   Query Parameters:
+     - days (optional, default: 30, max: 90): Forecast horizon in days.
+
+   Response Schema:
+     {
+       "ok": true,
+       "summary": {
+         "avg_daily_net": 1250.50,
+         "total_inflow": 450000.00,
+         "total_outflow": 120000.00,
+         "current_balance": 5557602.99,
+         "forecast_30d_projected": 6133842.10,
+         "detected_patterns": 2,
+         "pending_count": 4,
+         "forecast_days": 30,
+         "confidence_std": 450.25
+       },
+       "historical": [ ... ],
+       "forecast": [ ... ],
+       "pending_settlements": [ ... ]
+     }
+
+b) GET /api/forecast/day-details
+   Query Parameters:
+     - date (required): ISO date string (YYYY-MM-DD).
+
+   Response Schema:
+     {
+       "ok": true,
+       "date": "2026-08-15",
+       "total_settled_cumulative": 4379515.88,
+       "total_pending_cumulative": 576239.00,
+       "transactions": [ ... ]
+     }

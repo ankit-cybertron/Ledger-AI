@@ -1,0 +1,77 @@
+===============================================================================
+LEDGER AI - PRODUCT FEATURES & FUNCTIONAL OVERVIEW
+===============================================================================
+
+1. STANDARD IMPORT (DETERMINISTIC INGESTION)
+-------------------------------------------------------------------------------
+What It Does:
+Standard Import accepts multi-format statement files (CSV, XLSX, PDF) and parses
+their columnar contents using strict, dictionary-based header aliases and 
+deterministic regex pattern matchers.
+
+Why It Does It:
+Financial statements from banks (SBI, HDFC, ICICI), gateways (Razorpay, Stripe, 
+Paytm), and ERP order books vary wildly in column naming conventions (e.g., 
+"Txn Date", "Posting Date", "CR/DR Amount", "Reference No.", "UTR"). Standard 
+Import unifies these diverse schemas into a standard internal data format.
+
+What It Solves:
+It eliminates the tedious manual task of reformatting spreadsheet columns before 
+uploading statements into financial software.
+
+How It Is Useful & When Used:
+Used during routine daily or monthly file uploads when statement column formats 
+follow known enterprise standard templates.
+
+
+2. SMART IMPORT (GROQ AI SCHEMA ALIGNMENT & ALIAS REGISTRY)
+-------------------------------------------------------------------------------
+What It Does:
+Smart Import uses a 3-tier fallback strategy:
+  Step 1: Exact dictionary alias lookup.
+  Step 2: Fuzzy Levenshtein string distance matching for minor typos.
+  Step 3: Zero-shot Groq LLM API invocation for ambiguous or foreign column 
+          names (e.g., "Montant", "Verwendungszweck", "VALUTA").
+
+When Groq AI succeeds, the new mapping is automatically saved into the local 
+Column Alias Registry (`data/config/column_aliases.json`) so future uploads of 
+the same file format are parsed instantly without calling the AI API again.
+
+Why It Does It:
+New bank formats, customized ERP exports, or foreign language statements often 
+have column headers that static rule engines fail to recognize.
+
+What It Solves:
+Prevents file upload rejections caused by unknown column headers, enabling 
+zero-config ingestion for non-standard spreadsheets.
+
+How It Is Useful & When Used:
+Used whenever uploading custom, newly integrated, or non-standard vendor 
+spreadsheets.
+
+
+3. PRE-CONFIGURED TEST BENCHMARK DATA
+-------------------------------------------------------------------------------
+What It Does:
+Allows users and evaluators to instantly load pre-packaged real-world financial 
+test datasets (such as Standard Demo Benchmark, SBI Bank + Razorpay Gateway, 
+Discrepancy Heavy Edge-Cases, and Multi-Currency Feeds) with a single click.
+
+Why It Does It:
+Enables immediate testing and evaluation of the 5-layer reconciliation pipeline 
+without requiring the user to locate or format their own bank files.
+
+What It Solves:
+Solves the cold-start friction problem for new users testing the system.
+
+Advantages of Preloaded Benchmark Data:
+  a) Deterministic Baseline Testing: Preloaded datasets contain known matched 
+     pairs, fee discrepancies, and edge cases, allowing verification of 100% 
+     reconciliation accuracy.
+  b) Instant Verification: Users can evaluate the full 5-pass engine, ML scoring, 
+     and PDF report generation within seconds of launching the app.
+  c) Regression Testing: Serves as a standard integration test suite for core 
+     reconciliation algorithms when making system changes.
+  d) Realistic Edge Case Coverage: Benchmark feeds include weekend settlement 
+     lags, Razorpay MDR fee deductions, parenthetical negative values, and 
+     ambiguous customer name variations.

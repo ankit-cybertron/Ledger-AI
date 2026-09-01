@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 06 - LAYER 5: REPORTS & EXPORT | STEP 03: PERIOD CLOSING & AUDIT VAULT
+===============================================================================
+
+1. WHAT IT DOES:
+Locks the active reconciliation run, marks it as CLOSED, generates SHA-256 
+checksums of all input/output files, and stores the snapshot into the Period 
+Audit Vault (`data/vault/<period_name>/`).
+
+2. WHY IT DOES IT:
+Financial periods must be formally closed to prevent retro-active changes or 
+accidental overwrites of past months' accounting records.
+
+3. WHAT IT SOLVES:
+Solves audit compliance requirements by ensuring past financial periods remain 
+immutable and verifiable.
+
+4. HOW IT IS USEFUL:
+Provides historical audit history and allows finance teams to inspect past 
+closed runs at any time.
+
+5. WHEN IT IS USED:
+Executed when the user clicks "Close Financial Period" in the Reports panel.

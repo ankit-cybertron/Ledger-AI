@@ -1,0 +1,73 @@
+===============================================================================
+LEDGER AI - SCALING & PERFORMANCE CHALLENGES SPECIFICATION
+===============================================================================
+
+1. LARGE DATASET IMPORTS (100K+ ROWS & MULTI-GIGABYTE FILES)
+-------------------------------------------------------------------------------
+Challenge:
+Ingesting 100,000+ transaction rows in a single CSV/XLSX file can exhaust RAM 
+and cause HTTP request timeouts (504 Gateway Timeout) when parsing synchronously 
+within a Flask request thread.
+
+Mitigation & Scaling Architecture:
+  a) Streaming Chunk Parsers: Use `pandas.read_csv(chunksize=10000)` or `ijson` 
+     to stream rows from disk in chunks rather than loading entire datasets into 
+     RAM at once.
+  b) Asynchronous Task Queues: Offload file ingestion to asynchronous task 
+     workers (Celery + Redis or AWS SQS) and issue a job token to the UI for 
+     progress tracking.
+
+
+2. COMPOSITE SCORING COMPUTATIONAL COMPLEXITY (O(N*M))
+-------------------------------------------------------------------------------
+Challenge:
+Comparing N primary bank records against M counterpart gateway records yields 
+N * M pairwise comparisons. For 50,000 bank rows and 100,000 gateway rows, naive 
+comparison requires 5,000,000,000 evaluations.
+
+Mitigation & Scaling Architecture:
+  a) Blocking & Indexing: Group candidate records into indexing blocks based on 
+     coarse features (e.g. ±3-day date bucket, rounded amount range). Only pairs 
+     within the same block are evaluated for similarity.
+  b) Vector Search Engine: Embed text narrations into high-dimensional vector space 
+     using sentence-transformers and index candidates in a vector store (FAISS / 
+     Qdrant) for sub-millisecond approximate nearest neighbor (ANN) retrieval.
+
+
+3. BROWSER DOM MEMORY & TABLE RENDERING LIMITS
+-------------------------------------------------------------------------------
+Challenge:
+Rendering 100,000 DOM elements (`<tr>` rows) in a browser table freezes the DOM 
+and consumes gigabytes of browser RAM.
+
+Mitigation & Scaling Architecture:
+  a) Virtualized Windowed Tables: Use Virtualized Rendering (Clusterize.js / TanStack 
+     Virtual) to render only the 50 rows visible in the viewport viewport.
+  b) Server-Side Pagination: Shift table pagination to backend REST API parameters 
+     (`?page=1&limit=100`).
+
+
+4. AI AGENT RATE-LIMITING & COST SCALING
+-------------------------------------------------------------------------------
+Challenge:
+Sending 10,000 exception items to cloud LLM APIs incurs high latency and API rate 
+limits (429 Too Many Requests).
+
+Mitigation & Scaling Architecture:
+  a) Multi-Tier Failover Rotation: Maintain multi-key rotation pools across API 
+     providers (Groq, Anthropic, OpenAI).
+  b) Local Open-Source LLMs: Deploy quantized Llama-3 8B or DeepSeek models on local 
+     GPU instances (vLLM / Ollama) for zero API cost and high throughput.
+
+
+5. DATABASE & PERSISTENCE SCALING
+-------------------------------------------------------------------------------
+Challenge:
+Storing million-row audit histories in flat JSON/CSV files causes I/O bottlenecks 
+and race conditions during concurrent reads/writes.
+
+Mitigation & Scaling Architecture:
+  a) Relational Migration: Migrate storage to PostgreSQL + TimescaleDB with partition 
+     pruning by date range.
+  b) ACID Transactions: Enforce ACID transaction boundaries during balance updates and 
+     period closing vault operations.

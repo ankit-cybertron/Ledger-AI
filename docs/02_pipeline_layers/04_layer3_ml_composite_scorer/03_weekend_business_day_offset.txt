@@ -1,0 +1,22 @@
+===============================================================================
+STAGE 04 - LAYER 3: ML COMPOSITE SCORER | STEP 03: WEEKEND & BUSINESS DAY OFFSET
+===============================================================================
+
+1. WHAT IT DOES:
+Adjusts date decay scoring based on business calendar days. Saturday and Sunday 
+are treated as non-settlement days, so Friday-to-Monday transactions are scored 
+with 0 calendar day penalty.
+
+2. WHY IT DOES IT:
+Banking settlement systems (NEFT/RTGS/ACH) do not process payouts on weekend 
+holidays. A strict 3-calendar-day penalty would unfairly penalize Friday payments 
+settled on Monday.
+
+3. WHAT IT SOLVES:
+Prevents artificial score degradation for weekend and bank holiday payments.
+
+4. HOW IT IS USEFUL:
+Maintains high confidence score precision across calendar weekends.
+
+5. WHEN IT IS USED:
+Evaluated during date proximity scoring in Layer 3.

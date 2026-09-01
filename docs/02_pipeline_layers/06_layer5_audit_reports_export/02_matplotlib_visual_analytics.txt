@@ -1,0 +1,27 @@
+===============================================================================
+STAGE 06 - LAYER 5: REPORTS & EXPORT | STEP 02: MATPLOTLIB VISUAL ANALYTICS
+===============================================================================
+
+1. WHAT IT DOES:
+Renders high-DPI visual charts in headless mode using Matplotlib:
+  - Status Composition Donut Chart (SETTLED / MATCHED / SIMILAR / UNMATCHED)
+  - Amount Variance Bar Chart
+  - 30-Day Forward Cash Availability Trend Line
+
+Images are buffered directly into memory as BytesIO PNG streams and embedded 
+into ReportLab flowables without writing temporary image files to disk.
+
+2. WHY IT DOES IT:
+Visual charts provide immediate executive insights into match rates, variance 
+trends, and overall portfolio health.
+
+3. WHAT IT SOLVES:
+Solves image artifact clutter and file I/O latency by generating charts entirely in 
+RAM.
+
+4. HOW IT IS USEFUL:
+Delivers vector-quality charts directly inside generated PDF reports and web SPA 
+previews.
+
+5. WHEN IT IS USED:
+Executed during PDF compilation and dashboard overview rendering.

@@ -1,0 +1,26 @@
+===============================================================================
+STAGE 01 - INGESTION | STEP 03: SCHEMA HEADER & AI MAPPER
+===============================================================================
+
+1. WHAT IT DOES:
+Maps raw column headers (e.g. "Value Date", "UTR Number", "Gross Amt", "Narration") 
+to canonical internal field names (`transaction_date`, `utr`, `amount`, 
+`description`) using a 3-tier mapping cascade:
+  Tier 1: Exact dictionary matching against `column_aliases.json`.
+  Tier 2: Levenshtein distance string similarity score (threshold >= 0.82).
+  Tier 3: Zero-shot Groq AI header alignment with automated registry persistence.
+
+2. WHY IT DOES IT:
+Statements from different institutions use inconsistent field naming conventions. 
+Canonical mapping establishes a uniform internal schema for matching rules.
+
+3. WHAT IT SOLVES:
+Solves column name mismatch errors. If a bank changes "UTR No" to "Bank Ref No", 
+the AI mapper automatically detects the change, maps the header, and updates the 
+alias registry.
+
+4. HOW IT IS USEFUL:
+Eliminates manual column mapping drop-downs during file upload.
+
+5. WHEN IT IS USED:
+Executed for every newly imported statement file during the schema normalization phase.

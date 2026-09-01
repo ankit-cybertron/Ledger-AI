@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 03 - LAYER 2: FEE SOLVER | STEP 02: MDR FEE & GST RECONCILIATION
+===============================================================================
+
+1. WHAT IT DOES:
+Solves the exact mathematical fee equation for payment processor payouts:
+  Net Bank Deposit = Sum(Gross Orders) - MDR Commission Fees - 18% GST Tax
+
+2. WHY IT DOES IT:
+Payment gateways deduct 1.5% - 2.5% Merchant Discount Rate (MDR) plus 18% GST 
+on fees before remitting net cash into the bank account. Net deposits never equal 
+gross customer sales.
+
+3. WHAT IT SOLVES:
+Solves amount variances caused by fee deductions, preventing net deposits from 
+being flagged as unmatched discrepancies.
+
+4. HOW IT IS USEFUL:
+Automatically verifies fee structures and isolates fee variances into 
+transparent fee ledger accounts.
+
+5. WHEN IT IS USED:
+Evaluated when comparing net bank deposits against gross gateway batch totals.

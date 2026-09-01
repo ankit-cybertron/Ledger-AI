@@ -1,0 +1,90 @@
+===============================================================================
+LEDGER AI - CODE MAP & FILE-BY-FILE ARCHITECTURE REFERENCE
+===============================================================================
+
+1. SUBSYSTEM FILE & FUNCTION CODE MAP
+-------------------------------------------------------------------------------
+Below is the complete architectural reference map of core modules:
+
+Subsystem / File                       Main Functions / Classes                 Implementation Purpose & Logic
+---------------------------------------  ---------------------------------------  ----------------------------------------------------------------------
+ingestion/normalizer.py                normalize_row(),                         Converts raw mapped rows into CanonicalTransaction models. Parses locale
+                                       _generate_clean_fallback_tx_id()          amounts, extracts UTR/Order IDs, and generates clean synthetic IDs.
+
+ingestion/column_mapper.py             map_columns()                            3-stage column mapping (exact alias lookup + fuzzy distance fallback
+                                                                                + Groq AI header alignment).
+
+ingestion/dedupe.py                    detect_duplicates()                      Computes SHA-256 content hashes to detect intra-statement duplicate uploads.
+
+reconciler/pipeline_runner.py          run_full_pipeline()                      Master 6-step reconciliation orchestrator executing exact, tolerance, ML,
+                                                                                exception ledger, and summary passes.
+
+reconciler/reconcile.py                reconcile_all_statements()               Main multi-statement reconciliation engine applying Primary vs Counterpart
+                                                                                pool taxonomy rules.
+
+matcher/exact_matcher.py               match_exact()                            Stage 1 Exact Matcher. Sanitizes UTR/reference strings and matches with 100% amount parity.
+
+matcher/tolerance_matcher.py           match_tolerance()                        Stage 2 Tolerance Matcher. Computes 4-factor composite weighted scores.
+
+matcher/split_aggregate_matcher.py     match_split_aggregate(), match_batch()   Stage 3 Batch & Fee Solver. Solves 1-to-N batch deposits using net payout fee equations.
+
+matcher/scoring_engine.py              calculate_pair_score()                   Implements composite weighted scoring equation (0.40*S_id + 0.30*S_amt + 0.15*S_date + 0.15*S_narr).
+
+forecasting/engine.py                  build_forecast(),                        Forward cash forecaster. Computes seasonal decomposition, 14-day WMA trends,
+                                       estimate_pending_settlements()           pending settlements, recurring patterns, and beginning balance cumulative series.
+
+reports/report_builder.py              build_filtered_report_data()             Aggregates summary KPIs, status subsets, source filters, date ranges, and 30-day forecast data.
+
+reports/pdf_generator.py               generate_pdf_report()                    Generates high-fidelity PDF audit reports complete with visual summary blocks and tables.
+
+llm/query_llm.py                       query_llm(), get_all_groq_keys()         Central Groq LLM query engine with multi-key failover and model rotation.
+
+llm/ambiguous_matcher.py               run_llm_match()                          Groq LLM agent evaluating ambiguous candidate pairs (0.50 <= Score < 0.85).
+
+frontend/api/routes.py                 _build_dashboard_run(),                  Core Flask API layer managing statement store, beginning balance persistence,
+                                       /reconciliation/beginning_balance        mirror-pair deduplication, and report downloads.
+
+frontend/statement_store.py            get_statement(), list_statements()       JSON database store managing uploaded statement records and disk persistence (data/statements_db.json).
+
+frontend/static/js/dashboard.js        openUnifiedSourceView(),                 Client UI application controller. Manages tab routing, master table rendering,
+                                       editBeginningBalance()                   modal popups, benchmark loaders, and keyword comparison.
+
+
+2. SYMMETRIC MIRROR-PAIR DEDUPLICATION MECHANICS
+-------------------------------------------------------------------------------
+To prevent duplicate row entries when Record A (Bank) matches Record B (Gateway), 
+`frontend/api/routes.py` applies symmetric pair deduplication in `_build_dashboard_run()`:
+
+  seen_matched_ids = set()
+  for tx in all_reconciled_transactions:
+      p_id = str(tx.get("primary_id"))
+      c_id = str(tx.get("counterpart_id"))
+      
+      pair_key = (p_id, c_id)
+      reverse_key = (c_id, p_id)
+      
+      if pair_key in seen_matched_ids or reverse_key in seen_matched_ids:
+          continue
+          
+      seen_matched_ids.add(pair_key)
+      # Consolidated single row rendered in dashboard table
+
+
+3. UI KEYWORD EXTRACTION & COMPARISON LOGIC
+-------------------------------------------------------------------------------
+When a user clicks any row to view the side-by-side Comparison Modal (`openRecordComparisonModal`), 
+`dashboard.js` dynamically extracts shared keywords:
+
+  function extractSharedKeywords(str1, str2) {
+    if (!str1 || !str2) return [];
+    const STOP_WORDS = new Set(["the", "and", "for", "with", "ref", "txn", "card", "setl", "upi", "bank", "settlement", "payment", "inc", "ltd", "pvt", "corp", "org", "transfer", "neft", "rtgs", "imps", "from", "to", "via", "val", "date"]);
+    const cleanTokens = (s) => String(s).toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+    
+    const set1 = new Set(cleanTokens(str1));
+    const set2 = cleanTokens(str2);
+    const shared = new Set();
+    set2.forEach(w => {
+      if (set1.has(w)) shared.add(w.toUpperCase());
+    });
+    return Array.from(shared);
+  }

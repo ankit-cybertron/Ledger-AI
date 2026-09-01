@@ -1,0 +1,26 @@
+===============================================================================
+STAGE 01 - INGESTION | STEP 05: PRIMARY & COUNTERPART POOL SEPARATOR
+===============================================================================
+
+1. WHAT IT DOES:
+Classifies uploaded statement sources into two distinct pools:
+  - Primary Statements: General bank accounts, cash ledgers, main treasury feeds.
+  - Counterpart Statements: Payment gateways (Razorpay, Stripe), order ledgers, 
+    UPI registers.
+
+2. WHY IT DOES IT:
+The reconciliation taxonomy rules dictate outcome status:
+  - Any valid match involving a Primary Statement record yields `SETTLED`.
+  - Any valid match between two Counterpart sources yields `MATCHED`.
+
+3. WHAT IT SOLVES:
+Prevents ambiguity in status assignment and enforces financial rules regarding 
+when funds are settled in bank accounts vs matched between sub-ledgers.
+
+4. HOW IT IS USEFUL:
+Provides automated classification so users do not need to manually configure 
+matching rule groups for each uploaded statement.
+
+5. WHEN IT IS USED:
+Executed immediately after schema mapping when organizing input statements 
+into the active reconciliation session.

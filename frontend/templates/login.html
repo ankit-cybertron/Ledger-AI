@@ -18,8 +18,9 @@
 
 <nav class="topbar">
   <div class="page-topbar-left">
-    <a href="{{ url_for('index') }}" class="page-topbar-brand" title="Ledger AI">
+    <a href="{{ url_for('index') }}" class="page-topbar-brand" title="Ledger AI {{ app_version }}">
       <span class="brand-main">Ledger</span><span class="brand-sub">AI</span>
+      <span class="brand-version" style="font-size:0.65rem; font-weight:600; color:var(--text-muted, #94a3b8); margin-left:5px; opacity:0.85; letter-spacing:0.4px; align-self:flex-end; margin-bottom:2px;">{{ app_version }}</span>
     </a>
   </div>
   <div class="topbar-nav">

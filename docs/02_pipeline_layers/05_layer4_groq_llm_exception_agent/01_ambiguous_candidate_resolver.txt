@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 05 - LAYER 4: GROQ LLM AGENT | STEP 01: AMBIGUOUS CANDIDATE RESOLVER
+===============================================================================
+
+1. WHAT IT DOES:
+Performs deep semantic reasoning on ambiguous transactions (similarity score 
+between 0.50 and 0.85) using Groq LLM inference models (Llama-3).
+
+2. WHY IT DOES IT:
+Some transactions cannot be resolved by static rules or ML distance formulas 
+due to heavy text truncation, foreign bank descriptions, or complex fee structures. 
+LLM semantic reasoning evaluates contextual clues like an expert auditor.
+
+3. WHAT IT SOLVES:
+Resolves edge-case discrepancies that would otherwise require manual human review.
+
+4. HOW IT IS USEFUL:
+Reduces manual review queues by automatically confirming or rejecting ambiguous 
+candidate matches with audit-grade explanations.
+
+5. WHEN IT IS USED:
+Executed in Pass 4 on remaining exception items or when triggered by the user via 
+"Run LLM Match".

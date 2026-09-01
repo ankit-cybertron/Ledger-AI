@@ -18,6 +18,8 @@ from pages import dashboard as dashboard_page
 from pages import chat as chat_page
 from pages import reports as reports_page
 
+from config import APP_VERSION
+
 app = Flask(__name__)
 
 # TODO: move this to an environment variable before deploying anywhere real.
@@ -30,6 +32,11 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB per upload
 
 app.register_blueprint(api_bp)
 app.register_blueprint(chat_bp)
+
+
+@app.context_processor
+def inject_app_version():
+    return dict(app_version=APP_VERSION)
 
 # --- Hardcoded demo/admin credentials ---
 VALID_USERS = {

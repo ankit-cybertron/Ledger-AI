@@ -1,0 +1,40 @@
+===============================================================================
+LEDGER AI - DEPLOYMENT & CLOUD HOSTING SPECIFICATION
+===============================================================================
+
+1. ENVIRONMENT CONFIGURATION & SECRETS MANAGEMENT
+-------------------------------------------------------------------------------
+The application reads configuration parameters from environment variables or 
+`.env` files:
+  - `APP_VERSION`: Current dynamic application release version (e.g. `v2.10`).
+  - `FLASK_ENV`: Deployment mode (`production` vs `development`).
+  - `PORT`: HTTP port (default: 5000 / 8080).
+  - `GROQ_API_KEY`, `GROQ_API_KEY1`, `GROQ_API_KEY2`: API authentication tokens 
+    for the Groq LLM exception agent.
+
+
+2. DOCKER CONTAINERIZATION
+-------------------------------------------------------------------------------
+The application is containerized using a multi-stage Docker build:
+  - Base Image: `python:3.11-slim`
+  - System Dependencies: `build-essential`, `libpq-dev`, `fontconfig` (for ReportLab 
+    PDF font rendering).
+  - Production Server: Gunicorn WSGI container runner (`gunicorn -w 4 -b 0.00.0.0:8080 frontend.app:app`).
+
+
+3. CLOUD DEPLOYMENT TARGETS
+-------------------------------------------------------------------------------
+  a) Google Cloud Run (Serverless Container Hosting):
+     - Auto-scales container instances from 0 to N based on incoming HTTP traffic.
+     - Mounted persistent volume / Cloud Storage bucket for `data/` results and vault.
+  b) AWS Elastic Container Service (ECS) / Fargate:
+     - Managed Docker cluster running behind an AWS Application Load Balancer (ALB).
+  c) Local / On-Premises Bare-Metal Deployment:
+     - Direct execution via systemd service runner calling `./.venv/bin/python run.py`.
+
+
+4. PERSISTENT STORAGE & DATA VOLUMES
+-------------------------------------------------------------------------------
+  - Container instances mount a persistent volume at `/app/data` to ensure imported 
+    statements, audit vault closed periods, and column alias registries persist 
+    across container restarts.

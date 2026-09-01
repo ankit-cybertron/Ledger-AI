@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 02 - LAYER 1: EXACT MATCHING | STEP 02: AMOUNT PARITY & DATE WINDOW
+===============================================================================
+
+1. WHAT IT DOES:
+Validates that candidate pairs sharing matching reference codes also satisfy:
+  - Exact Net Amount Parity: Difference == 0.00
+  - Date Window Constraint: Transaction date difference <= 3 days (accounting 
+    for standard processing delays).
+
+2. WHY IT DOES IT:
+In rare cases, reference IDs might be recycled or truncated by third-party systems. 
+Enforcing exact amount parity and a date window prevents false positive matching 
+on stale or mismatched records.
+
+3. WHAT IT SOLVES:
+Eliminates false matches caused by duplicate or truncated reference numbers.
+
+4. HOW IT IS USEFUL:
+Guarantees that exact matches are financially accurate and date-aligned.
+
+5. WHEN IT IS USED:
+Evaluated during UTR and identifier candidate pairing in Layer 1.

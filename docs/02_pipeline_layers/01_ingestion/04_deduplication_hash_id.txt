@@ -1,0 +1,22 @@
+===============================================================================
+STAGE 01 - INGESTION | STEP 04: DEDUPLICATION & SYNTHETIC ID GENERATION
+===============================================================================
+
+1. WHAT IT DOES:
+Generates a unique SHA-256 content hash for each transaction row based on date, 
+amount, reference UTR, and description text. If a row lacks an explicit primary 
+ID, it generates a clean synthetic ID (e.g. `BNK-TXN-0001`, `PAY-TXN-0042`).
+
+2. WHY IT DOES IT:
+Duplicate file uploads or overlapping date ranges in statement imports can 
+cause the same transaction to be ingested twice, leading to double-counting.
+
+3. WHAT IT SOLVES:
+Prevents duplicate transaction processing and ensures each financial event 
+has a unique identifier across all statements.
+
+4. HOW IT IS USEFUL:
+Protects audit integrity by discarding exact duplicate rows before matching starts.
+
+5. WHEN IT IS USED:
+Applied to parsed rows during row validation and database storage.

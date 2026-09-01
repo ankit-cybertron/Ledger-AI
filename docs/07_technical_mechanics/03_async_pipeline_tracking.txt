@@ -1,0 +1,22 @@
+===============================================================================
+STAGE 07 - TECHNICAL MECHANICS | STEP 03: ASYNCHRONOUS PIPELINE PROGRESS TRACKING
+===============================================================================
+
+1. HOW WE DO IT:
+Pipeline operations (ingestion, 5-layer matching, report generation) execute on 
+a background thread managed by Python's `threading.Thread`.
+
+2. WHY WE DO IT:
+Long-running reconciliation jobs (e.g. running 5 matching passes over 50,000 rows) 
+would cause HTTP request timeouts and lock the frontend browser window if executed 
+synchronously in a single HTTP request.
+
+3. MECHANICS:
+  - Thread-Safe Shared Status Object: The backend maintains a global, thread-safe 
+    dictionary `_PIPELINE_STATUS` guarded by threading locks.
+  - Non-Blocking Frontend Polling: The frontend initiates the pipeline via `POST /api/reconcile`, 
+    receives an immediate `202 Accepted` response, and polls `GET /api/pipeline/status` 
+    every 300ms.
+  - Stage-Aware Button Locking: `dashboard.js` updates bottom-left status text dynamically 
+    (e.g., "Layer 2/5: Fee & Lag Solver..."), and selectively locks the Auto Match button 
+    only when auto-matching is actively running.

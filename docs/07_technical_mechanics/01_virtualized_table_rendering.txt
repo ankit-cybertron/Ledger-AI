@@ -1,0 +1,21 @@
+===============================================================================
+STAGE 07 - TECHNICAL MECHANICS | STEP 01: LARGE TABLE RENDERING & PAGINATION
+===============================================================================
+
+1. HOW WE DO IT:
+When rendering thousands of transaction rows in the Explorer tab, the system 
+implements client-side pagination combined with incremental DOM fragment construction 
+(`document.createDocumentFragment()`).
+
+2. WHY WE DO IT:
+Appending 10,000 individual `<tr>` elements to the DOM sequentially causes thousands 
+of browser reflow and repaint cycles, resulting in UI lag.
+
+3. MECHANICS:
+  - Page Slicing: Data arrays (`currentTransactions`) are sliced into pages of 50 
+    items (`list.slice(offset, offset + limit)`).
+  - Single DocumentFragment Batching: All 50 `<tr>` nodes are appended into a single 
+    in-memory DocumentFragment, which is then attached to the DOM in a single atomic 
+    operation.
+  - Search Indexing: Text searches build lower-cased lookup tokens in memory before 
+    filtering, ensuring smooth 60fps search interactions.

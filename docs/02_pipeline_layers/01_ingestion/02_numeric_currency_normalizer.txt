@@ -1,0 +1,28 @@
+===============================================================================
+STAGE 01 - INGESTION | STEP 02: NUMERIC & CURRENCY NORMALIZER
+===============================================================================
+
+1. WHAT IT DOES:
+Converts non-standard monetary string representations into standardized 64-bit 
+floating-point numbers. It handles:
+  - SBI Parenthetical Debits: `(1,234.56)` -> `-1234.56`
+  - Suffix Dr/Cr Indicators: `1234.56 Dr` -> `-1234.56`, `1234.56 Cr` -> `1234.56`
+  - Currency Symbols: Strips `₹`, `$`, `€`, `£`, commas, and whitespace.
+  - Separate Debit/Credit Columns: Merges separate "Deposit" and "Withdrawal" 
+    columns into a unified net signed amount column.
+
+2. WHY IT DOES IT:
+Financial institutions represent negative numbers and currencies differently. 
+Comparing amounts across statements requires signed numeric values (positive for 
+inflows/deposits, negative for outflows/payments).
+
+3. WHAT IT SOLVES:
+Eliminates parsing crashes and arithmetic errors caused by currency symbols, 
+thousands separators, or accounting parenthetical notation.
+
+4. HOW IT IS USEFUL:
+Ensures amount comparison, variance calculation, and fee equations operate 
+on clean numeric values.
+
+5. WHEN IT IS USED:
+Applied to every row extracted during statement parsing.

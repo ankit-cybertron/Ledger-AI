@@ -1,0 +1,22 @@
+===============================================================================
+STAGE 07 - TECHNICAL MECHANICS | STEP 02: TWO-PASS PDF GENERATION & CHART STREAMING
+===============================================================================
+
+1. HOW WE DO IT:
+Executive PDF reports are generated using ReportLab's `SimpleDocTemplate` combined 
+with a custom `NumberedCanvas` class that intercepts canvas page drawing calls in 
+a two-pass evaluation.
+
+2. WHY WE DO IT:
+Standard single-pass PDF generators cannot know the total page count until document 
+rendering finishes. Header footers requiring "Page X of Y" formatting fail or require 
+hardcoded numbers.
+
+3. MECHANICS:
+  - Two-Pass NumberedCanvas: Pass 1 records all page operations without writing the 
+    footer. When the document completes, Pass 2 retrieves the final total page count `_pageNumber` 
+    and writes running headers/footers ("Page X of Y") onto every page stream.
+  - In-Memory Matplotlib Chart Streaming: Visual donut and variance charts are drawn 
+    using Matplotlib in headless mode (`matplotlib.use('Agg')`), saved into a 
+    `io.BytesIO()` binary RAM buffer, and passed directly to ReportLab's `Image` 
+    flowable constructor without touching disk I/O.

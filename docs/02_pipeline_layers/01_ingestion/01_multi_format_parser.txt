@@ -1,0 +1,28 @@
+===============================================================================
+STAGE 01 - INGESTION | STEP 01: MULTI-FORMAT FILE PARSER
+===============================================================================
+
+1. WHAT IT DOES:
+The Multi-Format File Parser reads raw bank statements, gateway settlement 
+summaries, and order books from CSV, Excel (XLSX/XLS), and PDF file streams into 
+structured memory tables.
+
+2. WHY IT DOES IT:
+Financial data arrives in different file formats depending on the institution. 
+Banks frequently issue PDF bank statements or Excel exports, while gateways 
+provide CSV settlements. A universal parser converts all of these formats into 
+a common tabular structure.
+
+3. WHAT IT SOLVES:
+Solves file format incompatibility. PDF bank statements often contain embedded 
+table grids, multi-line headers, and footers ("Page 1 of 5", "Total Balance"). 
+The parser extracts tabular data while stripping decorative headers and 
+footer summary rows.
+
+4. HOW IT IS USEFUL:
+It allows users to drop any file format into the upload dropzone without 
+needing to manually save PDFs or Excel files as CSVs first.
+
+5. WHEN IT IS USED:
+Executed immediately when a user uploads statement files via the upload dropzone 
+or imports benchmark datasets.

@@ -1,0 +1,53 @@
+===============================================================================
+LEDGER AI - SYSTEM ARCHITECTURE OVERVIEW & DESIGN SPECIFICATION
+===============================================================================
+
+1. SINGLE PAGE APPLICATION (SPA) FRONTEND ARCHITECTURE
+-------------------------------------------------------------------------------
+The UI layer is engineered as a zero-dependency vanilla JavaScript and HTML5 SPA 
+styled with dynamic modern CSS. Key frontend modules include:
+  - `dashboard.js`: Orchestrates tab switching, state management, table virtual 
+    rendering, filter state, and async pipeline progress polling.
+  - `api.js`: Centralized HTTP service wrapper (`window.LedgerApi`). The rest 
+    of the codebase never hardcodes backend URL endpoints.
+  - `theme.js`: Manages dark/light glassmorphic UI themes using CSS tokens.
+  - `script.js`: Landing page, smooth scrolling, and navigation interactions.
+
+
+2. FLASK RESTFUL API ROUTING LAYER (`frontend/api/routes.py`)
+-------------------------------------------------------------------------------
+The API layer exposes RESTful endpoints for frontend interactions:
+  - `/api/statements/import`: Ingests CSV/XLSX/PDF files, triggers schema alignment, 
+    and clears stale results to yield a clean UNMATCHED state.
+  - `/api/reconcile`: Initiates 5-layer reconciliation pipeline asynchronously.
+  - `/api/reconcile/layer/<num>`: Executes individual pipeline layers for step-by-step 
+    hydration.
+  - `/api/pipeline/status`: Returns background progress percent, current stage, 
+    and live execution logs.
+  - `/api/report-pdf`: Triggers ReportLab executive PDF generation.
+  - `/api/forecast`: Computes 30-day cash projections and settlement lag models.
+
+
+3. RECONCILIATION CORE ENGINE (`reconciler/`)
+-------------------------------------------------------------------------------
+The core engine consists of modular Python packages:
+  - `reconciler/reconcile.py`: Primary 5-layer pipeline controller.
+  - `reconciler/exact_matcher.py`: Pass 1 UTR / RRN identifier matching.
+  - `reconciler/composite_scorer.py`: Pass 2 12D ML composite scorer.
+  - `reconciler/fee_solver.py`: Pass 3 1-to-N batch payout MDR fee equation solver.
+  - `agents/settlement_qa.py`: Pass 4 Groq LLM agent with multi-key failover.
+
+
+4. BACKGROUND PIPELINE TRACKER (`frontend/api/routes.py`)
+-------------------------------------------------------------------------------
+The background worker thread updates pipeline status without blocking Flask's HTTP 
+event loop. As reconciliation progresses through layers 1 to 5, progress updates 
+are logged into a thread-safe circular log buffer polled by the UI every 300ms.
+
+
+5. REPORTING & AUDIT GENERATION (`reports/`)
+-------------------------------------------------------------------------------
+Generates executive reports and visual charts:
+  - `reports/pdf_generator.py`: Two-pass ReportLab `NumberedCanvas` builder.
+  - `reports/report_builder.py`: Aggregates transaction data into summary KPIs.
+  - `reports/excel_generator.py`: Generates multi-tab Excel workbooks.

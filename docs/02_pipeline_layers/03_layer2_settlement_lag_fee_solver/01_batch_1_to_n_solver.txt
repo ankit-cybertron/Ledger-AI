@@ -1,0 +1,24 @@
+===============================================================================
+STAGE 03 - LAYER 2: FEE SOLVER | STEP 01: 1-TO-N BATCH PAYOUT SOLVER
+===============================================================================
+
+1. WHAT IT DOES:
+Reconciles 1 lump-sum bank deposit against N individual order transactions 
+captured by payment gateways (e.g., Razorpay, Stripe, Paytm).
+
+2. WHY IT DOES IT:
+Payment processors do not deposit funds transaction-by-transaction. Instead, 
+they aggregate hundreds of customer transactions into a single daily or 
+weekly net batch payout deposit into the merchant's bank account.
+
+3. WHAT IT SOLVES:
+Solves the many-to-one reconciliation problem where a single bank deposit 
+amount (e.g., ₹98,500.00) equals the sum of 50 individual orders minus payment 
+gateway MDR commissions.
+
+4. HOW IT IS USEFUL:
+Eliminates manual spreadsheet reconciliation where accountants sum order lines 
+to match bank deposit entries.
+
+5. WHEN IT IS USED:
+Executed in Layer 2 after Pass 1 exact 1-to-1 UTR matching completes.

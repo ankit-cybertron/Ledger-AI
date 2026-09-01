@@ -1,0 +1,24 @@
+===============================================================================
+STAGE 06 - LAYER 5: REPORTS & EXPORT | STEP 01: REPORTLAB EXECUTIVE PDF GENERATOR
+===============================================================================
+
+1. WHAT IT DOES:
+Compiles an executive-ready, multi-page PDF audit report using ReportLab's 
+Platypus flowable framework. It includes executive KPI tiles, status breakdown 
+tables, itemized match logs, exception summary lists, and an integrity audit.
+
+2. WHY IT DOES IT:
+Finance leaders, controllers, and external auditors require formal, immutable 
+PDF documentation for period-end sign-offs and regulatory compliance.
+
+3. WHAT IT SOLVES:
+Solves the problem of manually building presentation decks or printing web pages 
+to report monthly reconciliation results.
+
+4. HOW IT IS USEFUL:
+Generates print-ready PDFs with page numbers ("Page X of Y"), branded headers, 
+and zero-loss mathematical proof equations.
+
+5. WHEN IT IS USED:
+Executed in Layer 5 or when the user clicks "Download Executive PDF Audit" in the 
+Reports panel.

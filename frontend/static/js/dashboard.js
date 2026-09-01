@@ -167,7 +167,9 @@
         if (subId === "sub-overview") {
           _loadOverviewPanel(true).catch(() => { });
         } else if (subId === "sub-reconcile" || subId === "sub-manual-review") {
-          if (currentRunId) {
+          if (!hasAutoMatchRunForCurrentData && !isAutoMatchRunning) {
+            triggerAutoMatch().catch(() => { });
+          } else if (currentRunId) {
             loadRun(currentRunId).catch(() => { });
           } else {
             hydrateExistingRun().catch(() => { });
@@ -191,6 +193,9 @@
 
   // ── Shared Reconciliation & System State Manager (T13.3) ────────────────
   const _panelLoaded = {};
+
+  let isAutoMatchRunning = false;
+  let hasAutoMatchRunForCurrentData = false;
 
   const stateManager = {
     isStale: true,
@@ -239,7 +244,7 @@
       await Promise.allSettled([
         loadSidebarSources(),
         loadStatementsTable(),
-        currentRunId ? loadRun(currentRunId) : hydrateExistingRun()
+        (currentRunId && hasAutoMatchRunForCurrentData) ? loadRun(currentRunId) : hydrateExistingRun()
       ]);
 
       await new Promise(r => setTimeout(r, 50));
@@ -254,12 +259,12 @@
   };
 
   function _loadReportsPanel(force, expandVault = false, autoGenerateLive = false) {
-    if (_panelLoaded.reports && !force) return;
+    if (_panelLoaded.reports && !force) return Promise.resolve();
     const el = document.getElementById("reportsContent");
-    if (!el) return;
+    if (!el) return Promise.resolve();
     el.innerHTML = createSleekLoadingHTML("Loading Closed Audit Vault & Report Archives", "Retrieving server archives, audit PDFs, and closed period snapshots...");
 
-    Promise.all([
+    return Promise.all([
       fetch("/api/closed_periods").then(r => r.json()).catch(() => ({ periods: [] })),
       fetch("/api/statements").then(r => r.json()).catch(() => ({ statements: [] })),
       fetch("/api/forecast?days=30").then(r => r.json()).catch(() => ({}))
@@ -507,9 +512,6 @@
             </p>
           </div>
           <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-            <button type="button" onclick="window.generateLiveReport()" style="padding:9px 18px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(37,99,235,0.25);">
-              <span>Generate Report</span>
-            </button>
             <button type="button" onclick="if(window.openClosePeriodModal){window.openClosePeriodModal();}else{alert('Run a reconciliation first to close period.');}" style="padding:9px 18px; background:#10b981; color:#fff; border:none; border-radius:var(--radius-md); font-size:0.85rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 3px 10px rgba(16,185,129,0.25);">
               <span>Close & Lock Period</span>
             </button>
@@ -517,27 +519,12 @@
         </div>
       `;
 
-      const initialPlaceholderUI = `
-        <div id="liveReportContainer">
-          <div style="background:var(--bg-surface); border:1px dashed var(--border); border-radius:var(--radius-lg); padding:36px 28px; text-align:center; box-shadow:var(--shadow-sm);">
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="1.8" style="margin:0 auto 12px; display:block;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            <h3 style="font-size:1.15rem; font-weight:700; color:var(--text-primary); margin:0 0 6px;">Live Reconciliation Report</h3>
-            <p style="font-size:0.85rem; color:var(--text-muted); max-width:550px; margin:0 auto 20px;">
-              Click below to calculate period parity, interactive audit tables, and download custom Excel/PDF/CSV/Markdown reports.
-            </p>
-            <button type="button" onclick="window.generateLiveReport()" style="padding:10px 22px; background:var(--accent-blue); color:#fff; border:none; border-radius:var(--radius-md); font-size:0.88rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(37,99,235,0.3);">
-              <span>Generate Report</span>
-            </button>
-          </div>
-        </div>
-      `;
+      const liveReportWrapper = `<div id="liveReportContainer"></div>`;
 
-      el.innerHTML = headerActionUI + vaultHtml + initialPlaceholderUI;
+      el.innerHTML = headerActionUI + vaultHtml + liveReportWrapper;
       initVaultHeaderListeners();
 
-      if (autoGenerateLive) {
-        window.generateLiveReport();
-      }
+      window.generateLiveReport();
     }).catch(err => {
       console.error(err);
       el.innerHTML = '<div style="color:var(--color-danger);padding:20px;text-align:center;">Failed to load audit report. Check server connection.</div>';
@@ -2528,6 +2515,13 @@
         if (importBtn) importBtn.disabled = false;
         if (btnImportAI) btnImportAI.disabled = false;
 
+        hasAutoMatchRunForCurrentData = false;
+        currentRunId = null;
+        stateManager.invalidate();
+        for (const k in _panelLoaded) delete _panelLoaded[k];
+        await loadSidebarSources();
+        await loadStatementsTable();
+        await hydrateExistingRun();
         await pollPipelineStatus();
 
       } catch (err) {
@@ -2587,6 +2581,19 @@
 
       if (res.is_running) {
         pipelineHasSeenRunning = true;
+        if (isAutoMatchRunning && res.stage) {
+          const runBtn = document.getElementById("runReconcileBtn");
+          const navBtn = document.getElementById("btnNavRunAutoMatch");
+          let displayStage = res.stage;
+          if (runBtn) {
+            runBtn.disabled = true;
+            runBtn.innerHTML = `<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>${escapeHtml(displayStage)}</span>`;
+          }
+          if (navBtn) {
+            navBtn.disabled = true;
+            navBtn.innerHTML = `<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>${escapeHtml(displayStage)}</span>`;
+          }
+        }
       }
 
       if (stageEl && res.stage) {
@@ -2656,7 +2663,23 @@
     if (percentEl) percentEl.textContent = "100%";
     if (fillEl) fillEl.style.width = "100%";
     if (stageEl && !stageEl.textContent.includes("Complete")) {
-      stageEl.textContent = "Pipeline Execution Complete ✓";
+      stageEl.textContent = "Pipeline Execution Complete";
+    }
+
+    if (!isAutoMatchRunning) {
+      const runBtn = document.getElementById("runReconcileBtn");
+      const navBtn = document.getElementById("btnNavRunAutoMatch");
+      const cyclicSvg18 = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
+      const cyclicSvg14 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
+
+      if (runBtn) {
+        runBtn.disabled = false;
+        runBtn.innerHTML = `${cyclicSvg18} <span>Auto Match</span>`;
+      }
+      if (navBtn) {
+        navBtn.disabled = false;
+        navBtn.innerHTML = `${cyclicSvg14} <span>Auto Match</span>`;
+      }
     }
     if (typeof window.refreshAndPreloadAllTabs === "function") {
       await window.refreshAndPreloadAllTabs();
@@ -2920,7 +2943,7 @@
 
     activateSub("sub-statement-view");
 
-    const bodyEl = document.getElementById("stmtViewTableBody");
+    const bodyEl = document.getElementById("stmtTableBody");
     if (bodyEl) {
       bodyEl.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);"><span class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Loading statement records...</td></tr>';
     }
@@ -3016,7 +3039,7 @@
     "content_hash"
   ]);
 
-  const INITIAL_STATEMENT_RENDER_LIMIT = 100;
+  const INITIAL_STATEMENT_RENDER_LIMIT = 50;
 
   function renderStatementRows(rows, editable = false) {
     const headEl = document.getElementById("stmtTableHead");
@@ -3259,7 +3282,7 @@
       toast.style.display = "flex";
       toast.style.alignItems = "center";
       toast.style.gap = "8px";
-      toast.innerHTML = `<span id="toastIconSpan"></span><span id="toastTextSpan"></span>`;
+      toast.innerHTML = `</span><span id="toastTextSpan"></span>`;
       document.body.appendChild(toast);
     }
 
@@ -5187,25 +5210,79 @@
   }
 
   async function triggerAutoMatch() {
+    if (isAutoMatchRunning) return;
+    isAutoMatchRunning = true;
+
     const runBtn = document.getElementById("runReconcileBtn");
     const navBtn = document.getElementById("btnNavRunAutoMatch");
     const cyclicSvg18 = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
     const cyclicSvg14 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
 
-    if (runBtn) runBtn.disabled = true;
-    if (navBtn) navBtn.disabled = true;
-
-    if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Processing Pipeline...</span>';
-    if (navBtn) navBtn.innerHTML = '<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>Processing...</span>';
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 1/5: Exact Match...</span>';
+    }
+    if (navBtn) {
+      navBtn.disabled = true;
+      navBtn.innerHTML = '<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>Matching...</span>';
+    }
 
     try {
-      const result = await window.LedgerApi.runReconciliation();
-      currentRunId = result.run_id;
+      startPipelineMonitoring();
+
+      // Show imported transactions immediately (all UNMATCHED) before Layer 1 runs
       stateManager.invalidate();
-      await loadRun(currentRunId);
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+
+      // Layer 1: Exact Matching
+      if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 1/5: Exact Match...</span>';
+      await window.LedgerApi.runReconciliationLayer(1);
+      stateManager.invalidate();
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+
+      // Layer 2: Tolerance & Fee Solver
+      if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 2/5: Tolerance...</span>';
+      await window.LedgerApi.runReconciliationLayer(2);
+      stateManager.invalidate();
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+
+      // Layer 3: ML Feature Schema & Model Scoring
+      if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 3/5: ML Model...</span>';
+      await window.LedgerApi.runReconciliationLayer(3);
+      stateManager.invalidate();
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+
+      // Layer 4: Outcomes Aggregator & Exception Ledger
+      if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 4/5: Exception Ledger...</span>';
+      await window.LedgerApi.runReconciliationLayer(4);
+      stateManager.invalidate();
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+
+      // Layer 5: Executive Audit Report Generator & Dashboard Run Builder
+      if (runBtn) runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Layer 5/5: Reports...</span>';
+      const result = await window.LedgerApi.runReconciliationLayer(5);
+
+      if (result && result.run_id) {
+        currentRunId = result.run_id;
+      }
+
+      hasAutoMatchRunForCurrentData = true;
+      stateManager.invalidate();
+      for (const k in _panelLoaded) delete _panelLoaded[k];
+      await hydrateExistingRun();
+      _loadReportsPanel(true).catch(() => { });
+
     } catch (err) {
-      console.warn("Auto match failed:", err);
+      console.warn("Layered Auto match failed:", err);
+      showNotificationToast("Auto Match encountered an issue: " + (err.message || err), "error");
     } finally {
+      isAutoMatchRunning = false;
+      stopPipelineMonitoring();
       if (runBtn) {
         runBtn.disabled = false;
         runBtn.innerHTML = `${cyclicSvg18} <span>Auto Match</span>`;
@@ -5265,36 +5342,11 @@
     const navBtn = document.getElementById("btnNavRunAutoMatch");
     const closeBtn = document.getElementById("closePeriodBtn");
 
-    const cyclicSvg18 = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
-    const cyclicSvg14 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></svg>';
-
     if (runBtn) {
-      runBtn.addEventListener("click", async () => {
-        runBtn.disabled = true;
-        if (navBtn) navBtn.disabled = true;
-
-        runBtn.innerHTML = '<span class="spinner" style="width:15px; height:15px; border-width:2px; margin-right:6px;"></span> <span>Processing Pipeline...</span>';
-        if (navBtn) navBtn.innerHTML = '<span class="spinner" style="width:13px; height:13px; border-width:2px; margin-right:4px;"></span> <span>Processing...</span>';
-
-        try {
-          const result = await window.LedgerApi.runReconciliation();
-          if (result && result.run_id) currentRunId = result.run_id;
-
-          await new Promise((resolve) => {
-            startPipelineProgressPoller("Running 4-Pass Cascade Reconciliation...", async () => {
-              resolve();
-            });
-          });
-        } catch (err) {
-          const detail = (err && err.message) ? err.message : String(err || "Reconciliation run failed.");
-          alert(`Reconciliation Error:\n\n${detail}`);
-        } finally {
-          runBtn.disabled = false;
-          if (navBtn) navBtn.disabled = false;
-          runBtn.innerHTML = `${cyclicSvg18} <span>Auto Match</span>`;
-          if (navBtn) navBtn.innerHTML = `${cyclicSvg14} <span>Auto Match</span>`;
-        }
-      });
+      runBtn.addEventListener("click", () => triggerAutoMatch());
+    }
+    if (navBtn) {
+      navBtn.addEventListener("click", () => triggerAutoMatch());
     }
 
     closeBtn.addEventListener("click", async () => {
@@ -5484,11 +5536,14 @@
 
             if (data.ok || data.success) {
               sessionStorage.setItem("ledger_data_loaded", "true");
+              hasAutoMatchRunForCurrentData = false;
+              currentRunId = null;
+              stateManager.invalidate();
+              for (const k in _panelLoaded) delete _panelLoaded[k];
               await loadSidebarSources();
               await loadStatementsTable();
               await hydrateExistingRun();
-              const overviewTab = document.querySelector('[data-tab="sub-overview"]');
-              if (overviewTab) overviewTab.click();
+              showNotificationToast(`Loaded ${testcase} benchmark data into workspace.`, "success");
             } else {
               alert(data.error || "Failed to load test case.");
             }

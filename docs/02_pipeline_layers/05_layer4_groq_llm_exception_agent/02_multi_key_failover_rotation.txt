@@ -1,0 +1,21 @@
+===============================================================================
+STAGE 05 - LAYER 4: GROQ LLM AGENT | STEP 02: MULTI-KEY FAILOVER ROTATION
+===============================================================================
+
+1. WHAT IT DOES:
+Rotates through a pool of configured API keys (`GROQ_API_KEY`, `GROQ_API_KEY1`, 
+`GROQ_API_KEY2`) when making LLM requests. If a key encounters rate limiting (429) 
+or quota depletion, the system automatically fails over to the next key.
+
+2. WHY IT DOES IT:
+Cloud LLM APIs enforce rate limits per minute/day. High-volume batch reconciliation 
+could halt if restricted to a single API key.
+
+3. WHAT IT SOLVES:
+Prevents AI agent downtime and rate-limit failures during bulk statement matching.
+
+4. HOW IT IS USEFUL:
+Ensures continuous, uninterrupted LLM processing even during heavy reconciliation runs.
+
+5. WHEN IT IS USED:
+Applied automatically during every call to the Groq LLM client module.

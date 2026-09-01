@@ -1,0 +1,131 @@
+===============================================================================
+LEDGER AI - RECONCILIATION TAXONOMY & STATUS TAG SPECIFICATION
+===============================================================================
+
+1. SETTLED TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied exclusively when a transaction match involves at least one designated 
+Primary Statement record (such as a Bank Account, Cash Ledger, or Treasury Feed) 
+and satisfies either 100% amount parity (Pass 1 UTR match) or a valid net batch 
+MDR fee equation (Pass 3 Batch Solver).
+
+How It Affects Decision-Making:
+Signals to the finance team that real liquid cash has successfully arrived or 
+departed from the company's bank account. Records tagged as SETTLED are 
+automatically committed to liquid cash balance totals and cleared from open 
+sub-ledger tracking.
+
+
+2. MATCHED TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied when a valid, high-confidence match (Composite Score >= 0.85 or LLM 
+confirmed) is established strictly between two Counterpart statement sources 
+(e.g., Payment Gateway Settlement Feed vs E-Commerce Order Book, or Gateway vs 
+UPI Register), without a Primary Bank Statement record directly involved in 
+that specific pairing.
+
+How It Affects Decision-Making:
+Indicates sub-ledger alignment between operational systems prior to bank deposit. 
+It confirms that gateway collections match order transactions, isolating any 
+in-transit delays before funds land in the main bank account.
+
+
+3. SIMILAR TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied when a candidate match yields a composite score in the intermediate 
+confidence window (0.50 <= Score < 0.85). This occurs when transaction amounts 
+or reference strings align partially, but minor date offsets, fuzzy narration 
+differences, or untracked fee variances exist.
+
+How It Affects Decision-Making:
+Prevents automated force-matching while routing potential candidate pairs into the 
+Review Drawer. Finance users or the Groq LLM agent can review the shared feature 
+highlights and explicitly confirm or reject the match with one click.
+
+
+4. UNMATCHED TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied to fresh, freshly ingested transaction records before auto-matching, or 
+records that fail all matching layers with a composite score below 0.50.
+
+How It Affects Decision-Making:
+Establishes the initial baseline for newly imported data and isolates open 
+discrepancies. Summing all UNMATCHED amounts calculates the Net Variance KPI 
+for the period. UNMATCHED records are populated into the Exception Ledger for 
+LLM reasoning or manual review.
+
+
+5. INTERNATIONAL TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied to transactions originating from foreign bank accounts, international 
+credit cards, or cross-border payment gateways (e.g., Stripe USD/EUR transactions 
+settling in INR).
+
+How It Affects Decision-Making:
+Triggers multi-currency conversion logic and adjusts settlement lag expectations 
+(T+3 to T+5 days instead of domestic T+2). It allows foreign exchange (FX) rate 
+variances to be separated from standard operational MDR fees.
+
+
+6. ROUND_OFF_VARIANCE TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied when transaction amounts match within a tiny numerical rounding 
+tolerance (e.g., <= ₹1.00 or $0.05 difference) caused by currency conversion 
+rounding or fractional GST calculations.
+
+How It Affects Decision-Making:
+Allows the system to automatically pair transactions without rejecting them over 
+sub-cent rounding noise, posting the micro-difference to a designated Rounding 
+Variance ledger account.
+
+
+7. FEE_DEDUCTED TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied to batch payout settlements where the net bank deposit is less than the 
+gross sum of individual orders due to payment processor MDR commission fees 
+and 18% GST tax.
+
+How It Affects Decision-Making:
+Informs the reporting engine that the amount delta is not an uncollected loss 
+or missing payment, but rather an authorized merchant service fee expense.
+
+
+8. HIGH_CONFIDENCE TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied to candidate pairs achieving a multi-vector similarity score >= 0.95 or 
+verifiable UTR identifier equality.
+
+How It Affects Decision-Making:
+Bypasses manual audit queues and auto-commits the match, enabling straight-through 
+processing (STP) for clean commercial transactions.
+
+
+9. EXCEPTION TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied to transactions flagged for human investigation due to structural 
+anomalies, such as missing bank statement counterpart entries, duplicate 
+payments, or chargeback reversals.
+
+How It Affects Decision-Making:
+Isolates high-risk line items into the Exception Ledger drawer, preventing them 
+from distorting period-end financial balance sheets until resolved.
+
+
+10. UNRECONCILED TAG
+-------------------------------------------------------------------------------
+When Used:
+Applied when an auditor manually unlinks a previously matched pair or overrides 
+a auto-settled status back to an open state during an audit review.
+
+How It Affects Decision-Making:
+Re-opens the transaction pair for fresh matching evaluation, resetting all 
+downstream KPI calculations and report summaries.

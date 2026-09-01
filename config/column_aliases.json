@@ -110,7 +110,8 @@
     "payment_date",
     "transaction_time",
     "Order Date",
-    "Txn Date"
+    "Txn Date",
+    "Initiated Date"
   ],
   "value_date": [
     "value_date",

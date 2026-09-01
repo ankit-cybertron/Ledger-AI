@@ -1,0 +1,24 @@
+===============================================================================
+STAGE 05 - LAYER 4: GROQ LLM AGENT | STEP 03: STRUCTURED JSON & AUDIT REASONING
+===============================================================================
+
+1. WHAT IT DOES:
+Prompts the Groq LLM model to return strictly validated JSON containing:
+  - `recommendation`: "CONFIRMED", "REJECTED", or "MANUAL_REVIEW"
+  - `confidence_score`: float in [0.00, 1.00]
+  - `reasoning`: Detailed natural language explanation of why the match was made.
+
+2. WHY IT DOES IT:
+Financial audits require clear justification for matching decisions. Black-box 
+AI predictions without clear explanations are unsuited for corporate accounting.
+
+3. WHAT IT SOLVES:
+Solves the AI explainability problem by capturing step-by-step reasoning for 
+auditors and compliance teams.
+
+4. HOW IT IS USEFUL:
+Provides transparent audit trails embedded directly into Exception Ledger records 
+and PDF executive reports.
+
+5. WHEN IT IS USED:
+Generated as the final output payload of every LLM matching evaluation.

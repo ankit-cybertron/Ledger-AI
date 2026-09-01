@@ -2,61 +2,47 @@
 
 Welcome to the canonical technical documentation suite for **Ledger AI**, an autonomous financial reconciliation, multi-source ingestion, transaction matching, cash flow forecasting, and audit reporting platform.
 
-Below is the complete index of dedicated documentation files detailing every core component, status taxonomy rule, ingestion stage, matching algorithm, ML classifier, LLM agent, and reporting system implemented in the codebase.
+The documentation is organized into clear, sequential, numbered text (`.txt`) files across logical subdirectories:
 
 ---
 
 ## Technical Documentation Index
 
-### 1. Taxonomy Status Specifications
-Detailed algorithms, classification rules, criteria, formulas, and UI badges for each implemented outcome status:
+### 1. Product Features (`docs/01_features/`)
+- **`01_features_overview.txt`**: Standard Import, Smart Import (Groq AI header mapping & alias registry), Load Pre-configured Test Benchmark Data, and advantages of preloaded benchmark feeds.
+- **`02_forward_cash_forecasting.txt`**: Technical and mathematical specification of the 30-to-90 day Forward Cash Forecaster.
 
-- **[SETTLED Status Specification](status_settled.md)**  
-  Primary vs Counterpart rule, exact UTR/reference matching, zero amount variance, 1-to-N batch fee equations, and settlement criteria.
+### 2. Pipeline Layers (`docs/02_pipeline_layers/`)
+- **`01_ingestion/`**: Multi-format parser, numeric/currency normalizer, schema AI mapper, SHA-256 deduplication, and Primary/Counterpart separator.
+- **`02_layer1_exact_matching/`**: Exact UTR/RRN identifier matcher and amount parity date window validation.
+- **`03_layer2_settlement_lag_fee_solver/`**: 1-to-N batch payout solver, MDR fee & GST reconciliation, and channel lag estimation.
+- **`04_layer3_ml_composite_scorer/`**: 12D feature vector matrix, fuzzy narration Levenshtein matching, and weekend/holiday business day offset.
+- **`05_layer4_groq_llm_exception_agent/`**: Ambiguous candidate resolver, multi-key failover rotation pool, and structured JSON audit reasoning.
+- **`06_layer5_audit_reports_export/`**: Executive ReportLab PDF generator, Matplotlib visual chart buffer streaming, and period closing audit vault.
 
-- **[MATCHED Status Specification](status_matched.md)**  
-  Counterpart-to-Counterpart reconciliation, composite weighted scoring engine (S >= 0.85), amount/date tolerance parameters, and auto-approval thresholds.
+### 3. Tags & Reconciliation Taxonomy (`docs/03_tags_and_taxonomy/`)
+- **`01_taxonomy_and_tags.txt`**: Comprehensive specification of all 10 taxonomy statuses and tags (SETTLED, MATCHED, SIMILAR, UNMATCHED, INTERNATIONAL, ROUND_OFF_VARIANCE, FEE_DEDUCTED, HIGH_CONFIDENCE, EXCEPTION, UNRECONCILED).
 
-- **[SIMILAR Status Specification](status_similar.md)**  
-  Candidate similarity scoring (0.50 <= Score < 0.85), tokenized description keyword extraction, candidate drawer, and shared keyword UI badges.
+### 4. Architecture & Code Map (`docs/04_architecture/`)
+- **`01_system_architecture_overview.txt`**: SPA Frontend, Flask RESTful API, Core Reconciliation Engine, Background Pipeline Tracker, and Report Engine.
+- **`02_code_map_and_file_structure.txt`**: Subsystem file & function code map table, symmetric pair deduplication, and UI keyword comparison logic.
 
-- **[UNMATCHED Status Specification](status_unmatched.md)**  
-  Discrepancy detection, isolated transaction handling, exception ledger routing, and on-demand LLM match triggers.
+### 5. Scaling & Performance Challenges (`docs/05_scaling_challenges/`)
+- **`01_scaling_and_performance_challenges.txt`**: Streaming 100k+ row imports, $O(N \cdot M)$ complexity mitigations, virtualized table DOM rendering, AI rate-limiting, and PostgreSQL migration path.
 
----
+### 6. Deployment & Cloud Hosting (`docs/06_deployment/`)
+- **`01_deployment_and_cloud_hosting.txt`**: Environment configuration, Docker multi-stage builds, Google Cloud Run / AWS ECS hosting, and persistent volume storage.
 
-### 2. Core Engine & Subsystem Specifications
-
-- **[LLM Matching Agent Specification](llm_matching_agent.md)**  
-  Groq API integration (`llm/query_llm.py`) with multi-key failover (`GROQ_API_KEY` rotation), fallback models (`openai/gpt-oss-120b`, `qwen/qwen3.6-27b`), prompt construction, and JSON reasoning output schemas.
-
-- **[Statement Ingestion Pipeline Specification](ingestion_pipeline.md)**  
-  Full 5-stage ingestion process: file reading (CSV/XLSX/PDF), duplicate column resolution, 3-stage column mapping (exact, fuzzy, AI smart import), locale normalizer, clean fallback ID generation (`BNK-TXN-0004`), and SHA-256 content deduplication.
-
-- **[Multi-Pass Reconciliation Engine Specification](reconciliation_engine.md)**  
-  Sequential 6-step reconciliation pipeline (`reconciler/pipeline_runner.py`), primary vs. counterpart statement pool separation, and symmetric mirror-pair deduplication (`seen_matched_ids`).
-
-- **[Forward Cash Forecaster Specification](forecasting_logic.md)**  
-  Rules-first financial projection engine: seasonal decomposition, moving-average trend analysis, pending settlement estimation, recurring pattern overlay, and beginning balance cascade propagation.
-
-- **[Reports & PDF Generation Specification](reports_and_pdf_generation.md)**  
-  Filtered dataset builder (`reports/report_builder.py`), branded ReportLab PDF compilation (`reports/pdf_generator.py`), Matplotlib chart rendering, and audit integrity verification.
-
----
-
-### 3. Guides & System Specifications
-
-- **[Developer Reconciliation & Status Guide](developer_reconciliation_guide.md)**  
-  Comprehensive developer guide summarizing file mappings, code references, deduplication algorithms, master source table views, report generation pipelines, and UI keyword comparison logic.
-
-- **[Canonical Reconciliation Mechanism Specification](reconciliation_matching_mechanism.md)**  
-  Full mathematical specifications, scoring equations, 12-dimensional ML feature vector schema, subset-sum fee equation solver, and four-status taxonomy rules.
+### 7. Technical Mechanics (`docs/07_technical_mechanics/`)
+- **`01_virtualized_table_rendering.txt`**: DocumentFragment DOM batching & viewport pagination.
+- **`02_two_pass_pdf_generation.txt`**: ReportLab two-pass NumberedCanvas & in-memory chart streaming.
+- **`03_async_pipeline_tracking.txt`**: Non-blocking background thread worker & 300ms UI progress polling.
 
 ---
 
 ## Verification & Test Suite
 
-Run the full pytest suite across all test modules to validate pipeline logic, API contracts, closed period vault flows, forecasting engines, and ingestion normalizers:
+Run the full pytest suite to validate system integrity:
 
 ```bash
 PYTHONPATH=. ./.venv/bin/pytest -q

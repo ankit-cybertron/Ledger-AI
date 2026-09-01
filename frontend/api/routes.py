@@ -186,19 +186,24 @@ def _log_warning(msg):
         print(f"[WARNING] {msg}")
 
 
+def clear_reconciliation_results():
+    """Removes all generated matching outcome CSVs so fresh data starts in UNMATCHED state."""
+    for f in ["reconciliation_results.csv", "exception_ledger.csv", "exact_matches.csv", "tolerance_matches.csv", "confidence_eval.csv"]:
+        p = os.path.join(RESULTS_DIR, f)
+        if os.path.exists(p):
+            try:
+                os.unlink(p)
+            except Exception:
+                pass
+
+
 def _run_backend_pipeline():
     from frontend import statement_store
     from frontend.api import pipeline_tracker
 
     stmts = statement_store.list_statements()
     if not stmts:
-        for f in ["reconciliation_results.csv", "exception_ledger.csv", "exact_matches.csv", "tolerance_matches.csv"]:
-            p = os.path.join(RESULTS_DIR, f)
-            if os.path.exists(p):
-                try:
-                    os.unlink(p)
-                except Exception:
-                    pass
+        clear_reconciliation_results()
         pipeline_tracker.start_pipeline("No active statements imported.")
         pipeline_tracker.finish_pipeline(success=True)
         return
@@ -208,12 +213,12 @@ def _run_backend_pipeline():
     with pipeline_tracker.PipelineOutputCapture():
         statement_store.ensure_all_generated_csvs()
 
-        pipeline_tracker.update_progress(20, "Executing Reconciliation Pipeline (T5.4)...", "🔍 Running Rule Engine & ML Pipeline...", level="RECON")
+        pipeline_tracker.update_progress(20, "Executing Reconciliation Pipeline (T5.4)...", "Running Rule Engine & ML Pipeline...", level="RECON")
         try:
             from reconciler import pipeline_runner
             pipeline_runner.run_full_pipeline()
         except Exception as exc:
-            pipeline_tracker.add_log(f"Pipeline execution note: {exc}", level="WARNING")
+            pipeline_tracker.add_log(f"error: {exc}", level="WARNING")
 
         pipeline_tracker.finish_pipeline(success=True)
 
@@ -1340,18 +1345,19 @@ def get_transactions():
 
 @api_bp.route("/config", methods=["GET"])
 def get_matching_config():
-    """T6.3 API endpoint returning active MatchingConfig parameters from reconciliation_config.json."""
+    """T6.3 API endpoint returning active MatchingConfig parameters and app_version."""
+    from config import APP_VERSION
+    cfg_data = {}
     if os.path.exists(CONFIG_OUTPUT_PATH):
         try:
             with open(CONFIG_OUTPUT_PATH, "r", encoding="utf-8") as f:
                 cfg_data = json.load(f)
-            return jsonify({"ok": True, "config": cfg_data})
-        except Exception as exc:
-            return _error(f"Failed to read config: {exc}", 500)
+        except Exception:
+            cfg_data = MatchingConfig().to_dict()
+    else:
+        cfg_data = MatchingConfig().to_dict()
 
-    # Fallback to MatchingConfig defaults
-    cfg = MatchingConfig()
-    return jsonify({"ok": True, "config": cfg.to_dict()})
+    return jsonify({"ok": True, "app_version": APP_VERSION, "config": cfg_data})
 
 
 @api_bp.route("/report-html", methods=["GET", "POST"])
@@ -1398,7 +1404,7 @@ def get_statements_list():
 def import_statement():
     invalidate_dashboard_cache()
     from frontend.api import pipeline_tracker
-    pipeline_tracker.start_pipeline("Reading & Ingesting Uploaded File...")
+    pipeline_tracker.start_pipeline("Importing...")
 
     files = request.files.getlist("file") or request.files.getlist("files")
     if not files or all(f.filename == "" for f in files):
@@ -1443,8 +1449,8 @@ def import_statement():
 
         pipeline_tracker.update_progress(
             15 + int((idx / max(1, total_files)) * 10),
-            f"Reading File: {original_name}...",
-            f"📥 Ingesting statement file ({idx + 1}/{total_files}): {original_name}",
+            "Reading File...",
+            "Ingesting statement file...",
             level="INFO"
         )
 
@@ -1466,8 +1472,8 @@ def import_statement():
 
             pipeline_tracker.update_progress(
                 25,
-                f"Extracting & Parsing {ext.upper()} Data...",
-                f"Parsing {original_name} records...",
+                "Extracting & Parsing Data...",
+                "Parsing records...",
                 level="INFO"
             )
 
@@ -1484,8 +1490,8 @@ def import_statement():
 
             pipeline_tracker.update_progress(
                 28,
-                f"Normalizing Schema: {stmt_name}...",
-                f"Mapping column headers and canonical schema for {stmt_name}...",
+                "Normalizing Schema...",
+                "Mapping field headers and canonical schema...",
                 level="INFO"
             )
 
@@ -1519,28 +1525,20 @@ def import_statement():
             })
 
     if successful_imports > 0:
+        clear_reconciliation_results()
+        invalidate_dashboard_cache()
+        _RUNS.clear()
+        _RUN_LOG.clear()
         try:
             pipeline_tracker.update_progress(
-                30,
-                "Synchronizing Database & Initializing Pipeline...",
-                "Syncing statement database and starting multi-pass reconciliation engine...",
-                level="INFO"
+                100,
+                "Statement Ingestion Done",
+                "Successfully ingested.",
+                level="SUCCESS"
             )
-            def _async_import_pipeline():
-                try:
-                    _run_backend_pipeline()
-                    run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
-                    _RUNS[run["run_id"]] = run
-                    _RUNS["latest"] = run
-                except Exception as exc:
-                    current_app.logger.warning(f"Auto pipeline run on import note: {exc}")
-
-            if current_app.config.get("TESTING"):
-                _async_import_pipeline()
-            else:
-                threading.Thread(target=_async_import_pipeline, daemon=True).start()
+            pipeline_tracker.finish_pipeline(success=True)
         except Exception as exc:
-            current_app.logger.warning(f"Auto pipeline run on import note: {exc}")
+            current_app.logger.warning(f"Pipeline tracker completion note: {exc}")
 
     first_stmt = statement_store.get_statement(results[0]["statement_id"]) if (results and results[0]["status"] == "success") else None
     return jsonify({
@@ -1558,7 +1556,7 @@ def get_statement_detail(statement_id):
         return _error("Statement not found.", 404)
     stmt_copy = dict(stmt)
     try:
-        run = _build_dashboard_run("Statement Detail Taxonomy")
+        run = _get_or_build_run()
         txns = run.get("transactions", [])
         period_settled = run.get("period_settled", False)
 
@@ -1698,6 +1696,7 @@ def load_test_case_endpoint():
     try:
         import pandas as pd
         statement_store.clear_all_statements()
+        clear_reconciliation_results()
         invalidate_dashboard_cache()
         _RUNS.clear()
         _RUN_LOG.clear()
@@ -1740,10 +1739,9 @@ def load_test_case_endpoint():
             )
             imported_count += 1
 
-        _run_backend_pipeline()
         invalidate_dashboard_cache()
-        run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
-        _RUNS[run["run_id"]] = run
+        _RUNS.clear()
+        _RUN_LOG.clear()
 
         return jsonify({
             "ok": True,
@@ -2008,6 +2006,70 @@ def _handle_upload(source):
 # --------------------------------------------------------------------------
 # Reconciliation trigger + results
 # --------------------------------------------------------------------------
+
+@api_bp.route("/reconcile/layer/<int:layer_num>", methods=["POST"])
+def run_reconciliation_layer(layer_num):
+    invalidate_dashboard_cache()
+    from frontend.api import pipeline_tracker
+    from config import MatchingConfig
+    from matcher import exact_matcher, tolerance_matcher
+    from ml import build_training_data, evaluate_confidence_model
+    from reconciler import reconcile
+    from exceptions import exception_ledger
+    from reports import generate_report
+    from agents import settlement_qa
+
+    cfg = MatchingConfig.load_with_env_overrides()
+
+    if layer_num == 1:
+        pipeline_tracker.start_pipeline("Layer 1/5: Executing Clean Exact Matcher...")
+        pipeline_tracker.update_progress(20, "Layer 1/5...", "Executing Clean Exact Matcher...", level="RULE")
+        exact_matcher.main()
+        return jsonify({"ok": True, "layer": 1, "message": "Exact Matching completed successfully."})
+
+    elif layer_num == 2:
+        pipeline_tracker.update_progress(40, "Layer 2/5...", "Executing Tolerance & Fee Matcher...", level="RULE")
+        tolerance_matcher.main()
+        return jsonify({"ok": True, "layer": 2, "message": "Tolerance & Fee Matching completed successfully."})
+
+    elif layer_num == 3:
+        pipeline_tracker.update_progress(60, "Layer 3/5...", "Evaluating ML Feature Schema & Confidence Scores...", level="ML")
+        build_training_data.main()
+        evaluate_confidence_model.main()
+        return jsonify({"ok": True, "layer": 3, "message": "ML Confidence Scoring completed successfully."})
+
+    elif layer_num == 4:
+        pipeline_tracker.update_progress(80, "Layer 4/5...", "Aggregating Reconciliation Outcomes...", level="RECON")
+        reconcile_df = reconcile.reconcile(cfg=cfg)
+        exception_ledger.main()
+        try:
+            settlement_qa.reload_data()
+        except Exception:
+            pass
+        return jsonify({"ok": True, "layer": 4, "message": "Reconciliation Outcomes & Exception Ledger aggregated successfully."})
+
+    elif layer_num == 5:
+        pipeline_tracker.update_progress(95, "Layer 5/5...", "Building Executive Audit Reports...", level="RECON")
+        try:
+            generate_report.main()
+        except Exception as exc:
+            current_app.logger.warning(f"Report generation note: {exc}")
+
+        run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+        _RUNS[run["run_id"]] = run
+        _RUNS["latest"] = run
+        pipeline_tracker.finish_pipeline(success=True)
+
+        return jsonify({
+            "ok": True,
+            "layer": 5,
+            "run_id": run["run_id"],
+            "status": "completed",
+            "message": "Cascade Reconciliation & Executive Audit Report Generation Completed Successfully."
+        })
+
+    return _error("Invalid layer number. Choose 1, 2, 3, 4, or 5.", 400)
+
 
 @api_bp.route("/reconcile", methods=["POST"])
 def trigger_reconciliation():

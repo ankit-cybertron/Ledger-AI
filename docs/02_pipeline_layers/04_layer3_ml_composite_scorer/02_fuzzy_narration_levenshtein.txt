@@ -1,0 +1,23 @@
+===============================================================================
+STAGE 04 - LAYER 3: ML COMPOSITE SCORER | STEP 02: FUZZY NARRATION & LEVENSHTEIN
+===============================================================================
+
+1. WHAT IT DOES:
+Evaluates text similarity between bank narrations (e.g. "CARD-SETL MEERA IYER MUMBAI") 
+and order description strings (e.g. "Payment for Order 8034 by Meera Iyer") 
+using token-sort ratio and Levenshtein edit distance.
+
+2. WHY IT DOES IT:
+Bank narrations shorten customer names, add branch codes, or strip vowels. Token-based 
+fuzzy matching extracts core entities (e.g. customer name "Meera Iyer") even 
+when word order or noise words differ.
+
+3. WHAT IT SOLVES:
+Solves name formatting differences between customer checkout names and bank statement 
+narration text.
+
+4. HOW IT IS USEFUL:
+Pairs transactions based on customer identity when reference codes are omitted.
+
+5. WHEN IT IS USED:
+Evaluated during narration similarity scoring in Layer 3.

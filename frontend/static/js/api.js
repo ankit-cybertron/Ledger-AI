@@ -84,6 +84,9 @@ const LedgerApi = {
     }).then(handleResponse);
   },
 
+  getStatement(statementId) {
+    return this.getStatementDetail(statementId);
+  },
   getStatementDetail(statementId) {
     return getJson(`/statements/${encodeURIComponent(statementId)}`);
   },
@@ -153,6 +156,9 @@ const LedgerApi = {
   },
   runReconciliation(options = {}) {
     return postJson("/reconcile", options);
+  },
+  runReconciliationLayer(layerNum) {
+    return postJson(`/reconcile/layer/${encodeURIComponent(layerNum)}`);
   },
   getLatestReconciliation() {
     return getJson("/reconciliation");
