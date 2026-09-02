@@ -1179,8 +1179,117 @@
   </div>
 
   <!-- ------------------------------------------------------------ -->
-  <!-- Delete Column Modal Pop-Up -->
+  <!-- Recurring Pattern History & Projected Forecast Modal -->
   <!-- ------------------------------------------------------------ -->
+  <div class="compare-modal-backdrop" id="patternDetailsModalBackdrop" style="display:none;">
+    <div class="compare-modal-card" style="max-width: 920px; width: 95%;">
+      <div class="compare-modal-header">
+        <div class="compare-modal-title">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span id="patternModalTitle">Recurring Pattern Analytics</span>
+          </h3>
+          <p class="compare-subtitle" id="patternModalSubtitle" style="margin-top: 4px;">Historical occurrence timeline & future projected schedule</p>
+        </div>
+        <button type="button" class="compare-modal-close" id="closePatternDetailsModalBtn" title="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="compare-modal-body" style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+        <!-- Key Metric Highlights Cards -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+          <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-lg, 8px); border: 1px solid var(--border);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Average Amount</div>
+            <div id="patternModalAvgAmt" style="font-size: 16px; font-weight: 700; color: var(--color-success); font-family: var(--font-mono); margin-top: 4px;">-</div>
+          </div>
+          <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-lg, 8px); border: 1px solid var(--border);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Cadence & Gap</div>
+            <div id="patternModalCadence" style="font-size: 15px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">-</div>
+          </div>
+          <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-lg, 8px); border: 1px solid var(--border);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Historical Hits</div>
+            <div id="patternModalOccurrences" style="font-size: 16px; font-weight: 700; color: var(--accent-blue); margin-top: 4px;">-</div>
+          </div>
+          <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-lg, 8px); border: 1px solid var(--border);">
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Next Due Date</div>
+            <div id="patternModalNextExpected" style="font-size: 15px; font-weight: 700; color: var(--color-warning); font-family: var(--font-mono); margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <!-- Visualization Chart Box -->
+        <div style="background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Historical & Projected Occurrence Timeline
+            </h4>
+            <span style="font-size: 11px; color: var(--text-muted);">Green = Historical Past | Purple = Projected Future</span>
+          </div>
+          <div style="height: 230px; position: relative;">
+            <canvas id="patternTimelineChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Tables Section: Past History vs Future Projections -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Left: Past History -->
+          <div style="background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); padding: 14px;">
+            <h4 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Past Historical Occurrences
+            </h4>
+            <div style="max-height: 220px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                  <tr style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    <th style="padding: 4px; text-align: left;">Date</th>
+                    <th style="padding: 4px; text-align: left;">Description</th>
+                    <th style="padding: 4px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="patternModalHistoryTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right: Future Projections -->
+          <div style="background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg, 8px); padding: 14px;">
+            <h4 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-ai)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              Projected Future Schedule
+            </h4>
+            <div style="max-height: 220px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                  <tr style="color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    <th style="padding: 4px; text-align: left;">Expected Date</th>
+                    <th style="padding: 4px; text-align: center;">Status</th>
+                    <th style="padding: 4px; text-align: right;">Est. Amount</th>
+                    <th style="padding: 4px; text-align: right;">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody id="patternModalFutureTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compare-modal-footer" style="padding: 12px 20px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" id="closePatternDetailsModalFooterBtn">Close Analytics</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Column Modal Pop-Up -->
   <div class="compare-modal-backdrop" id="deleteColumnModalBackdrop" style="display:none;">
     <div class="compare-modal-card" style="max-width: 480px;">
       <div class="compare-modal-header">

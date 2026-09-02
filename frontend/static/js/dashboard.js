@@ -5880,16 +5880,17 @@
       if (recCntEl) recCntEl.textContent = data.recurring_patterns?.length || 0;
 
       // Update Recurring Patterns Table
+      window._currentForecastPatterns = data.recurring_patterns || [];
       const patternsBody = document.getElementById("forecastPatternsTableBody");
       if (patternsBody) {
         if (!data.recurring_patterns || data.recurring_patterns.length === 0) {
           patternsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No recurring patterns detected.</td></tr>`;
         } else {
-          patternsBody.innerHTML = data.recurring_patterns.map(p => {
+          patternsBody.innerHTML = data.recurring_patterns.map((p, idx) => {
             const flowColor = p.avg_amount < 0 ? "#ef4444" : "#10b981";
             const confidencePct = Math.round(p.confidence * 100);
             return `
-              <tr style="border-bottom:1px solid var(--border); transition: background-color 0.2s;">
+              <tr class="pattern-row-clickable" data-pattern-idx="${idx}" style="border-bottom:1px solid var(--border); cursor:pointer; transition: background-color 0.2s;" title="Click to view history timeline & projected dates">
                 <td style="padding:10px 4px;">
                   <div style="font-weight:600; color:var(--text-primary); max-width: 180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.sample_desc}">${p.label}</div>
                   <div style="font-size:10px; color:var(--text-muted); max-width: 180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.sample_desc}</div>
@@ -5903,6 +5904,14 @@
               </tr>
             `;
           }).join("");
+
+          patternsBody.querySelectorAll(".pattern-row-clickable").forEach((row) => {
+            row.addEventListener("click", () => {
+              const idx = parseInt(row.dataset.patternIdx, 10);
+              const p = window._currentForecastPatterns[idx];
+              if (p) openPatternDetailsModal(p);
+            });
+          });
         }
       }
 
@@ -6199,6 +6208,167 @@
     }
   };
 
+  window.openPatternDetailsModal = function (p) {
+    if (!p) return;
+
+    const backdrop = document.getElementById("patternDetailsModalBackdrop");
+    if (!backdrop) return;
+
+    // Header & Meta
+    document.getElementById("patternModalTitle").textContent = p.label || "Recurring Pattern Analytics";
+    document.getElementById("patternModalSubtitle").textContent = `Pattern: "${p.sample_desc || ''}" | Cadence: ${p.cadence_label || 'Weekly'} (${p.occurrences || 0} past hits)`;
+
+    // KPI Cards
+    const avgColor = p.avg_amount < 0 ? "#ef4444" : "#10b981";
+    const avgAmtEl = document.getElementById("patternModalAvgAmt");
+    if (avgAmtEl) {
+      avgAmtEl.style.color = avgColor;
+      avgAmtEl.textContent = `${p.currency || 'INR'} ${p.avg_amount < 0 ? '-' : ''}${Math.abs(p.avg_amount).toFixed(2)}`;
+    }
+    const cadEl = document.getElementById("patternModalCadence");
+    if (cadEl) cadEl.textContent = `${p.cadence_label || 'Weekly'} (${p.cadence_days || 7}d gap)`;
+
+    const occEl = document.getElementById("patternModalOccurrences");
+    if (occEl) occEl.textContent = `${p.occurrences || 0} hits`;
+
+    const nextEl = document.getElementById("patternModalNextExpected");
+    if (nextEl) nextEl.textContent = formatDateDDMMYYYY(p.next_expected);
+
+    // Populate History Table
+    const histBody = document.getElementById("patternModalHistoryTableBody");
+    if (histBody) {
+      const history = p.history || [];
+      if (history.length === 0) {
+        histBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted);">No historical occurrence data.</td></tr>`;
+      } else {
+        histBody.innerHTML = history.map(h => {
+          const amtColor = h.amount < 0 ? "#ef4444" : "#10b981";
+          return `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:6px 4px; font-family:var(--font-mono); font-weight:600; color:var(--text-secondary);">${formatDateDDMMYYYY(h.date)}</td>
+              <td style="padding:6px 4px; color:var(--text-primary); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(h.description)}">${escapeHtml(h.description)}</td>
+              <td style="padding:6px 4px; text-align:right; font-family:var(--font-mono); font-weight:600; color:${amtColor};">${h.amount < 0 ? '-' : ''}${Math.abs(h.amount).toFixed(2)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // Populate Future Projections Table
+    const futBody = document.getElementById("patternModalFutureTableBody");
+    if (futBody) {
+      const projections = p.future_projections || [];
+      if (projections.length === 0) {
+        futBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:var(--text-muted);">No future projection available.</td></tr>`;
+      } else {
+        futBody.innerHTML = projections.map(fp => {
+          const amtColor = fp.estimated_amount < 0 ? "#ef4444" : "#10b981";
+          return `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:6px 4px; font-family:var(--font-mono); font-weight:600; color:var(--text-primary);">${formatDateDDMMYYYY(fp.date)}</td>
+              <td style="padding:6px 4px; text-align:center;"><span style="padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px; background:rgba(139,92,246,0.15); color:#8b5cf6;">${fp.status}</span></td>
+              <td style="padding:6px 4px; text-align:right; font-family:var(--font-mono); font-weight:600; color:${amtColor};">${fp.estimated_amount < 0 ? '-' : ''}${Math.abs(fp.estimated_amount).toFixed(2)}</td>
+              <td style="padding:6px 4px; text-align:right;"><span style="padding:2px 6px; border-radius:4px; font-weight:600; font-size:10px; background:rgba(59,130,246,0.1); color:#3b82f6;">${fp.confidence}%</span></td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+
+    // Render Timeline Chart
+    renderPatternTimelineChart(p);
+
+    backdrop.style.display = "flex";
+  };
+
+  function renderPatternTimelineChart(p) {
+    const canvas = document.getElementById("patternTimelineChartCanvas");
+    if (!canvas) return;
+
+    if (window.patternTimelineChartInstance) {
+      window.patternTimelineChartInstance.destroy();
+      window.patternTimelineChartInstance = null;
+    }
+
+    const history = p.history || [];
+    const projections = p.future_projections || [];
+
+    const labels = [
+      ...history.map(h => formatDateDDMMYYYY(h.date)),
+      ...projections.map(fp => formatDateDDMMYYYY(fp.date))
+    ];
+
+    const histData = [
+      ...history.map(h => Math.abs(h.amount)),
+      ...projections.map(() => null)
+    ];
+
+    const projData = [
+      ...history.map(() => null),
+      ...projections.map(fp => Math.abs(fp.estimated_amount))
+    ];
+
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+    const textMutedColor = isLight ? "#475569" : "#8B929C";
+    const gridColor = isLight ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.05)";
+    const histBarColor = isLight ? "rgba(22, 163, 74, 0.75)" : "rgba(50, 196, 141, 0.7)";
+    const histBorderColor = isLight ? "#16A34A" : "#32C48D";
+    const projBarColor = isLight ? "rgba(109, 40, 217, 0.55)" : "rgba(155, 114, 248, 0.5)";
+    const projBorderColor = isLight ? "#6D28D9" : "#9B72F8";
+
+    const ctx = canvas.getContext("2d");
+    window.patternTimelineChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Historical Past Occurrence",
+            data: histData,
+            backgroundColor: histBarColor,
+            borderColor: histBorderColor,
+            borderWidth: 2,
+            borderRadius: 4,
+          },
+          {
+            label: "Projected Future Occurrence",
+            data: projData,
+            backgroundColor: projBarColor,
+            borderColor: projBorderColor,
+            borderWidth: 2,
+            borderDash: [4, 4],
+            borderRadius: 4,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: textMutedColor, font: { size: 11, weight: "600" } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${p.currency || 'INR'} ${ctx.raw ? ctx.raw.toFixed(2) : '0.00'}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: textMutedColor, font: { size: 10 } }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: textMutedColor, font: { size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
   function initForecastModalHandlers() {
     const fdModal = document.getElementById("forecastDayDetailsModalBackdrop");
     const closeFdBtn = document.getElementById("closeFdModalBtn");
@@ -6211,6 +6381,21 @@
     if (fdModal) {
       fdModal.addEventListener("click", (e) => {
         if (e.target === fdModal) closeFdModal();
+      });
+    }
+
+    // Pattern Modal Handlers
+    const patModal = document.getElementById("patternDetailsModalBackdrop");
+    const closePatBtn = document.getElementById("closePatternDetailsModalBtn");
+    const closePatFooterBtn = document.getElementById("closePatternDetailsModalFooterBtn");
+    const closePatModal = () => {
+      if (patModal) patModal.style.display = "none";
+    };
+    if (closePatBtn) closePatBtn.addEventListener("click", closePatModal);
+    if (closePatFooterBtn) closePatFooterBtn.addEventListener("click", closePatModal);
+    if (patModal) {
+      patModal.addEventListener("click", (e) => {
+        if (e.target === patModal) closePatModal();
       });
     }
   }

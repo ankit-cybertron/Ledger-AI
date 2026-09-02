@@ -213,17 +213,44 @@ def detect_recurring_patterns(
         avg_dev = sum(deviations) / len(deviations) if deviations else cadence
         confidence = max(0.0, min(1.0, 1.0 - (avg_dev / cadence)))
 
+        # Compute history occurrences list
+        history = [
+            {
+                "date": e["date"].strftime("%Y-%m-%d"),
+                "amount": round(float(e["amount"]), 2),
+                "description": str(e["desc"])[:140]
+            }
+            for e in entries
+        ]
+
+        # Compute projected future occurrences (next 5 occurrences)
+        future_projections = []
+        proj_date = last_date
+        for step in range(1, 6):
+            proj_date += timedelta(days=cadence)
+            future_projections.append({
+                "date": proj_date.strftime("%Y-%m-%d"),
+                "estimated_amount": round(avg_amt, 2),
+                "status": "Expected" if step == 1 else "Projected",
+                "confidence": max(10, min(99, round(confidence * 100 - (step - 1) * 3)))
+            })
+
         patterns.append({
             "label": label[:80],
             "sample_desc": entries[0]["desc"][:120],
             "cadence_days": cadence,
             "cadence_label": _cadence_label(cadence),
             "avg_amount": round(avg_amt, 2),
+            "min_amount": round(min(amounts), 2),
+            "max_amount": round(max(amounts), 2),
+            "total_volume": round(sum(amounts), 2),
             "occurrences": len(entries),
             "last_date": last_date.strftime("%Y-%m-%d"),
             "next_expected": next_expected.strftime("%Y-%m-%d"),
             "confidence": round(confidence, 3),
             "currency": _detect_currency(entries[0], label + " " + entries[0]["desc"]),
+            "history": history,
+            "future_projections": future_projections,
         })
 
     patterns.sort(key=lambda p: abs(p["avg_amount"]), reverse=True)
