@@ -238,7 +238,16 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
                             })
 
     # Pass 2: Counterpart vs Counterpart (or Multi-Source Pairwise matching if no primary statement)
-    match_sources = cnt_stmts if pri_stmts else all_stmts
+    def _stmt_priority(s):
+        name = (s.get("name") or "").lower()
+        if "order" in name or "book" in name:
+            return 0
+        if "transaction" in name or "upi" in name or "gateway" in name:
+            return 1
+        return 2
+
+    raw_match_sources = cnt_stmts if pri_stmts else all_stmts
+    match_sources = sorted(raw_match_sources, key=_stmt_priority)
     for i in range(len(match_sources)):
         for j in range(i + 1, len(match_sources)):
             s1 = match_sources[i]

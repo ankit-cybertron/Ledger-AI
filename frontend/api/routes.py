@@ -772,13 +772,6 @@ def _build_dashboard_run(period_label="Current Period"):
             "charts": empty_charts,
         }
 
-    results_csv_path = os.path.join(RESULTS_DIR, "reconciliation_results.csv")
-    if not os.path.exists(results_csv_path) or os.path.getsize(results_csv_path) == 0:
-        try:
-            _run_backend_pipeline()
-        except Exception as exc:
-            _log_warning(f"Auto pipeline execution in _build_dashboard_run note: {exc}")
-
     results = read_csv_rows("results/reconciliation_results.csv")
     raw_exceptions = read_csv_rows("results/exception_ledger.csv")
 
@@ -1012,10 +1005,10 @@ def _build_dashboard_run(period_label="Current Period"):
                 if similar_results:
                     top_cand = similar_results[0]
                     cand_id = str(top_cand["candidate_id"]).strip()
-                    status_val = "similar"
                     conf_val = float(top_cand["similarity_score"])
+                    status_val = "matched" if conf_val >= 0.80 else "similar"
                     m_features = ", ".join(top_cand.get("matching_features", []))
-                    rule_val = f"Similar Candidate ({cand_id}): {m_features}"
+                    rule_val = f"High Confidence Candidate ({cand_id}): {m_features}" if status_val == "matched" else f"Similar Candidate ({cand_id}): {m_features}"
 
                     cand_amt = top_cand.get("amount")
                     cand_date = top_cand.get("date")
@@ -1553,13 +1546,13 @@ def import_statement():
             _run_backend_pipeline()
             pipeline_tracker.update_progress(
                 100,
-                "Statement Ingestion & Cascade Matching Done",
-                "Successfully ingested and reconciled statements.",
+                "Statement Ingestion Done",
+                "Successfully ingested.",
                 level="SUCCESS"
             )
             pipeline_tracker.finish_pipeline(success=True)
         except Exception as exc:
-            current_app.logger.warning(f"Pipeline execution after import note: {exc}")
+            current_app.logger.warning(f"Pipeline tracker completion note: {exc}")
 
     first_stmt = statement_store.get_statement(results[0]["statement_id"]) if (results and results[0]["status"] == "success") else None
     return jsonify({
@@ -1785,7 +1778,7 @@ def load_test_case_endpoint():
         try:
             _run_backend_pipeline()
         except Exception as exc:
-            current_app.logger.warning(f"Pipeline run on load test case note: {exc}")
+            current_app.logger.warning(f"Auto pipeline run on load_testcase note: {exc}")
 
         return jsonify({
             "ok": True,

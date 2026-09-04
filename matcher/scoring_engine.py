@@ -77,6 +77,12 @@ def compute_confidence(evidence: MatchEvidence, cfg: Optional[MatchingConfig] = 
     # Weighted Total Score
     total_score = (s_id * w_id) + (s_amt * w_amt) + (s_date * w_date) + (s_narr * w_narr)
 
+    # High Confidence Floors: Exact Identifier or Exact Amount + 0-Day Date Parity
+    if s_id >= 0.95:
+        total_score = max(total_score, 0.85)
+    elif s_amt == 1.00 and s_date == 1.00:
+        total_score = max(total_score, 0.85)
+
     # Incompatibility penalty
     if not evidence.currency_match or not evidence.direction_match:
         penalty = float(getattr(cfg, "incompatibility_penalty", 0.50))

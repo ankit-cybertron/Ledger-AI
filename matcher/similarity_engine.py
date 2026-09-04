@@ -58,17 +58,24 @@ def find_similar_candidates(
             matching_features.append("within_amount_tolerance")
 
         # Identifier check
+        min_id_len = getattr(cfg, "minimum_identifier_length", 5)
         id_type = "none"
-        if tx_target.utr and tx_cand.utr and str(tx_target.utr).strip().lower() == str(tx_cand.utr).strip().lower():
+        
+        t_utr_norm = str(tx_target.utr or "").strip().lower()
+        c_utr_norm = str(tx_cand.utr or "").strip().lower()
+        t_ord_norm = str(tx_target.order_id or "").strip().lower()
+        c_ord_norm = str(tx_cand.order_id or "").strip().lower()
+
+        if t_utr_norm and c_utr_norm and len(t_utr_norm) >= min_id_len and t_utr_norm == c_utr_norm:
             id_type = "exact_utr"
             matching_features.append("exact_utr")
-        elif tx_target.order_id and tx_cand.order_id and str(tx_target.order_id).strip().lower() == str(tx_cand.order_id).strip().lower():
+        elif t_ord_norm and c_ord_norm and len(t_ord_norm) >= min_id_len and t_ord_norm == c_ord_norm:
             id_type = "exact_order_id"
             matching_features.append("exact_order_id")
         elif tx_target.description and tx_cand.description:
             t_desc = str(tx_target.description).upper().strip()
             c_desc = str(tx_cand.description).upper().strip()
-            if t_desc in c_desc or c_desc in t_desc:
+            if len(t_desc) >= 4 and len(c_desc) >= 4 and (t_desc in c_desc or c_desc in t_desc):
                 id_type = "partial"
                 matching_features.append("partial_narration_match")
 
@@ -86,18 +93,8 @@ def find_similar_candidates(
         if id_type != "none" and amt_diff > 0.0:
             matching_features.append(f"fee_variance_₹{amt_diff:.2f}")
 
-        # Ignore generic descriptions for narration similarity ("transaction", "payment", "transfer", "neft", "upi", "imps", etc.)
-        GENERIC_DESCS = {"transaction", "payment", "transfer", "neft", "upi", "imps", "bank", "credit", "debit", "na", "nan", "none", ""}
-        t_desc_clean = (tx_target.description or "").strip().lower()
-        c_desc_clean = (tx_cand.description or "").strip().lower()
-        is_generic_desc = (not t_desc_clean or t_desc_clean in GENERIC_DESCS) and (not c_desc_clean or c_desc_clean in GENERIC_DESCS)
-
-        # Require a real matching signal (identifier, amount match, or non-generic narration similarity)
-        has_strong_id = id_type in ("exact_utr", "exact_order_id", "partial")
-        has_amount_match = "exact_amount" in matching_features or "within_amount_tolerance" in matching_features
-        has_high_narr_sim = narr_sim >= 0.70 and not is_generic_desc
-
-        if not (has_strong_id or (has_amount_match and (has_high_narr_sim or ddiff <= 3))):
+        # Need at least amount closeness or identifier or narration match to be SIMILAR
+        if not matching_features:
             continue
 
         evidence = MatchEvidence(

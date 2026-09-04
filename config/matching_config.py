@@ -65,7 +65,10 @@ class MatchingConfig:
     n_to_1_confidence: float = 0.95
     n_to_n_confidence: float = 0.90
     utr_prefix_strip_list: tuple = (
-        "NEFTCR-", "NEFTCR", "NEFT-", "NEFT", "UPI-", "UPI", "UTR-", "UTR", "GPAY-", "GPAY", "PAYTM-", "RAZORPAY-", "SETTLEMENT-", "INB-", "REF:"
+        "NEFTCR-", "NEFTCR", "NEFT-", "NEFT",
+        "RTGSCR-", "RTGSCR", "RTGS-", "RTGS",
+        "IMPSCR-", "IMPSCR", "IMPS-", "IMPS",
+        "UPI-", "UPI", "UTR-", "UTR", "GPAY-", "GPAY", "PAYTM-", "RAZORPAY-", "SETTLEMENT-", "INB-", "REF:", "REF-", "REF"
     )
     minimum_identifier_length: int = 5
     date_diff_error_sentinel: int = 999

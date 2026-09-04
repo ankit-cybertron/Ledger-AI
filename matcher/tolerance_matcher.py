@@ -10,6 +10,7 @@ Extends tolerance matching logic for primary vs counterpart transaction sets:
 """
 
 import re
+import math
 from pathlib import Path
 from difflib import SequenceMatcher
 from typing import Optional, List, Any, Dict, Tuple, Union
@@ -80,6 +81,14 @@ def get_date_diff(d1: Optional[str], d2: Optional[str], cfg: MatchingConfig) -> 
         return sentinel
 
 
+BANK_STOPWORDS = {
+    "upi", "neft", "imps", "rtgs", "transfer", "payment", "to", "from",
+    "pvt", "ltd", "bank", "ref", "no", "direct", "debit", "credit",
+    "rs", "inr", "tx", "txn", "val", "by", "dr", "cr", "a", "c", "ac",
+    "account", "paid", "received", "order", "id", "bill", "chq", "cheque"
+}
+
+
 def normalize_text(value: Any) -> str:
     """Normalizes text by stripping whitespace and converting to uppercase."""
     if pd.isna(value) or value is None:
@@ -99,8 +108,12 @@ def narration_similarity(left: Any, right: Any) -> float:
     norm_right = normalize_text(s_right)
     seq_ratio = SequenceMatcher(None, norm_left, norm_right).ratio() if norm_left and norm_right else 0.0
 
-    tokens_left = set(re.findall(r"\w+", s_left.lower()))
-    tokens_right = set(re.findall(r"\w+", s_right.lower()))
+    raw_tokens_left = set(re.findall(r"\w+", s_left.lower()))
+    raw_tokens_right = set(re.findall(r"\w+", s_right.lower()))
+
+    # Filter out ubiquitous banking stop-words to eliminate false positive narration overlaps
+    tokens_left = {t for t in raw_tokens_left if t not in BANK_STOPWORDS and not t.isdigit()} or raw_tokens_left
+    tokens_right = {t for t in raw_tokens_right if t not in BANK_STOPWORDS and not t.isdigit()} or raw_tokens_right
 
     jaccard_score = 0.0
     if tokens_left and tokens_right:
@@ -190,12 +203,12 @@ def tolerance_match(
 
             c_amt = expected_net(tx_c, cfg)
             amt_diff = abs(p_amt - c_amt)
-            if amt_diff > eff_tol:
+            if math.isnan(amt_diff) or pd.isna(amt_diff) or amt_diff > eff_tol:
                 # Also check gross vs expected net if fee_aware_matching is enabled (T22.1)
-                if cfg.fee_aware_matching and tx_c.gross_amount is not None:
+                if cfg.fee_aware_matching and pd.notna(tx_c.gross_amount):
                     c_exp_net = expected_net(tx_c, cfg)
                     amt_diff = abs(p_amt - c_exp_net)
-                if amt_diff > eff_tol:
+                if math.isnan(amt_diff) or pd.isna(amt_diff) or amt_diff > eff_tol:
                     continue
 
             ddiff = get_date_diff(tx_p.transaction_date, tx_c.transaction_date, cfg)
@@ -251,6 +264,11 @@ def tolerance_match(
             narration_similarity=best["narration_similarity"]
         )
         conf = compute_confidence(ev, cfg)
+
+        # Enforce confidence floor for tolerance match
+        min_conf_floor = getattr(cfg, "source_confidence_needs_confirmation", 0.60)
+        if conf < min_conf_floor:
+            continue
 
         matches.append({
             "primary_transaction_id": best["primary_transaction_id"],

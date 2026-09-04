@@ -21,6 +21,7 @@ html, body {
     linear-gradient(rgba(120, 140, 180, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(120, 140, 180, 0.05) 1px, transparent 1px);
   background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 40%, transparent 90%);
   mask-image: radial-gradient(ellipse 80% 60% at 50% 20%, black 40%, transparent 90%);
   z-index: 0;
   pointer-events: none;
@@ -163,7 +164,9 @@ html, body {
 .headline .ghost {
   background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
   font-style: normal;
   font-weight: 800;
 }

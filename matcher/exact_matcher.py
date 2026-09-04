@@ -50,10 +50,20 @@ def _norm_str(text: Any, prefix_list: Optional[tuple] = None) -> str:
     if pd.isna(text) or text is None:
         return ""
     s = str(text).upper().strip()
-    prefixes = prefix_list or ("NEFTCR-", "NEFTCR", "NEFT-", "NEFT", "UPI-", "UPI", "UTR-", "UTR", "GPAY-", "GPAY", "REF:")
-    for prefix in prefixes:
-        if s.startswith(prefix):
-            s = s[len(prefix):]
+    prefixes = prefix_list or (
+        "NEFTCR-", "NEFTCR", "NEFT-", "NEFT",
+        "RTGSCR-", "RTGSCR", "RTGS-", "RTGS",
+        "IMPSCR-", "IMPSCR", "IMPS-", "IMPS",
+        "UPI-", "UPI", "UTR-", "UTR", "GPAY-", "GPAY",
+        "REF:", "REF-", "REF", "CARD-", "CARD", "AUTH-", "AUTH"
+    )
+    changed = True
+    while changed:
+        changed = False
+        for prefix in prefixes:
+            if s.startswith(prefix):
+                s = s[len(prefix):]
+                changed = True
     return "".join(c for c in s if c.isalnum())
 
 
@@ -74,6 +84,20 @@ def _to_canonical_list(items: Union[pd.DataFrame, List[Any]], fallback_prefix: s
     if isinstance(items, pd.DataFrame):
         return [row_to_canonical(row, fallback_prefix) for _, row in items.iterrows()]
     return [row_to_canonical(item, fallback_prefix) for item in items]
+
+
+def _amounts_compatible_1to1(tx_p: CanonicalTransaction, tx_c: CanonicalTransaction, cfg: MatchingConfig) -> bool:
+    p_amt = float(tx_p.net_amount or 0.0)
+    c_amt = float(tx_c.net_amount or 0.0)
+    p_abs = abs(p_amt)
+    c_abs = abs(c_amt)
+    if p_abs == 0.0 or c_abs == 0.0:
+        return True
+    diff = abs(p_abs - c_abs)
+    if diff <= cfg.absolute_amount_tolerance:
+        return True
+    fee_tol = max(cfg.max_tolerance_cap or 100.0, max(p_abs, c_abs) * (cfg.percentage_tolerance or 0.05))
+    return diff <= fee_tol
 
 
 def exact_match(
@@ -114,8 +138,9 @@ def exact_match(
         if not available_cnt:
             break
 
-        p_order_norm = _norm_str(tx_p.order_id or tx_p.transaction_id, prefixes)
-        p_utr_norm = _norm_str(tx_p.utr or tx_p.transaction_id, prefixes)
+        p_utr_norm = _norm_str(tx_p.utr, prefixes)
+        p_order_norm = _norm_str(tx_p.order_id, prefixes)
+        p_txid_norm = _norm_str(tx_p.transaction_id, prefixes)
         p_rrn_norm = _norm_str(tx_p.rrn, prefixes)
         p_gw_norm = _norm_str(tx_p.gateway_reference, prefixes)
         p_auth_norm = _norm_str(tx_p.auth_code, prefixes)
@@ -128,40 +153,46 @@ def exact_match(
             if not candidates_compatible(tx_p, tx_c):
                 continue
 
+            if not _amounts_compatible_1to1(tx_p, tx_c, cfg):
+                continue
+
             p_desc_norm = _norm_str(tx_p.description, prefixes)
             c_desc_norm = _norm_str(tx_c.description, prefixes)
-            c_utr_norm = _norm_str(tx_c.utr or tx_c.transaction_id, prefixes)
+            c_utr_norm = _norm_str(tx_c.utr, prefixes)
+            c_order_norm = _norm_str(tx_c.order_id, prefixes)
+            c_txid_norm = _norm_str(tx_c.transaction_id, prefixes)
             c_rrn_norm = _norm_str(tx_c.rrn, prefixes)
             c_gw_norm = _norm_str(tx_c.gateway_reference, prefixes)
             c_auth_norm = _norm_str(tx_c.auth_code, prefixes)
-            c_order_norm = _norm_str(tx_c.order_id or tx_c.transaction_id, prefixes)
             c_settl_norm = _norm_str(tx_c.settlement_id, prefixes)
 
             # Check UTR match
             if (p_utr_norm and len(p_utr_norm) >= min_len and (p_utr_norm == c_utr_norm or p_utr_norm in c_desc_norm)) or \
-               (c_utr_norm and len(c_utr_norm) >= min_len and c_utr_norm in p_desc_norm):
+               (c_utr_norm and len(c_utr_norm) >= min_len and (c_utr_norm == p_utr_norm or c_utr_norm in p_desc_norm)):
                 matched_cnt_target = (tx_c, "exact_utr_match", 1.00)
                 break
             # Check RRN match
             elif (p_rrn_norm and len(p_rrn_norm) >= min_len and (p_rrn_norm == c_rrn_norm or p_rrn_norm in c_desc_norm)) or \
-                 (c_rrn_norm and len(c_rrn_norm) >= min_len and c_rrn_norm in p_desc_norm):
+                  (c_rrn_norm and len(c_rrn_norm) >= min_len and c_rrn_norm in p_desc_norm):
                 matched_cnt_target = (tx_c, "exact_rrn_match", 1.00)
                 break
             # Check Gateway Ref match
             elif (p_gw_norm and len(p_gw_norm) >= min_len and (p_gw_norm == c_gw_norm or p_gw_norm in c_desc_norm)) or \
-                 (c_gw_norm and len(c_gw_norm) >= min_len and c_gw_norm in p_desc_norm):
+                  (c_gw_norm and len(c_gw_norm) >= min_len and c_gw_norm in p_desc_norm):
                 matched_cnt_target = (tx_c, "exact_gateway_ref_match", 1.00)
                 break
             # Check Auth Code match
             elif (p_auth_norm and len(p_auth_norm) >= min_len and (p_auth_norm == c_auth_norm or p_auth_norm in c_desc_norm)) or \
-                 (c_auth_norm and len(c_auth_norm) >= min_len and c_auth_norm in p_desc_norm):
+                  (c_auth_norm and len(c_auth_norm) >= min_len and c_auth_norm in p_desc_norm):
                 matched_cnt_target = (tx_c, "exact_auth_code_match", 1.00)
                 break
-            # Check Order ID / Settlement ID match
+            # Check Order ID / Settlement ID / Direct Transaction ID match
             elif (p_order_norm and len(p_order_norm) >= min_len and (p_order_norm == c_order_norm or p_order_norm in c_desc_norm)) or \
-                 (c_order_norm and len(c_order_norm) >= min_len and c_order_norm in p_desc_norm) or \
-                 (p_settl_norm and len(p_settl_norm) >= min_len and (p_settl_norm == c_settl_norm or p_settl_norm in c_desc_norm)) or \
-                 (c_settl_norm and len(c_settl_norm) >= min_len and c_settl_norm in p_desc_norm):
+                  (c_order_norm and len(c_order_norm) >= min_len and (c_order_norm == p_order_norm or c_order_norm in p_desc_norm)) or \
+                  (p_settl_norm and len(p_settl_norm) >= min_len and (p_settl_norm == c_settl_norm or p_settl_norm in c_desc_norm)) or \
+                  (c_settl_norm and len(c_settl_norm) >= min_len and (c_settl_norm == p_settl_norm or c_settl_norm in p_desc_norm)) or \
+                  (p_txid_norm and len(p_txid_norm) >= min_len and (p_txid_norm == c_txid_norm or p_txid_norm == c_order_norm or p_txid_norm == c_utr_norm)) or \
+                  (c_txid_norm and len(c_txid_norm) >= min_len and (c_txid_norm == p_order_norm or c_txid_norm == p_utr_norm)):
                 matched_cnt_target = (tx_c, "exact_order_id_match", 1.00)
                 break
 

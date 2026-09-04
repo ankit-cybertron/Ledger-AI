@@ -73,19 +73,6 @@
 
 ---
 
-### Commit: `feat(v2.12): optimize side-by-side record comparison, keyword intelligence, and kill switch reset`
-* **Problem**: 
-  1. The Side-by-Side Record Comparison modal had overflow layout issues and displayed empty visualization panels for unmatched records without a counterpart.
-  2. The space under the interactive multi-parameter visualization suite was unutilized.
-  3. Clicking the Clear / Delete Data button did not immediately cancel active backend pipeline executions or reset the application state.
-* **How We Fixed It**: 
-  1. **Adaptive Grid Modal System (`.is-unmatched`)**: Implemented responsive dual-column grid (`1160px` for matched transactions) and automatic single-column compact mode (`760px`) for unmatched records, hiding empty chart/keyword columns.
-  2. **Radar Chart Default**: Set Radar/Spider chart as default for multi-parameter comparison across 5 dimensions.
-  3. **Shared Keywords & Field Overlaps Engine**: Added `populateCompareKeywordIntelligence` below the chart section to dynamically extract shared tokens (`kw-pill-shared`), filter financial stop words, and display verified field overlap breakdown chips (`chip-exact`, `chip-linked`).
-  4. **Delete & Clear Data Kill Switch**: Integrated `pipeline_tracker.finish_pipeline()` and `reset_tracker()` into `/api/clear_all_data` and statement deletion handlers. On frontend, clear buttons abort client polling loops and force a complete page reload (`window.location.reload()`) for a clean session reset.
-
----
-
 ### Commit: `fix(style): resolve vendor-prefixed CSS lint error & add standard property fallbacks`
 * **Problem**: 
   `frontend/static/css/style.css` generated linter errors due to vendor-prefixed CSS properties (`-webkit-background-clip: text;` and `-webkit-text-fill-color: transparent;`) missing standard W3C equivalents (`background-clip: text;` and `color: transparent;`). Additionally, `.bg-grid` lacked `-webkit-mask-image`.
@@ -146,5 +133,4 @@
   1. Updated `matcher/scoring_engine.py` to enforce a `0.85` minimum confidence floor for exact identifier matches (`s_id >= 0.95`) and 0.00 amount delta / 0-day date parity matches (`s_amt == 1.0` and `s_date == 1.0`).
   2. Added automatic `_run_backend_pipeline()` execution to `import_statement` and `load_testcase_endpoint` in `frontend/api/routes.py`.
   3. Reduced `SIMILAR` count to **0**, promoting all 18 remaining similarity candidates into verified `MATCHED` status.
-
 
