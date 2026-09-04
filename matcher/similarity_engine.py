@@ -86,8 +86,18 @@ def find_similar_candidates(
         if id_type != "none" and amt_diff > 0.0:
             matching_features.append(f"fee_variance_₹{amt_diff:.2f}")
 
-        # Need at least amount closeness or identifier or narration match to be SIMILAR
-        if not matching_features:
+        # Ignore generic descriptions for narration similarity ("transaction", "payment", "transfer", "neft", "upi", "imps", etc.)
+        GENERIC_DESCS = {"transaction", "payment", "transfer", "neft", "upi", "imps", "bank", "credit", "debit", "na", "nan", "none", ""}
+        t_desc_clean = (tx_target.description or "").strip().lower()
+        c_desc_clean = (tx_cand.description or "").strip().lower()
+        is_generic_desc = (not t_desc_clean or t_desc_clean in GENERIC_DESCS) and (not c_desc_clean or c_desc_clean in GENERIC_DESCS)
+
+        # Require a real matching signal (identifier, amount match, or non-generic narration similarity)
+        has_strong_id = id_type in ("exact_utr", "exact_order_id", "partial")
+        has_amount_match = "exact_amount" in matching_features or "within_amount_tolerance" in matching_features
+        has_high_narr_sim = narr_sim >= 0.70 and not is_generic_desc
+
+        if not (has_strong_id or (has_amount_match and (has_high_narr_sim or ddiff <= 3))):
             continue
 
         evidence = MatchEvidence(
