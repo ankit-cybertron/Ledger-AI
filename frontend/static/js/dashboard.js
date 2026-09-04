@@ -108,6 +108,9 @@
 
   function activateSub(subId) {
     if (subId === "sub-reconciliation") subId = "sub-reconcile";
+    if (subId !== "sub-statement-view") {
+      window.activeSubTabId = subId;
+    }
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === subId));
     document.querySelectorAll(".sub-tab").forEach((t) => t.classList.toggle("active", t.dataset.sub === subId));
     document.querySelectorAll(".source-item").forEach((s) => s.classList.toggle("active", s.dataset.sub === subId));
@@ -1898,7 +1901,18 @@
 
     const closeStmtViewBtn = document.getElementById("closeStmtViewBtn");
     if (closeStmtViewBtn) {
-      closeStmtViewBtn.addEventListener("click", () => activateSub("sub-upload-bank"));
+      closeStmtViewBtn.addEventListener("click", () => {
+        if (window.comparisonModalReturnContext) {
+          const ctx = window.comparisonModalReturnContext;
+          window.comparisonModalReturnContext = null;
+          activateSub(ctx.subTab || "sub-reconcile");
+          if (ctx.tx) {
+            openRecordComparisonModal(ctx.tx);
+          }
+        } else {
+          activateSub(window.activeSubTabId || "sub-upload-bank");
+        }
+      });
     }
 
     document.querySelectorAll("#btnClearAllData, #btnClearAllDataSidebar, .btn-dustbin-expand, .btn-dustbin-topbar").forEach((clearBtn) => {
@@ -2711,7 +2725,13 @@
 
   async function findAndOpenStatementForSource(sourceType, searchId, sourceName, statementId) {
     const modalBackdrop = document.getElementById("compareModalBackdrop");
-    if (modalBackdrop) modalBackdrop.style.display = "none";
+    if (modalBackdrop && modalBackdrop.style.display !== "none" && modalBackdrop.style.display !== "") {
+      window.comparisonModalReturnContext = {
+        tx: window.currentRecordComparisonTx,
+        subTab: window.activeSubTabId || "sub-reconcile"
+      };
+      modalBackdrop.style.display = "none";
+    }
 
     try {
       const res = await window.LedgerApi.getStatements();
@@ -4316,9 +4336,30 @@
   }
 
   function getTaxonomyInfo(tx) {
-    const statusStr = (typeof tx === "string" ? tx : (tx && tx.status) || "").toLowerCase().trim();
-    const confRaw = typeof tx === "object" ? (tx.confidence ?? tx.confidence_score ?? tx.score ?? tx.ml_confidence ?? 1.0) : 1.0;
-    const confPct = Math.round(Number(confRaw) * 100);
+    let statusStr = "";
+    let confRaw = 1.0;
+
+    if (typeof tx === "string") {
+      statusStr = tx.toLowerCase().trim();
+    } else if (tx && typeof tx === "object") {
+      statusStr = (tx.status || "").toLowerCase().trim();
+      if (tx.confidence !== undefined && tx.confidence !== null) {
+        confRaw = Number(tx.confidence);
+      } else if (tx.similarity_pct !== undefined && tx.similarity_pct !== null) {
+        confRaw = Number(tx.similarity_pct) / 100;
+      } else if (tx.confidence_score !== undefined && tx.confidence_score !== null) {
+        confRaw = Number(tx.confidence_score);
+      } else if (tx.score !== undefined && tx.score !== null) {
+        confRaw = Number(tx.score);
+      } else if (tx.ml_confidence !== undefined && tx.ml_confidence !== null) {
+        confRaw = Number(tx.ml_confidence);
+      } else if (tx.counterpart && tx.counterpart.similarity_pct !== undefined && tx.counterpart.similarity_pct !== null) {
+        confRaw = Number(tx.counterpart.similarity_pct) / 100;
+      }
+    }
+
+    let confPct = Math.round(confRaw > 1 ? confRaw : confRaw * 100);
+    if (isNaN(confPct)) confPct = 100;
 
     if (statusStr === "settled") {
       return { taxonomy: "SETTLED", pillClass: "status-settled", label: "SETTLED" };
@@ -4326,7 +4367,7 @@
     if (statusStr === "auto" || statusStr === "matched" || statusStr === "exact" || statusStr === "tolerance" || statusStr === "llm" || statusStr === "confirmed_match") {
       return { taxonomy: "MATCHED", pillClass: "status-auto", label: `MATCHED (${confPct}%)` };
     }
-    if (statusStr === "similar" || statusStr === "proposed" || statusStr === "ml") {
+    if (statusStr === "similar" || statusStr === "proposed" || statusStr === "ml" || statusStr === "manual") {
       return { taxonomy: "SIMILAR", pillClass: "status-manual", label: `SIMILAR (${confPct}%)` };
     }
     if (statusStr === "unreconciled" || statusStr === "unmatched" || statusStr === "rejected") {
@@ -4409,6 +4450,7 @@
   function openRecordComparisonModal(tx) {
     const modalBackdrop = document.getElementById("compareModalBackdrop");
     if (!modalBackdrop) return;
+    window.currentRecordComparisonTx = tx;
 
     // Display modal container
     modalBackdrop.style.display = "flex";
@@ -4549,11 +4591,37 @@
       }
 
       // Populate Parameter Match Matrix Table Body
-      const ev = tx.evidence || {};
-      const amtDiff = ev.amount_difference !== undefined ? Math.abs(ev.amount_difference) : 0;
-      const amtStatus = amtDiff === 0 ? '<span class="status-pill status-exact">Exact Match</span>' : `<span class="status-pill status-tolerance">Variance: ${amtDiff.toFixed(2)}</span>`;
-      const dateGap = ev.date_difference_days !== undefined ? ev.date_difference_days : 0;
-      const dateStatus = dateGap === 0 ? '<span class="status-pill status-exact">Same Date</span>' : `<span class="status-pill status-tolerance">${dateGap} day gap</span>`;
+      const primaryAmt = tx.amount;
+      // Note: cpAmt is already defined at line 4525
+      const realAmtDiff = Math.abs((primaryAmt || 0) - (cpAmt || 0));
+      let amtStatus = "";
+      if (realAmtDiff < 0.01) {
+        amtStatus = '<span class="status-pill status-exact">Exact Match</span>';
+      } else {
+        const diffStr = formatMoney(realAmtDiff);
+        amtStatus = `<span class="status-pill status-tolerance">Variance: ${diffStr}</span>`;
+      }
+
+      const primaryDateStr = tx.date || tx.transaction_date || "—";
+      const counterpartDateStr = (counterpart && (counterpart.date || counterpart.transaction_date)) || tx.counterpart_date || primaryDateStr;
+
+      let dateStatus = '<span class="status-pill status-exact">Same Date</span>';
+      if (primaryDateStr !== counterpartDateStr && primaryDateStr !== "—" && counterpartDateStr !== "—") {
+        try {
+          const d1 = new Date(primaryDateStr);
+          const d2 = new Date(counterpartDateStr);
+          if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+            const gapDays = Math.round(Math.abs(d1 - d2) / (1000 * 60 * 60 * 24));
+            dateStatus = gapDays === 0 
+              ? '<span class="status-pill status-exact">Same Date</span>' 
+              : `<span class="status-pill status-tolerance">${gapDays} day gap</span>`;
+          } else {
+            dateStatus = `<span class="status-pill status-tolerance">Date Shift</span>`;
+          }
+        } catch (e) {
+          dateStatus = `<span class="status-pill status-tolerance">Date Shift</span>`;
+        }
+      }
 
       // Extract Description & Similar Keywords
       const pDesc = tx.bank_description || tx.description || tx.primary_id || "";
@@ -4562,7 +4630,7 @@
 
       const sharedKwBadge = sharedKws.length > 0
         ? `<span class="status-pill status-exact" style="background: rgba(52, 211, 153, 0.2); color: #34d399; font-weight:600;">Shared Keywords: ${sharedKws.map(escapeHtml).join(", ")}</span>`
-        : `<span class="status-pill" style="opacity: 0.75; font-size:0.78rem;">Fuzzy / Field Linked Match</span>`;
+        : `<span class="status-pill status-exact">Fuzzy / Field Linked Match</span>`;
 
       // Multi-Source Cluster Summary Row if present
       let multiSourceRowHTML = "";
@@ -4603,18 +4671,18 @@
           <td><strong>UTR / Reference ID</strong></td>
           <td class="font-mono">${primaryIdVal}</td>
           <td class="font-mono">${counterpart.id || "—"}</td>
-          <td><span class="status-pill status-exact">${primaryIdVal === counterpart.id ? "Exact Reference Match" : "Reference Linked"}</span></td>
+          <td><span class="status-pill status-exact">${(primaryIdVal && counterpart.id && primaryIdVal === counterpart.id) ? "Exact Reference Match" : "Reference Linked"}</span></td>
         </tr>
         <tr>
           <td><strong>Reconciled Amount</strong></td>
-          <td class="font-mono">${formatMoney(tx.amount)}</td>
-          <td class="font-mono">${formatMoney(tx.amount)}</td>
+          <td class="font-mono">${formatMoney(primaryAmt)}</td>
+          <td class="font-mono">${formatMoney(cpAmt)}</td>
           <td>${amtStatus}</td>
         </tr>
         <tr>
           <td><strong>Transaction Date</strong></td>
-          <td>${tx.date || "—"}</td>
-          <td>${tx.date || "—"}</td>
+          <td>${primaryDateStr}</td>
+          <td>${counterpartDateStr}</td>
           <td>${dateStatus}</td>
         </tr>
         <tr>
@@ -4627,7 +4695,7 @@
           <td><strong>Rule Engine Result</strong></td>
           <td>${tx.stage ? tx.stage.toUpperCase() : "EXACT"} MATCH</td>
           <td>RECONCILED COUNTERPART</td>
-          <td><span class="status-pill ${statusPillClass(tx.status)}">${getStatusLabel(tx.status)}</span></td>
+          <td><span class="status-pill ${statusPillClass(tx)}">${getStatusLabel(tx)}</span></td>
         </tr>
       `;
     } else {
@@ -4667,7 +4735,7 @@
     // Footer status pill & action buttons
     const currentPill = document.getElementById("compareCurrentStatusPill");
     if (currentPill) {
-      currentPill.textContent = `Current Status: ${getStatusLabel(tx.status).toUpperCase()}`;
+      currentPill.textContent = `Current Status: ${getStatusLabel(tx).toUpperCase()}`;
     }
 
     const statusSelect = document.getElementById("cmpChangeStatusSelect");

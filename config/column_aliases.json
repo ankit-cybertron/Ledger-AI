@@ -48,7 +48,8 @@
     "Gross Amt Paid",
     "Net Salary Paid",
     "Card Network",
-    "Net Amount"
+    "Net Amount",
+    "Network"
   ],
   "credit_amount": [
     "credit",
@@ -73,7 +74,8 @@
     "debit (inr)",
     "dr_amount",
     "debit_inr",
-    "withdrawal (dr)"
+    "withdrawal (dr)",
+    "Expected Outcome"
   ],
   "fee_amount": [
     "fee",
@@ -83,7 +85,8 @@
     "commission",
     "service_tax",
     "fee (usd)",
-    "Fee Charged"
+    "Fee Charged",
+    "Fee Amount"
   ],
   "tax_amount": [
     "tax",
@@ -111,7 +114,12 @@
     "transaction_time",
     "Order Date",
     "Txn Date",
-    "Initiated Date"
+    "Initiated Date",
+    "Date (DD-Mon-YY)",
+    "Date (MM/DD/YYYY)",
+    "Timestamp (UTC)",
+    "Txn Date (DD-MM-YYYY)",
+    "Date (DD/MM/YYYY)"
   ],
   "value_date": [
     "value_date",
@@ -152,7 +160,10 @@
     "UTR / Reference No",
     "Answer Key (Reference Only)",
     "Bill Reference No",
-    "Reference / UTR"
+    "Reference / UTR",
+    "UTR (masked)",
+    "Bank Ref (masked)",
+    "Payout Ref"
   ],
   "order_id": [
     "order_id",
@@ -192,7 +203,9 @@
     "adjustment type",
     "adjustment_type",
     "particulars / notes",
-    "Card Last 4"
+    "Card Last 4",
+    "Card (masked)",
+    "Remarks / Breakdown"
   ],
   "customer_name": [
     "customer_name",
@@ -208,7 +221,8 @@
     "employee_name",
     "Client Full Name",
     "Customer Name",
-    "Buyer Name"
+    "Buyer Name",
+    "Payer Email"
   ],
   "channel": [
     "payment_mode",
@@ -222,7 +236,8 @@
     "transaction_type",
     "Adjustment Type",
     "Payment Mode",
-    "Transaction Type"
+    "Transaction Type",
+    "Exception Type"
   ],
   "status": [
     "status",
