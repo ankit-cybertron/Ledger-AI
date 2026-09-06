@@ -23,13 +23,15 @@
   <nav class="topbar">
     <div class="page-topbar-left">
       <a href="{{ url_for('index') }}" class="page-topbar-brand" title="Ledger AI {{ app_version }}">
-        <span class="brand-main">Ledger</span><span class="brand-sub">AI</span>
-        <span class="brand-version" style="font-size:0.65rem; font-weight:600; color:var(--text-muted, #94a3b8); margin-left:5px; opacity:0.85; letter-spacing:0.4px; align-self:flex-end; margin-bottom:2px;">{{ app_version }}</span>
+        <img src="{{ url_for('static', filename='img/ledger_ai_logo_transparent.png') }}" alt="Ledger AI" class="brand-logo-img brand-logo-dark">
+        <img src="{{ url_for('static', filename='img/ledger_ai_logo_transparent_light.png') }}" alt="Ledger AI" class="brand-logo-img brand-logo-light">
+        <span class="brand-version">{{ app_version }}</span>
       </a>
     </div>
     <div class="topbar-nav">
-      <a href="{{ url_for('help_page') }}" class="nav-link">Guide</a>
-      <a href="#product-features" class="nav-link">Product Capabilities</a>
+      <a href="#doctrine" class="nav-link">Doctrine</a>
+      <a href="#product-features" class="nav-link">Capabilities</a>
+      <a href="#documentation" class="nav-link">Documentation</a>
       <a href="#about" class="nav-link">Architecture</a>
       <a href="#contact" class="nav-link">Contact</a>
       <button id="themeToggleBtn" class="theme-toggle-landing-btn" title="Toggle Theme" aria-label="Toggle Theme">
@@ -71,9 +73,9 @@
             stroke-linejoin="round" />
         </svg>
       </a>
-      <a href="{{ url_for('help_page') }}" class="btn btn-secondary-nav"
+      <a href="#documentation" class="btn btn-secondary-nav"
         style="padding: 14px 24px !important; font-size: 0.98rem !important;">
-        Interactive System Guide &rarr;
+        Explore Documentation &rarr;
       </a>
     </div>
 
@@ -96,101 +98,300 @@
       </div>
     </section>
 
+    <!-- Guiding Principles / Foundational Doctrine Section -->
+    <section class="landing-section doctrine-section" id="doctrine">
+      <div class="section-badge">CORE DOCTRINE</div>
+      <h2 class="section-title">The Principles of Financial Certainty</h2>
+      <p class="section-description">
+        Enterprise financial operations demand mathematical integrity over probabilistic guesswork. Our foundational doctrines eliminate false matches and unlock forward liquidity intelligence.
+      </p>
+
+      <div class="doctrine-cards">
+        <div class="doctrine-card">
+          <div class="doctrine-card-header">
+            <div class="doctrine-icon-wrap icon-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+            </div>
+            <span class="doctrine-tag">THE RECONCILIATION DOCTRINE</span>
+          </div>
+          <blockquote class="doctrine-quote">
+            <span class="quote-glyph">&ldquo;</span>It’s not about matching. It’s about knowing which matches to trust.<span class="quote-glyph">&rdquo;</span>
+          </blockquote>
+          <p class="doctrine-desc">
+            Reconciliation without deterministic verification creates silent balance sheet errors. Ledger AI replaces naive matching with a deterministic 4-pass cascade &mdash; pairing exact UTRs, scoring composite similarity matrices, solving 1-to-N batch MDR fee equations, and using Groq LLM semantic reasoning backed by immutable audit trails.
+          </p>
+          <div class="doctrine-footer">
+            <span class="doctrine-metric"><span class="highlight">0%</span> Force-Matching</span>
+            <span class="doctrine-divider">&bull;</span>
+            <span class="doctrine-metric"><span class="highlight">100%</span> Auditable Lineage</span>
+          </div>
+        </div>
+
+        <div class="doctrine-card">
+          <div class="doctrine-card-header">
+            <div class="doctrine-icon-wrap icon-purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
+            <span class="doctrine-tag">THE LIQUIDITY DOCTRINE</span>
+          </div>
+          <blockquote class="doctrine-quote">
+            <span class="quote-glyph">&ldquo;</span>Reconcile what happened. Forecast what comes next.<span class="quote-glyph">&rdquo;</span>
+          </blockquote>
+          <p class="doctrine-desc">
+            Looking backward only accounts for past events. Ledger AI synchronizes historical bank settlements with 14-day weighted moving average projections, day-of-week seasonality decomposition, and empirical gateway settlement lag curves (T+2 / T+3) to ensure proactive 30-day cash control.
+          </p>
+          <div class="doctrine-footer">
+            <span class="doctrine-metric"><span class="highlight">30-Day</span> Dynamic Runway</span>
+            <span class="doctrine-divider">&bull;</span>
+            <span class="doctrine-metric"><span class="highlight">T+N</span> Settlement Lag Curves</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Product Features Showcase Section -->
     <section id="product-features" class="landing-section about-section">
+      <div class="section-badge">ENGINE CAPABILITIES</div>
       <h2 class="section-title">Platform Capabilities &amp; Financial Core</h2>
       <p class="section-description">
         Built for high-volume finance teams and commercial merchants. Ledger AI solves the verification bottleneck by combining mathematical precision with Groq LLM semantic reasoning and 30-day liquidity forecasting.
       </p>
 
       <div class="about-cards">
+        <!-- Card 1 -->
         <div class="about-card">
-          <div class="card-icon icon-blue">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <span class="card-category-tag">DATA INGESTION</span>
           </div>
           <h4>Multi-Format Ingestion &amp; AI Alignment</h4>
-          <p>Ingests CSV, Excel, and PDF bank statements with 3-stage column header mapping (exact dictionary, Levenshtein distance, and zero-shot Groq AI smart schema alignment). Resolves duplicate headers and SHA-256 content hashes automatically.</p>
+          <p>Ingests CSV, Excel, and PDF bank statements with automated 3-stage column header mapping. Resolves schema variations, duplicate headers, and SHA-256 deduplication hashes automatically.</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">Exact Dictionary</span>
+            <span class="feature-pill">Levenshtein Mapping</span>
+            <span class="feature-pill">SHA-256 Hashing</span>
+          </div>
         </div>
 
+        <!-- Card 2 -->
         <div class="about-card">
-          <div class="card-icon icon-purple">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-              <circle cx="12" cy="12" r="4" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                <circle cx="12" cy="12" r="4" />
+              </svg>
+            </div>
+            <span class="card-category-tag">CASCADE ENGINE</span>
           </div>
           <h4>4-Pass Reconciliation &amp; MDR Fee Solver</h4>
-          <p>Pairs exact reference UTR keys (Pass 1), evaluates 4-factor composite scoring ($S = 0.40 S_{\text{id}} + 0.30 S_{\text{amt}} + 0.15 S_{\text{date}} + 0.15 S_{\text{narr}}$) (Pass 2), and solves 1-to-N batch payout MDR fee equations ($\text{Net Deposit} = \sum \text{Sales} - \text{MDR} - \text{GST}$) (Pass 3).</p>
+          <p>Pairs exact reference UTR keys in Pass 1, evaluates 4-factor composite scoring vectors in Pass 2, and solves complex 1-to-N batch payout MDR fee balance equations in Pass 3 with zero force-matching.</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">Exact UTR Pairing</span>
+            <span class="feature-pill">Composite Vector Scorer</span>
+            <span class="feature-pill">1-to-N Batch Solver</span>
+          </div>
         </div>
 
+        <!-- Card 3 -->
         <div class="about-card">
-          <div class="card-icon icon-green">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <span class="card-category-tag">SEMANTIC AI</span>
           </div>
           <h4>Groq LLM Agent &amp; Failover Key Rotation</h4>
-          <p>Deep semantic AI analysis for ambiguous names, non-standard text narrations, and digit transposition typos. Powered by Groq API with multi-key failover rotation (`GROQ_API_KEY` rotation) and Llama-3 model fallback.</p>
+          <p>Deep semantic AI analysis for ambiguous entity names, non-standard text narrations, and digit transposition typos. Powered by high-speed Groq Llama-3 inference with automated API key failover rotation.</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">Groq Llama-3 API</span>
+            <span class="feature-pill">Transposition Detection</span>
+            <span class="feature-pill">Key Rotation</span>
+          </div>
         </div>
 
+        <!-- Card 4 -->
         <div class="about-card">
-          <div class="card-icon icon-blue">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-blue">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <span class="card-category-tag">LIQUIDITY FORECASTING</span>
           </div>
           <h4>Forward Cash Forecaster &amp; Settlement Lags</h4>
-          <p>Predicts 30-day liquid cash availability using 14-day weighted moving average (WMA) models, weekly seasonal decomposition, empirical gateway channel settlement lag estimation (T+2 / T+3), and beginning balance state propagation.</p>
+          <p>Predicts 30-day liquid cash availability using 14-day weighted moving average (WMA) models, weekly seasonal decomposition, and empirical gateway channel settlement lag estimation (T+2 / T+3).</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">14-Day WMA</span>
+            <span class="feature-pill">T+2 / T+3 Lag Curves</span>
+            <span class="feature-pill">Cash Runways</span>
+          </div>
         </div>
 
+        <!-- Card 5 -->
         <div class="about-card">
-          <div class="card-icon icon-purple">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              <line x1="3" y1="9" x2="21" y2="9" />
-              <line x1="9" y1="21" x2="9" y2="9" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="9" y1="21" x2="9" y2="9" />
+              </svg>
+            </div>
+            <span class="card-category-tag">CENTRAL LEDGER</span>
           </div>
           <h4>Unified Master Source Table</h4>
-          <p>Single-pane table aggregating records across all primary bank ledgers and counterpart payment channels into a centralized searchable view with dynamic status badges and source filters.</p>
+          <p>Aggregates records across all primary bank ledgers and counterpart payment channels into a centralized searchable view with dynamic status badges, instant text search, and multi-source filters.</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">Multi-Source Views</span>
+            <span class="feature-pill">Instant Filter Bar</span>
+            <span class="feature-pill">Taxonomy Badges</span>
+          </div>
         </div>
 
+        <!-- Card 6 -->
         <div class="about-card">
-          <div class="card-icon icon-green">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
+          <div class="about-card-top">
+            <div class="card-icon icon-green">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+            </div>
+            <span class="card-category-tag">AUDIT &amp; GOVERNANCE</span>
           </div>
           <h4>Executive PDF Reports &amp; Period Vaulting</h4>
-          <p>Compiles print-ready ReportLab PDF audit reports complete with visual KPI summary tiles, embedded Matplotlib trend charts, status pill indicators, itemized match ledgers, and audit integrity verification equations.</p>
+          <p>Compiles print-ready ReportLab PDF audit packages complete with visual KPI summary tiles, embedded trend charts, itemized match ledgers, and tamper-proof cryptographic period lock sealing.</p>
+          <div class="card-feature-pills">
+            <span class="feature-pill">ReportLab PDF</span>
+            <span class="feature-pill">Period Vault Lock</span>
+            <span class="feature-pill">Audit Verification</span>
+          </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Documentation & Operator Guides Section -->
+    <section class="landing-section docs-preview-section" id="documentation">
+      <div class="section-badge">SYSTEM DOCUMENTATION</div>
+      <h2 class="section-title">Technical Documentation &amp; Operator Guides</h2>
+      <p class="section-description">
+        Comprehensive architectural specifications, mathematical formulas, ingestion schemas, and operator playbooks for financial controllers and system auditors.
+      </p>
+
+      <div class="docs-grid">
+        <a href="{{ url_for('help_page') }}#decision-tree" class="doc-card">
+          <div class="doc-card-icon icon-blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </div>
+          <div class="doc-card-content">
+            <div class="doc-card-eyebrow">MATHEMATICAL CORE</div>
+            <h3 class="doc-card-title">4-Pass Cascade &amp; Scoring Formulas</h3>
+            <p class="doc-card-desc">Deterministic UTR pairings, 4-factor composite similarity math ($S = 0.40 S_{\text{id}} + 0.30 S_{\text{amt}} + \dots$), and 1-to-N batch payout MDR fee algebra.</p>
+            <span class="doc-card-link">Read Engine Architecture &rarr;</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('help_page') }}#ingestion-pipeline" class="doc-card">
+          <div class="doc-card-icon icon-green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="doc-card-content">
+            <div class="doc-card-eyebrow">DATA INGESTION</div>
+            <h3 class="doc-card-title">Smart Schema Alignment &amp; Ingestion</h3>
+            <p class="doc-card-desc">Support for CSV, Excel, and PDF bank statements with Levenshtein header mapping, duplicate resolution, and SHA-256 deduplication hashing.</p>
+            <span class="doc-card-link">Read Ingestion Specs &rarr;</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('help_page') }}#forecasting-engine" class="doc-card">
+          <div class="doc-card-icon icon-purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="doc-card-content">
+            <div class="doc-card-eyebrow">LIQUIDITY INTELLIGENCE</div>
+            <h3 class="doc-card-title">Forward Cash Forecaster &amp; Lag Decay</h3>
+            <p class="doc-card-desc">14-day WMA modeling, day-of-week seasonality factors, gateway settlement delay calibration (T+2 / T+3), and liquid buffer simulations.</p>
+            <span class="doc-card-link">Read Forecaster Specs &rarr;</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('help_page') }}#pdf-reporting" class="doc-card">
+          <div class="doc-card-icon icon-amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="doc-card-content">
+            <div class="doc-card-eyebrow">AUDIT &amp; COMPLIANCE</div>
+            <h3 class="doc-card-title">Audit Reports &amp; Period Vault Lock</h3>
+            <p class="doc-card-desc">ReportLab corporate PDF audit compilations, visual KPI summary tiles, status indicator pills, and cryptographic period locks.</p>
+            <span class="doc-card-link">Read Compliance Playbook &rarr;</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="docs-cta-banner">
+        <div class="docs-cta-content">
+          <h4>Looking for the complete operator manual?</h4>
+          <p>Explore interactive tutorials, decision tree diagrams, and comprehensive troubleshooting playbooks in our dedicated guide.</p>
+        </div>
+        <a href="{{ url_for('help_page') }}" class="btn btn-secondary-nav" style="padding: 12px 24px !important; white-space:nowrap;">
+          Open Complete System Guide &rarr;
+        </a>
       </div>
     </section>
 
     <!-- Architecture & Walkthrough Section -->
     <section id="about" class="landing-section about-section" style="padding-top:0;">
-      <h2 class="section-title">System Architecture</h2>
+      <div class="section-badge">PLATFORM DEMONSTRATION</div>
+      <h2 class="section-title">System Architecture &amp; Platform Walkthrough</h2>
       <p class="section-description">
         Explore how Ledger AI reconciles financial feeds across exact rules, composite scoring, MDR fee solvers, and Groq LLM agents.
       </p>
 
       <div class="video-section">
         <div class="video-wrapper">
-          <iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0"
-            title="Ledger AI Platform Overview"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          <iframe src="https://www.youtube-nocookie.com/embed/kGxiT3-O7pc?rel=0&amp;modestbranding=1"
+            title="Ledger AI Platform Overview &amp; Walkthrough"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen>
           </iframe>
+        </div>
+        <div class="video-meta-bar">
+          <div class="video-meta-left">
+            <span class="video-status-dot"></span>
+            <span class="video-meta-title">Ledger AI Platform Walkthrough &amp; Demonstration</span>
+          </div>
+          <a href="https://www.youtube.com/watch?v=kGxiT3-O7pc" target="_blank" rel="noopener noreferrer" class="video-direct-link" title="Open video on YouTube">
+            <span>Watch on YouTube</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
         </div>
       </div>
     </section>
@@ -211,7 +412,12 @@
     </section>
 
     <footer class="footer">
-      <span class="dot"></span> Ledger AI &mdash; Autonomous Financial Reconciliation &amp; Forward Cash Controller Platform
+      <div class="footer-brand" style="display:inline-flex; align-items:center;">
+        <img src="{{ url_for('static', filename='img/ledger_ai_logo_transparent.png') }}" alt="Ledger AI" class="brand-logo-dark" style="height: 24px; width: auto;">
+        <img src="{{ url_for('static', filename='img/ledger_ai_logo_transparent_light.png') }}" alt="Ledger AI" class="brand-logo-light" style="height: 24px; width: auto;">
+      </div>
+      <span class="dot"></span>
+      <span>Autonomous Financial Reconciliation &amp; Forward Cash Controller Platform</span>
     </footer>
   </main>
 

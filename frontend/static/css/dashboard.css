@@ -123,18 +123,45 @@ body {
 }
 
 .page-topbar-brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
   text-decoration: none;
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-family: var(--font-ui, 'Inter', sans-serif);
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
-.page-topbar-brand .brand-main { color: var(--text-primary); }
-.page-topbar-brand .brand-sub  { color: var(--accent-blue); }
+.brand-logo-img {
+  height: 32px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-topbar-brand:hover .brand-logo-img {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.brand-logo-dark {
+  display: block;
+}
+.brand-logo-light {
+  display: none;
+}
+
+[data-theme="light"] .brand-logo-dark {
+  display: none;
+}
+[data-theme="light"] .brand-logo-light {
+  display: block;
+}
 
 .topbar-period-badge {
   display: inline-flex;
