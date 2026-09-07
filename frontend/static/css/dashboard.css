@@ -7453,3 +7453,52 @@ textarea.form-input.form-textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Widescreen Responsive Overview & KPI Extensions (Step 5) ───────────── */
+.overview-widescreen-container {
+  width: 100%;
+  max-width: min(1760px, 95vw);
+  margin: 0 auto;
+  padding: clamp(16px, 2.5vw, 36px);
+}
+
+.stat-cards-5 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin: 0 auto 32px;
+}
+
+.overview-chart-card {
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 22px 24px;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.overview-chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.overview-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 24px;
+  width: 100%;
+  margin: 32px 0;
+}
+
+.info-box-row-wide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 450px), 1fr));
+  gap: 16px;
+  width: 100%;
+  margin: 0 auto 32px;
+}

@@ -90,6 +90,8 @@ def _setup_pdf_fonts() -> tuple[str, str, str]:
 
 class NumberedCanvas(canvas.Canvas):
     """Two-pass canvas for adding Ledger AI running headers, subtle diagonal watermark, and page numbers."""
+    _startPage: Any
+    _pageNumber: int
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -230,14 +232,16 @@ def render_chart_images(charts_data: Dict[str, Any]) -> Dict[str, io.BytesIO]:
     fig, ax = plt.subplots(figsize=(4.5, 3.0), dpi=300)
     total_val = sum(counts)
     if total_val > 0:
-        wedges, texts, autotexts = ax.pie(
+        pie_result: Any = ax.pie(
             counts, labels=None, autopct=lambda pct: f"{pct:.1f}%" if pct > 4 else "", startangle=140,
-            colors=chart_colors, wedgeprops=dict(width=0.45, edgecolor="white", linewidth=2.5),
+            colors=chart_colors, wedgeprops={"width": 0.45, "edgecolor": "white", "linewidth": 2.5},
             pctdistance=0.72
         )
+        wedges = pie_result[0]
+        autotexts = pie_result[2] if len(tuple(pie_result)) > 2 else []
         for t in autotexts:
             t.set_fontsize(8)
-            t.set_weight("bold")
+            t.set_fontweight("bold")
             t.set_color("#0f172a")
 
         legend_labels = [f"{l}: {c}" for l, c in zip(labels, counts)]
