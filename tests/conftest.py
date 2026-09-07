@@ -1,8 +1,15 @@
 import pytest
 import pandas as pd
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+FRONTEND_DIR = ROOT / "frontend"
+if str(FRONTEND_DIR) not in sys.path:
+    sys.path.insert(0, str(FRONTEND_DIR))
+
 GENERATED_DIR = ROOT / "data" / "generated"
 GROUND_TRUTH_DIR = ROOT / "data" / "ground_truth"
 RESULTS_DIR = ROOT / "data" / "results"

@@ -67,3 +67,27 @@ def test_unmatched_utr_flag():
     }
     flags, primary_type = compute_transaction_feature_flags(txn)
     assert "Unmatched UTR" in flags
+
+
+def test_non_primary_exact_match_no_contradictory_flags():
+    """Verify matched non-primary records with no UTR (e.g. CV5003_row2) never get contradictory flags."""
+    txn = {
+        "transaction_id": "CV5003_row2",
+        "currency": "INR",
+        "description": "Cash sale - Arjun Nair",
+        "utr": "",
+        "status": "matched",
+        "evidence": {"rule": "Exact match between non-primary sources (Rw 05 Cash Book vs Rw 02 Internal Order Book)."},
+        "amount": 11115.55
+    }
+    counterpart = {
+        "transaction_id": "ORD8037",
+        "order_id": "ORD8037",
+        "utr": "",
+        "status": "matched"
+    }
+    flags, primary_type = compute_transaction_feature_flags(txn, counterpart)
+    assert "Unmatched UTR" not in flags
+    assert "Exact UTR Match" not in flags
+    assert ("Exact Match" in flags or "Order ID Match" in flags)
+    assert primary_type in ["Exact Match", "Order ID Match"]
