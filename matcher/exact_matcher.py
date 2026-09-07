@@ -7,6 +7,7 @@ Matches primary transactions (is_primary=True) against counterpart transactions 
 3. Config-driven thresholds and dynamic evidence-weighted confidence scoring (no hardcoded literals).
 """
 
+import collections
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Union
 import dateutil.parser
@@ -130,13 +131,55 @@ def exact_match(
     min_len = getattr(cfg, "minimum_identifier_length", 5)
     prefixes = getattr(cfg, "utr_prefix_strip_list", None)
 
+    # Pre-index counterpart transactions for O(1) identifier and amount lookups
+    utr_map = collections.defaultdict(list)
+    rrn_map = collections.defaultdict(list)
+    gw_map = collections.defaultdict(list)
+    auth_map = collections.defaultdict(list)
+    order_map = collections.defaultdict(list)
+    settl_map = collections.defaultdict(list)
+    txid_map = collections.defaultdict(list)
+    amt_map = collections.defaultdict(list)
+    desc_cnt_list = []
+
+    for tx_c in counterpart_txs:
+        if not tx_c.transaction_id or tx_c.transaction_id == "tx_unk":
+            continue
+        c_utr = _norm_str(tx_c.utr, prefixes)
+        if c_utr and len(c_utr) >= min_len:
+            utr_map[c_utr].append(tx_c)
+        c_rrn = _norm_str(tx_c.rrn, prefixes)
+        if c_rrn and len(c_rrn) >= min_len:
+            rrn_map[c_rrn].append(tx_c)
+        c_gw = _norm_str(tx_c.gateway_reference, prefixes)
+        if c_gw and len(c_gw) >= min_len:
+            gw_map[c_gw].append(tx_c)
+        c_auth = _norm_str(tx_c.auth_code, prefixes)
+        if c_auth and len(c_auth) >= min_len:
+            auth_map[c_auth].append(tx_c)
+        c_order = _norm_str(tx_c.order_id, prefixes)
+        if c_order and len(c_order) >= min_len:
+            order_map[c_order].append(tx_c)
+        c_settl = _norm_str(tx_c.settlement_id, prefixes)
+        if c_settl and len(c_settl) >= min_len:
+            settl_map[c_settl].append(tx_c)
+        c_txid = _norm_str(tx_c.transaction_id, prefixes)
+        if c_txid and len(c_txid) >= min_len:
+            txid_map[c_txid].append(tx_c)
+
+        if tx_c.net_amount is not None:
+            try:
+                amt_map[float(tx_c.net_amount)].append(tx_c)
+            except Exception:
+                pass
+
+        c_desc = _norm_str(tx_c.description, prefixes)
+        if c_desc:
+            desc_cnt_list.append((tx_c, c_desc))
+
     for tx_p in primary_txs:
         if not tx_p.transaction_id or tx_p.transaction_id == "tx_unk":
             continue
-
-        available_cnt = [tx for tx in counterpart_txs if tx.transaction_id not in matched_cnt_ids]
-        if not available_cnt:
-            break
 
         p_utr_norm = _norm_str(tx_p.utr, prefixes)
         p_order_norm = _norm_str(tx_p.order_id, prefixes)
@@ -145,56 +188,120 @@ def exact_match(
         p_gw_norm = _norm_str(tx_p.gateway_reference, prefixes)
         p_auth_norm = _norm_str(tx_p.auth_code, prefixes)
         p_settl_norm = _norm_str(tx_p.settlement_id, prefixes)
+        p_desc_norm = _norm_str(tx_p.description, prefixes)
 
         matched_cnt_target = None
 
-        # Priority 1: Identifier Cross-Matching (UTR -> RRN -> Gateway Ref -> Auth Code -> Order ID / Settlement ID)
-        for tx_c in available_cnt:
-            if not candidates_compatible(tx_p, tx_c):
-                continue
+        def _try_candidate(cand, m_type, conf=1.00):
+            if cand.transaction_id in matched_cnt_ids:
+                return None
+            if not candidates_compatible(tx_p, cand):
+                return None
+            if not _amounts_compatible_1to1(tx_p, cand, cfg):
+                return None
+            return (cand, m_type, conf)
 
-            if not _amounts_compatible_1to1(tx_p, tx_c, cfg):
-                continue
+        # 1. Fast Hash-Lookup: UTR
+        if p_utr_norm and len(p_utr_norm) >= min_len and p_utr_norm in utr_map:
+            for cand in utr_map[p_utr_norm]:
+                res = _try_candidate(cand, "exact_utr_match")
+                if res:
+                    matched_cnt_target = res
+                    break
 
-            p_desc_norm = _norm_str(tx_p.description, prefixes)
-            c_desc_norm = _norm_str(tx_c.description, prefixes)
-            c_utr_norm = _norm_str(tx_c.utr, prefixes)
-            c_order_norm = _norm_str(tx_c.order_id, prefixes)
-            c_txid_norm = _norm_str(tx_c.transaction_id, prefixes)
-            c_rrn_norm = _norm_str(tx_c.rrn, prefixes)
-            c_gw_norm = _norm_str(tx_c.gateway_reference, prefixes)
-            c_auth_norm = _norm_str(tx_c.auth_code, prefixes)
-            c_settl_norm = _norm_str(tx_c.settlement_id, prefixes)
+        # 2. Fast Hash-Lookup: RRN
+        if not matched_cnt_target and p_rrn_norm and len(p_rrn_norm) >= min_len and p_rrn_norm in rrn_map:
+            for cand in rrn_map[p_rrn_norm]:
+                res = _try_candidate(cand, "exact_rrn_match")
+                if res:
+                    matched_cnt_target = res
+                    break
 
-            # Check UTR match
-            if (p_utr_norm and len(p_utr_norm) >= min_len and (p_utr_norm == c_utr_norm or p_utr_norm in c_desc_norm)) or \
-               (c_utr_norm and len(c_utr_norm) >= min_len and (c_utr_norm == p_utr_norm or c_utr_norm in p_desc_norm)):
-                matched_cnt_target = (tx_c, "exact_utr_match", 1.00)
-                break
-            # Check RRN match
-            elif (p_rrn_norm and len(p_rrn_norm) >= min_len and (p_rrn_norm == c_rrn_norm or p_rrn_norm in c_desc_norm)) or \
-                  (c_rrn_norm and len(c_rrn_norm) >= min_len and c_rrn_norm in p_desc_norm):
-                matched_cnt_target = (tx_c, "exact_rrn_match", 1.00)
-                break
-            # Check Gateway Ref match
-            elif (p_gw_norm and len(p_gw_norm) >= min_len and (p_gw_norm == c_gw_norm or p_gw_norm in c_desc_norm)) or \
-                  (c_gw_norm and len(c_gw_norm) >= min_len and c_gw_norm in p_desc_norm):
-                matched_cnt_target = (tx_c, "exact_gateway_ref_match", 1.00)
-                break
-            # Check Auth Code match
-            elif (p_auth_norm and len(p_auth_norm) >= min_len and (p_auth_norm == c_auth_norm or p_auth_norm in c_desc_norm)) or \
-                  (c_auth_norm and len(c_auth_norm) >= min_len and c_auth_norm in p_desc_norm):
-                matched_cnt_target = (tx_c, "exact_auth_code_match", 1.00)
-                break
-            # Check Order ID / Settlement ID / Direct Transaction ID match
-            elif (p_order_norm and len(p_order_norm) >= min_len and (p_order_norm == c_order_norm or p_order_norm in c_desc_norm)) or \
-                  (c_order_norm and len(c_order_norm) >= min_len and (c_order_norm == p_order_norm or c_order_norm in p_desc_norm)) or \
-                  (p_settl_norm and len(p_settl_norm) >= min_len and (p_settl_norm == c_settl_norm or p_settl_norm in c_desc_norm)) or \
-                  (c_settl_norm and len(c_settl_norm) >= min_len and (c_settl_norm == p_settl_norm or c_settl_norm in p_desc_norm)) or \
-                  (p_txid_norm and len(p_txid_norm) >= min_len and (p_txid_norm == c_txid_norm or p_txid_norm == c_order_norm or p_txid_norm == c_utr_norm)) or \
-                  (c_txid_norm and len(c_txid_norm) >= min_len and (c_txid_norm == p_order_norm or c_txid_norm == p_utr_norm)):
-                matched_cnt_target = (tx_c, "exact_order_id_match", 1.00)
-                break
+        # 3. Fast Hash-Lookup: Gateway Reference
+        if not matched_cnt_target and p_gw_norm and len(p_gw_norm) >= min_len and p_gw_norm in gw_map:
+            for cand in gw_map[p_gw_norm]:
+                res = _try_candidate(cand, "exact_gateway_ref_match")
+                if res:
+                    matched_cnt_target = res
+                    break
+
+        # 4. Fast Hash-Lookup: Auth Code
+        if not matched_cnt_target and p_auth_norm and len(p_auth_norm) >= min_len and p_auth_norm in auth_map:
+            for cand in auth_map[p_auth_norm]:
+                res = _try_candidate(cand, "exact_auth_code_match")
+                if res:
+                    matched_cnt_target = res
+                    break
+
+        # 5. Fast Hash-Lookup: Order ID / Settlement ID / Direct Transaction ID
+        if not matched_cnt_target:
+            for id_val in (p_order_norm, p_settl_norm, p_txid_norm):
+                if not id_val or len(id_val) < min_len:
+                    continue
+                for id_source in (order_map, settl_map, txid_map):
+                    if id_val in id_source:
+                        for cand in id_source[id_val]:
+                            res = _try_candidate(cand, "exact_order_id_match")
+                            if res:
+                                matched_cnt_target = res
+                                break
+                    if matched_cnt_target:
+                        break
+                if matched_cnt_target:
+                    break
+
+        # 6. Description Substring Fallback (if direct hash key wasn't present)
+        if not matched_cnt_target and (p_desc_norm or p_utr_norm or p_order_norm or p_rrn_norm or p_gw_norm or p_auth_norm or p_settl_norm):
+            for tx_c, c_desc in desc_cnt_list:
+                if tx_c.transaction_id in matched_cnt_ids:
+                    continue
+                c_utr_norm = _norm_str(tx_c.utr, prefixes)
+                c_order_norm = _norm_str(tx_c.order_id, prefixes)
+                c_txid_norm = _norm_str(tx_c.transaction_id, prefixes)
+                c_rrn_norm = _norm_str(tx_c.rrn, prefixes)
+                c_gw_norm = _norm_str(tx_c.gateway_reference, prefixes)
+                c_auth_norm = _norm_str(tx_c.auth_code, prefixes)
+                c_settl_norm = _norm_str(tx_c.settlement_id, prefixes)
+
+                # Check UTR match
+                if (p_utr_norm and len(p_utr_norm) >= min_len and p_utr_norm in c_desc) or \
+                   (c_utr_norm and len(c_utr_norm) >= min_len and (c_utr_norm == p_utr_norm or c_utr_norm in p_desc_norm)):
+                    res = _try_candidate(tx_c, "exact_utr_match")
+                    if res:
+                        matched_cnt_target = res
+                        break
+                # Check RRN match
+                elif (p_rrn_norm and len(p_rrn_norm) >= min_len and (p_rrn_norm == c_rrn_norm or p_rrn_norm in c_desc)) or \
+                     (c_rrn_norm and len(c_rrn_norm) >= min_len and c_rrn_norm in p_desc_norm):
+                    res = _try_candidate(tx_c, "exact_rrn_match")
+                    if res:
+                        matched_cnt_target = res
+                        break
+                # Check Gateway Ref match
+                elif (p_gw_norm and len(p_gw_norm) >= min_len and (p_gw_norm == c_gw_norm or p_gw_norm in c_desc)) or \
+                     (c_gw_norm and len(c_gw_norm) >= min_len and c_gw_norm in p_desc_norm):
+                    res = _try_candidate(tx_c, "exact_gateway_ref_match")
+                    if res:
+                        matched_cnt_target = res
+                        break
+                # Check Auth Code match
+                elif (p_auth_norm and len(p_auth_norm) >= min_len and (p_auth_norm == c_auth_norm or p_auth_norm in c_desc)) or \
+                     (c_auth_norm and len(c_auth_norm) >= min_len and c_auth_norm in p_desc_norm):
+                    res = _try_candidate(tx_c, "exact_auth_code_match")
+                    if res:
+                        matched_cnt_target = res
+                        break
+                # Check Order ID / Settlement ID / Direct Transaction ID match
+                elif (p_order_norm and len(p_order_norm) >= min_len and (p_order_norm == c_order_norm or p_order_norm in c_desc)) or \
+                     (c_order_norm and len(c_order_norm) >= min_len and (c_order_norm == p_order_norm or c_order_norm in p_desc_norm)) or \
+                     (p_settl_norm and len(p_settl_norm) >= min_len and (p_settl_norm == c_settl_norm or p_settl_norm in c_desc)) or \
+                     (c_settl_norm and len(c_settl_norm) >= min_len and (c_settl_norm == p_settl_norm or c_settl_norm in p_desc_norm)) or \
+                     (p_txid_norm and len(p_txid_norm) >= min_len and (p_txid_norm == c_txid_norm or p_txid_norm == c_order_norm or p_txid_norm == c_utr_norm)) or \
+                     (c_txid_norm and len(c_txid_norm) >= min_len and (c_txid_norm == p_order_norm or c_txid_norm == p_utr_norm)):
+                    res = _try_candidate(tx_c, "exact_order_id_match")
+                    if res:
+                        matched_cnt_target = res
+                        break
 
         if matched_cnt_target:
             tx_c, m_type, conf = matched_cnt_target
@@ -212,16 +319,19 @@ def exact_match(
             })
             continue
 
-        # Priority 2: Single Unambiguous Amount + Date Window Match
+        # Priority 2: Single Unambiguous Amount + Date Window Match (O(1) hash query)
+        p_amt_key = float(tx_p.net_amount or 0.0)
         amt_candidates = []
-        for tx_c in available_cnt:
-            if not candidates_compatible(tx_p, tx_c):
-                continue
-
-            if tx_p.net_amount == tx_c.net_amount:
-                ddiff = _date_diff_days(tx_p.transaction_date, tx_c.transaction_date)
-                if ddiff is None or ddiff <= cfg.date_tolerance_days:
-                    amt_candidates.append((tx_c, ddiff or 0))
+        if p_amt_key in amt_map:
+            for cand in amt_map[p_amt_key]:
+                if cand.transaction_id in matched_cnt_ids:
+                    continue
+                if not candidates_compatible(tx_p, cand):
+                    continue
+                if tx_p.net_amount == cand.net_amount:
+                    ddiff = _date_diff_days(tx_p.transaction_date, cand.transaction_date)
+                    if ddiff is None or ddiff <= cfg.date_tolerance_days:
+                        amt_candidates.append((cand, ddiff or 0))
 
         if len(amt_candidates) == 1:
             tx_c, ddiff = amt_candidates[0]

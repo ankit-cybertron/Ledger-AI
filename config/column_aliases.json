@@ -15,7 +15,12 @@
     "invoice number",
     "Bill No",
     "Bill Number",
-    "Invoice No"
+    "Invoice No",
+    "Refund ID",
+    "Payment ID",
+    "Transaction ID",
+    "Reference No",
+    "Voucher No"
   ],
   "gross_amount": [
     "gross_amount",
@@ -26,7 +31,10 @@
     "txn_amount",
     "gross amount (usd)",
     "Gross Amount",
-    "Gross Sale Value"
+    "Gross Sale Value",
+    "Amount",
+    "Refund Amount",
+    "Order Amount"
   ],
   "net_amount": [
     "amount",
@@ -65,7 +73,8 @@
     "Debit (INR)",
     "Balance (INR)",
     "Incomplete/failed transaction",
-    "Card DECLINED with no retry \u2014 bill has no valid completed payment"
+    "Card DECLINED with no retry \u2014 bill has no valid completed payment",
+    "Amount Received"
   ],
   "debit_amount": [
     "debit",
@@ -248,18 +257,22 @@
     "statement_id",
     "primary_statement_id",
     "counterpart_statement_id",
-    "expected_status"
+    "expected_status",
+    "Adjustment Type",
+    "Order Status"
   ],
   "auth_code": [
     "auth_code",
     "approval_code",
     "auth code / ref",
-    "auth code/ref"
+    "auth code/ref",
+    "Original Reference"
   ],
   "card_network": [
     "card_network",
     "card_type",
-    "scheme"
+    "scheme",
+    "Card Network"
   ],
   "currency": [
     "currency",

@@ -58,13 +58,11 @@ def candidates_compatible(
 
     # 3. Direction & Transaction Type Gate
     if a.direction and b.direction:
-        dir_a = a.direction.upper().strip()
-        dir_b = b.direction.upper().strip()
+        dir_a = "CREDIT" if a.direction.upper().strip() in ("CREDIT", "CR", "IN") else ("DEBIT" if a.direction.upper().strip() in ("DEBIT", "DR", "OUT") else a.direction.upper().strip())
+        dir_b = "CREDIT" if b.direction.upper().strip() in ("CREDIT", "CR", "IN") else ("DEBIT" if b.direction.upper().strip() in ("DEBIT", "DR", "OUT") else b.direction.upper().strip())
 
         if not allow_refund_mode:
-            # In standard settlement reconciliation:
-            # Internal Order / Gateway deposit line (CREDIT) matches Bank credit line (CREDIT).
-            # If one is DEBIT and the other is CREDIT, they are opposite flows and should not match unless refund mode.
-            pass
+            if dir_a in ("CREDIT", "DEBIT") and dir_b in ("CREDIT", "DEBIT") and dir_a != dir_b:
+                return False
 
     return True

@@ -34,7 +34,7 @@ def find_similar_candidates(
     elif isinstance(candidate_pool, pd.DataFrame):
         cands = [row_to_canonical(row, "cand_tx") for _, row in candidate_pool.iterrows()]
     else:
-        cands = [row_to_canonical(item, "cand_tx") for item in candidate_pool]
+        cands = [item if isinstance(item, CanonicalTransaction) else row_to_canonical(item, "cand_tx") for item in candidate_pool]
 
     results = []
     min_score = getattr(cfg, "similarity_minimum_score", 0.40)

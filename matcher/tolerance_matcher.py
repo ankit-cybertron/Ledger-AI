@@ -11,6 +11,7 @@ Extends tolerance matching logic for primary vs counterpart transaction sets:
 
 import re
 import math
+import bisect
 from pathlib import Path
 from difflib import SequenceMatcher
 from typing import Optional, List, Any, Dict, Tuple, Union
@@ -192,12 +193,45 @@ def tolerance_match(
     matches = []
     tie_exceptions = []
 
+    # Build sorted counterpart list for O(log M) binary search window slicing
+    cnt_items = []
+    for tx_c in unresolved_cnt:
+        try:
+            c_net = float(expected_net(tx_c, cfg) or 0.0)
+        except Exception:
+            c_net = 0.0
+        cnt_items.append((c_net, tx_c))
+    cnt_items.sort(key=lambda x: x[0])
+    cnt_amounts = [x[0] for x in cnt_items]
+
     for tx_p in unresolved_pri:
         p_amt = expected_net(tx_p, cfg)
         eff_tol = get_effective_tolerance(p_amt, cfg)
+        if math.isnan(eff_tol) or pd.isna(eff_tol):
+            eff_tol = 0.0
 
         candidates = []
-        for tx_c in unresolved_cnt:
+        low_val = p_amt - eff_tol
+        high_val = p_amt + eff_tol
+
+        idx_low = bisect.bisect_left(cnt_amounts, low_val)
+        idx_high = bisect.bisect_right(cnt_amounts, high_val)
+
+        candidate_subset = [item[1] for item in cnt_items[idx_low:idx_high]]
+
+        # If fee_aware_matching is enabled, also check any gross-adjusted candidates outside the standard net slice
+        if cfg.fee_aware_matching:
+            already_included = {c.transaction_id for c in candidate_subset}
+            for tx_c in unresolved_cnt:
+                if tx_c.transaction_id in already_included:
+                    continue
+                if pd.notna(tx_c.gross_amount):
+                    c_exp_net = expected_net(tx_c, cfg)
+                    diff_gross = abs(p_amt - c_exp_net)
+                    if not (math.isnan(diff_gross) or pd.isna(diff_gross)) and diff_gross <= eff_tol:
+                        candidate_subset.append(tx_c)
+
+        for tx_c in candidate_subset:
             if not candidates_compatible(tx_p, tx_c):
                 continue
 
@@ -215,7 +249,23 @@ def tolerance_match(
             if ddiff > cfg.date_tolerance_days:
                 continue
 
-            sim = narration_similarity(tx_p.utr or tx_p.description, tx_c.description or tx_c.utr)
+            has_exact_id = False
+            if tx_p.utr and tx_c.utr and str(tx_p.utr).strip().upper() == str(tx_c.utr).strip().upper():
+                has_exact_id = True
+            elif tx_p.order_id and tx_c.order_id and str(tx_p.order_id).strip().upper() == str(tx_c.order_id).strip().upper():
+                has_exact_id = True
+            elif tx_p.rrn and tx_c.rrn and str(tx_p.rrn).strip().upper() == str(tx_c.rrn).strip().upper():
+                has_exact_id = True
+
+            desc_p = tx_p.description or tx_p.utr or ""
+            desc_c = tx_c.description or tx_c.utr or ""
+            sim = narration_similarity(desc_p, desc_c)
+            if has_exact_id:
+                sim = max(sim, 1.0)
+            elif tx_p.utr and str(tx_p.utr).lower() != "nan" and str(tx_p.utr).lower() in str(desc_c).lower():
+                sim = max(sim, 1.0)
+            elif tx_c.utr and str(tx_c.utr).lower() != "nan" and str(tx_c.utr).lower() in str(desc_p).lower():
+                sim = max(sim, 1.0)
 
             candidates.append({
                 "primary_transaction_id": tx_p.transaction_id,
@@ -224,7 +274,8 @@ def tolerance_match(
                 "counterpart_statement_id": tx_c.counterpart_statement_id or "",
                 "amount_difference": round(amt_diff, 2),
                 "date_difference_days": ddiff,
-                "narration_similarity": round(sim, 4)
+                "narration_similarity": round(sim, 4),
+                "has_exact_id": has_exact_id,
             })
 
         if not candidates:
@@ -233,8 +284,8 @@ def tolerance_match(
         candidates.sort(key=lambda x: (x["amount_difference"], x["date_difference_days"], -x["narration_similarity"]))
         best = candidates[0]
 
-        if tx_p.utr and tx_p.utr.lower() != "nan":
-            if best["narration_similarity"] < cfg.narration_similarity_threshold:
+        if tx_p.utr and str(tx_p.utr).lower() != "nan":
+            if not best.get("has_exact_id", False) and best["narration_similarity"] < cfg.narration_similarity_threshold:
                 continue
 
         # Ambiguous Tie Check
@@ -257,8 +308,22 @@ def tolerance_match(
                 })
                 continue
 
+        best_cand_id = best["counterpart_transaction_id"]
+        best_tx_c = next((c for c in unresolved_cnt if c.transaction_id == best_cand_id), None)
+
+        id_match_type = "none"
+        if best_tx_c:
+            if tx_p.utr and best_tx_c.utr and str(tx_p.utr).strip().upper() == str(best_tx_c.utr).strip().upper():
+                id_match_type = "exact_utr"
+            elif tx_p.order_id and best_tx_c.order_id and str(tx_p.order_id).strip().upper() == str(best_tx_c.order_id).strip().upper():
+                id_match_type = "exact_order_id"
+            elif tx_p.rrn and best_tx_c.rrn and str(tx_p.rrn).strip().upper() == str(best_tx_c.rrn).strip().upper():
+                id_match_type = "exact_rrn"
+            elif best["narration_similarity"] >= cfg.narration_similarity_threshold:
+                id_match_type = "partial"
+
         ev = MatchEvidence(
-            identifier_match_type="partial" if best["narration_similarity"] >= cfg.narration_similarity_threshold else "none",
+            identifier_match_type=id_match_type,
             amount_diff=best["amount_difference"],
             date_diff_days=best["date_difference_days"],
             narration_similarity=best["narration_similarity"]

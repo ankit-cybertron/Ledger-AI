@@ -42,36 +42,32 @@ def run_full_pipeline(cfg: MatchingConfig = None) -> dict:
     print("STARTING FULL RECONCILIATION PIPELINE (T5.4)")
     print("=" * 60)
 
-    # 1. Exact Matching
-    pipeline_tracker.update_progress(35, "[Pipeline Step 2/6] Running Clean Exact Matcher...", "Running Clean Exact Matcher...", level="RULE")
-    print("\n[Pipeline Step 2/6] Running Exact Matching...")
-    exact_matcher.main()
-
-    # 2. Tolerance Matching
-    pipeline_tracker.update_progress(55, "[Pipeline Step 3/6] Running Settlement Lag & MDR Fee Solver...", "Running Settlement Lag & MDR Fee Solver...", level="RULE")
-    print("\n[Pipeline Step 3/6] Running Tolerance & Split Matching...")
-    tolerance_matcher.main()
-
-    # 3. ML Feature Building & Confidence Evaluation
-    pipeline_tracker.update_progress(75, "[Pipeline Step 4/6] Evaluating ML Feature Schema & Model...", "Evaluating ML Feature Schema & Confidence Scores...", level="ML")
-    print("\n[Pipeline Step 4/6] Building ML Feature Vectors & Evaluating Model...")
-    build_training_data.main()
-    evaluate_confidence_model.main()
-
-    # 4. Reconciliation Aggregator (No automatic LLM invocation per T5.3)
-    pipeline_tracker.update_progress(85, "[Pipeline Step 5/6] Aggregating Outcomes & Building Exception Ledger...", "Aggregating Pipeline Outcomes...", level="RECON")
-    print("\n[Pipeline Step 5/6] Aggregating Reconciliation Outcomes & Building Exception Ledger...")
+    # 1. Reconciliation Engine (Unified Exact, Tolerance, and Similarity Matching)
+    pipeline_tracker.update_progress(45, "[Pipeline Step 2/5] Running Unified Matching Engine...", "Executing High-Performance Reconciliation...", level="RULE")
+    print("\n[Pipeline Step 2/5] Running High-Performance Unified Reconciliation...")
     reconcile_df = reconcile.reconcile(cfg=cfg)
 
-    # 5. Exception Ledger
-    pipeline_tracker.update_progress(90, "[Pipeline Step 5/6] Aggregating Outcomes & Building Exception Ledger...", "Compiling Exception Ledger...", level="RECON")
-    print("\n[Pipeline Step 5/6] Building Exception Ledger...")
+    # 2. ML Feature Building & Confidence Evaluation
+    pipeline_tracker.update_progress(70, "[Pipeline Step 3/5] Evaluating ML Feature Schema & Model...", "Evaluating ML Features...", level="ML")
+    print("\n[Pipeline Step 3/5] Building ML Feature Vectors & Evaluating Model...")
+    try:
+        build_training_data.main()
+        evaluate_confidence_model.main()
+    except Exception as ml_err:
+        print(f"[NOTE] ML evaluation skipped: {ml_err}")
+
+    # 3. Exception Ledger
+    pipeline_tracker.update_progress(85, "[Pipeline Step 4/5] Compiling Exception Ledger...", "Compiling Exception Ledger...", level="RECON")
+    print("\n[Pipeline Step 4/5] Building Exception Ledger...")
     exception_ledger.main()
 
-    # 6. Report Generation
-    pipeline_tracker.update_progress(95, "[Pipeline Step 6/6] Generating Reconciliation Audit Report...", "Building PDF & Excel Audit Reports...", level="SUCCESS")
-    print("\n[Pipeline Step 6/6] Generating Reconciliation Report...")
-    generate_report.main()
+    # 4. Report Generation (Safe Non-blocking Execution)
+    pipeline_tracker.update_progress(95, "[Pipeline Step 5/5] Generating Audit Reports...", "Compiling Audit Reports...", level="SUCCESS")
+    print("\n[Pipeline Step 5/5] Generating Reconciliation Report...")
+    try:
+        generate_report.main()
+    except Exception as rep_err:
+        print(f"[NOTE] Audit report generation skipped: {rep_err}")
 
     # Reload QA Agent Data
     try:

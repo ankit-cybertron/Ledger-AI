@@ -64,14 +64,15 @@ def load_csv(path: Path) -> pd.DataFrame:
 
 def _get_primary_statement_ids() -> Set[str]:
     primary_ids = set()
-    db_path = ROOT / "frontend" / "data" / "statements_db.json"
+    db_path = ROOT / "data" / "statements_db.json"
     if db_path.exists():
         try:
             with open(db_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                for stmt_id, stmt in data.items():
-                    if stmt.get("is_primary"):
-                        primary_ids.add(str(stmt_id))
+                stmts = data.get("statements", []) if isinstance(data, dict) else []
+                for stmt in stmts:
+                    if isinstance(stmt, dict) and stmt.get("is_primary"):
+                        primary_ids.add(str(stmt.get("id", "")))
         except Exception:
             pass
 
@@ -315,7 +316,7 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
                     continue
                 cand_pool.extend([t for t in s_other["txs"] if t.transaction_id not in resolved_ids])
 
-            similar_cands = find_similar_candidates(tx, to_df(cand_pool), cfg)
+            similar_cands = find_similar_candidates(tx, cand_pool, cfg)
             if similar_cands:
                 top_cand = similar_cands[0]
                 c_id = str(top_cand["candidate_id"]).strip()
@@ -358,6 +359,15 @@ def reconcile(cfg: Optional[MatchingConfig] = None) -> pd.DataFrame:
     ])
 
     res_df.to_csv(OUTPUT_PATH, index=False)
+
+    # Save exact and tolerance match slices for downstream tools & audit reports
+    try:
+        em_slice = res_df[res_df["stage"] == "exact"]
+        em_slice.to_csv(EXACT_RESULTS_PATH, index=False)
+        tm_slice = res_df[res_df["stage"].isin(["tolerance", "split_aggregate"])]
+        tm_slice.to_csv(TOLERANCE_RESULTS_PATH, index=False)
+    except Exception:
+        pass
 
     print("=" * 60)
     print("LEDGER - RECONCILIATION COMPLETE (Four-Status Taxonomy v2)")
