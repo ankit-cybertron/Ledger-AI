@@ -8,6 +8,7 @@ to ingestion/*.py engines (single source of truth).
 
 import json
 import os
+import re
 import random
 import shutil
 import string
@@ -93,13 +94,6 @@ _DB_LOCK = threading.Lock()
 
 def _load_db():
     _ensure_data_dir()
-    seed_file = DB_FILE.replace(".json", "_seed.json")
-    if not os.path.exists(DB_FILE) and os.path.exists(seed_file):
-        try:
-            shutil.copy(seed_file, DB_FILE)
-        except Exception:
-            pass
-
     with _DB_LOCK:
         for attempt in range(5):
             try:
@@ -107,30 +101,7 @@ def _load_db():
                     return {"statements": []}
                 with open(DB_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    
-                existing_codes = {s.get("serial_code") for s in data.get("statements", []) if s.get("serial_code")}
-                needs_save = False
-                for stmt in data.get("statements", []):
-                    if not stmt.get("serial_code"):
-                        stmt["serial_code"] = generate_unique_serial_code(existing_codes)
-                        existing_codes.add(stmt["serial_code"])
-                        needs_save = True
-                    scode = stmt["serial_code"]
-                    if "rows" in stmt and isinstance(stmt["rows"], list):
-                        sanitized = []
-                        for idx, r in enumerate(stmt["rows"]):
-                            sr = _sanitize_statement_row(r, stmt.get("name"))
-                            if isinstance(sr, dict):
-                                expected_serial = f"{scode}-{idx + 1}"
-                                if sr.get("serial_no") != expected_serial or sr.get("serial_code") != scode:
-                                    sr["serial_no"] = expected_serial
-                                    sr["serial_code"] = scode
-                                    needs_save = True
-                            sanitized.append(sr)
-                        stmt["rows"] = sanitized
-                if needs_save:
-                    _save_db_unlocked(data)
-                return data
+                return data if isinstance(data, dict) else {"statements": []}
             except (json.JSONDecodeError, OSError):
                 time.sleep(0.05)
         return {"statements": []}

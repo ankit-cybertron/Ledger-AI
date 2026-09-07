@@ -104,6 +104,12 @@ def logout():
 # --------------------------------------------------------------------------
 
 @app.route("/overview")
+@login_required
+def overview():
+    context = overview_page.get_context(_username())
+    return render_template("overview.html", **context)
+
+
 @app.route("/chat")
 @app.route("/reports")
 @app.route("/matching-config")
@@ -111,7 +117,6 @@ def logout():
 @login_required
 def page_redirects():
     route_map = {
-        "overview": "sub-overview",
         "chat": "sub-talk-to-ledger",
         "reports": "sub-reports",
         "config": "sub-config",
@@ -125,8 +130,15 @@ def page_redirects():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    if not app.config.get("TESTING_DISABLE_AUTO_RESET"):
+        try:
+            from api.routes import clear_all_data_state
+            clear_all_data_state()
+        except Exception:
+            pass
     context = dashboard_page.get_context(_username())
     return render_template("dashboard.html", **context)
+
 
 
 

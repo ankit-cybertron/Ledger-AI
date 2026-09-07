@@ -14,15 +14,15 @@ STATUS_COLUMNS below and the rest of this file needs no changes.
 from data_access import file_exists
 
 
-def get_context():
+def get_context(username=None):
     """
     Assembles context for templates/overview.html using canonical reconciliation pipeline output (T9.1).
     Returns total transactions, counts, percentages, and pre-computed data structures for all 6 Overview charts.
     """
     try:
         from api.routes import _build_dashboard_run
-        from datetime import datetime
-        run = _build_dashboard_run(datetime.utcnow().strftime("%B %Y"))
+        from datetime import datetime, timezone
+        run = _build_dashboard_run(datetime.now(timezone.utc).strftime("%B %Y"))
         s = run.get("summary", {})
         total = s.get("total_transactions", 0)
         auto = s.get("auto_matched", 0)

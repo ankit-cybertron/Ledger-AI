@@ -19,7 +19,7 @@ import sys
 import threading
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Dict, List
 
 from flask import Blueprint, current_app, jsonify, request, Response, send_file, session
@@ -54,6 +54,30 @@ if FRONTEND_DIR not in sys.path:
 
 from data_access import read_csv_rows, file_exists
 from statement_store import list_statements
+
+
+def map_txn_to_taxonomy(status_val: str, period_settled: bool = False) -> str:
+    """Map raw transaction status string to Part 3B / Part 9 taxonomy (SETTLED, MATCHED, SIMILAR, UNMATCHED)."""
+    st = (status_val or "").lower().strip()
+    if st == "settled" or (period_settled and st in {"auto", "matched"}):
+        return "SETTLED"
+    elif st in {"auto", "matched"}:
+        return "MATCHED"
+    elif st in {"manual", "llm", "similar", "review"}:
+        return "SIMILAR"
+    else:
+        return "UNMATCHED"
+
+
+def _format_ddmmyyyy(d_str: Any) -> str:
+    if not d_str:
+        return ""
+    d_s = str(d_str).split("T")[0].split(" ")[0].strip()
+    parts = d_s.split("-")
+    if len(parts) == 3 and len(parts[0]) == 4:
+        return f"{parts[2]}/{parts[1]}/{parts[0]}"
+    return d_s
+
 
 RESULTS_DIR = os.path.join(LEDGER_ROOT, "data", "results")
 GENERATED_DIR = os.path.join(LEDGER_ROOT, "data", "generated")
@@ -159,12 +183,11 @@ def _extract_date(row):
     d = row.to_dict() if hasattr(row, "to_dict") else dict(row)
     for k in ["Order Date", "order_date", "Date", "date", "Txn Date", "txn_date", "Value Date", "value_date", "created_at", "transaction_date", "Time", "time"]:
         val = d.get(k)
-        if not pd.isna(val) and val is not None:
+        if val is not None and str(val).strip().lower() not in ["nan", "none", "null", "undefined", "—", ""]:
             s = str(val).strip()
-            if s and s.lower() not in ["nan", "none", "null", "undefined", "—"]:
-                if "T" in s:
-                    s = s.split("T")[0]
-                return s
+            if "T" in s:
+                s = s.split("T")[0]
+            return s
     return ""
 
 
@@ -237,23 +260,214 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
     """
     total = len(transactions)
 
-    # ── 1. Status Breakdown (SETTLED / MATCHED / SIMILAR / UNMATCHED) ──
     settled_cnt = 0
     matched_cnt = 0
     similar_cnt = 0
     unmatched_cnt = 0
 
+    source_stats = {}
+    variance_buckets: collections.OrderedDict[str, int] = collections.OrderedDict([
+        ("₹0 (Exact)", 0),
+        ("₹0–₹10", 0),
+        ("₹10–₹100", 0),
+        ("₹100–₹1,000", 0),
+        ("₹1,000+", 0),
+    ])
+
+    reason_map = collections.Counter()
+    scatter_points = []
+    point_index_by_id = {}
+    pending_cluster_links = []
+
+    pass_1_cnt = 0
+    pass_2_cnt = 0
+    pass_3_cnt = 0
+    pass_4_cnt = 0
+    unresolved_cnt = 0
+
+    age_tiers = ["0–2 Days", "3–7 Days", "8–14 Days", "15+ Days"]
+    amount_tiers = ["< \u20b91k", "\u20b91k\u2013\u20b910k", "\u20b910k\u2013\u20b9100k", "\u20b9100k+"]
+    risk_matrix = [[{"count": 0, "amount": 0.0} for _ in range(4)] for _ in range(4)]
+    total_exposure = 0.0
+
+    gw_stats = {}
+    today_dt = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # Pre-populate fast amount lookup
+    _tx_amount_by_id = {}
     for t in transactions:
+        tid = t.get("id") or t.get("primary_id")
+        if tid:
+            try:
+                _tx_amount_by_id[str(tid)] = abs(float(t.get("amount") or 0.0))
+            except Exception:
+                pass
+
+    # Single-pass accumulator over all transactions
+    for idx, t in enumerate(transactions):
         st = (t.get("status") or "").lower()
+        amt = float(t.get("amount") or 0.0)
+        abs_amt = abs(amt)
+        sname = t.get("source_name") or t.get("source_type_label") or "Primary Statement"
+        evidence = t.get("evidence") or {}
+        rule_text = (evidence.get("rule") or t.get("rule") or "").lower()
+        flags = evidence.get("flags") or []
+        conf = float(t.get("confidence") or 0.0)
+
+        # 1. Status classification
         if st == "settled" or (period_settled and st in {"auto", "matched"}):
             settled_cnt += 1
+            cat = "SETTLED"
         elif st in {"auto", "matched"}:
             matched_cnt += 1
+            cat = "MATCHED"
         elif st in {"manual", "llm", "similar", "review"}:
             similar_cnt += 1
+            cat = "SIMILAR"
         else:
             unmatched_cnt += 1
+            cat = "UNMATCHED"
 
+        # 2. Source-wise contribution
+        if sname not in source_stats:
+            source_stats[sname] = {"SETTLED": 0, "MATCHED": 0, "SIMILAR": 0, "UNMATCHED": 0}
+        source_stats[sname][cat] += 1
+
+        # 3. Matching cascade
+        if st in {"settled", "matched", "auto", "similar", "llm"}:
+            if "llm" in rule_text or "groq" in rule_text or st == "llm":
+                pass_4_cnt += 1
+            elif "split" in rule_text or "aggregate" in rule_text or "n:1" in rule_text:
+                pass_3_cnt += 1
+            elif "tolerance" in rule_text or "fee" in rule_text or "mdr" in rule_text or "lag" in rule_text:
+                pass_2_cnt += 1
+            elif "exact" in rule_text or "utr" in rule_text or "clean" in rule_text or conf >= 0.9:
+                pass_1_cnt += 1
+            else:
+                pass_2_cnt += 1
+        else:
+            unresolved_cnt += 1
+
+        # 4. Exception classification & Risk matrix
+        if st in {"exception", "unmatched", "unreconciled", "manual", "similar", "review"}:
+            classified = False
+            if "duplicate" in rule_text or "Duplicate Discrepancy" in flags:
+                reason_map["Duplicate Transaction"] += 1
+                classified = True
+            if "amount" in rule_text or "tolerance" in rule_text or "fee" in rule_text:
+                reason_map["Amount Mismatch"] += 1
+                classified = True
+            if "date" in rule_text or "time" in rule_text or "lag" in rule_text:
+                reason_map["Date/Time Mismatch"] += 1
+                classified = True
+            if "reference" in rule_text or "utr" in rule_text or "narration" in rule_text:
+                reason_map["Reference/UTR Mismatch"] += 1
+                classified = True
+            if "currency" in rule_text or "fx" in rule_text:
+                reason_map["Source Mismatch"] += 1
+                classified = True
+            if "no candidate" in rule_text or "no match" in rule_text or "overlap" in rule_text:
+                reason_map["Missing Transaction"] += 1
+                classified = True
+            if not classified:
+                reason_map["Other"] += 1
+
+            total_exposure += abs_amt
+            tx_date_str = str(t.get("date") or "").split("T")[0].split(" ")[0].strip()
+            days_open = 1
+            if tx_date_str and tx_date_str.lower() not in {"nan", "none", "", "\u2014"}:
+                try:
+                    tx_dt = datetime.strptime(tx_date_str, "%Y-%m-%d")
+                    days_open = max((today_dt - tx_dt).days, 0)
+                except Exception:
+                    days_open = 1
+
+            amt_idx = 0 if abs_amt < 1000 else (1 if abs_amt < 10000 else (2 if abs_amt < 100000 else 3))
+            age_idx = 0 if days_open <= 2 else (1 if days_open <= 7 else (2 if days_open <= 14 else 3))
+            risk_matrix[amt_idx][age_idx]["count"] += 1
+            risk_matrix[amt_idx][age_idx]["amount"] += round(abs_amt, 2)
+
+        # 5. Amount Variance Distribution
+        counterpart = t.get("counterpart")
+        if st in {"settled", "matched", "similar", "llm", "auto"} and counterpart:
+            cp_id = str(counterpart.get("id", ""))
+            cp_amt = _tx_amount_by_id.get(cp_id, abs_amt)
+            diff = abs(abs_amt - cp_amt)
+            if diff == 0.0:
+                variance_buckets["\u20b90 (Exact)"] += 1
+            elif diff <= 10:
+                variance_buckets["\u20b90\u2013\u20b910"] += 1
+            elif diff <= 100:
+                variance_buckets["\u20b910\u2013\u20b9100"] += 1
+            elif diff <= 1000:
+                variance_buckets["\u20b9100\u2013\u20b91,000"] += 1
+            else:
+                variance_buckets["\u20b91,000+"] += 1
+        elif st in {"exception", "unmatched", "unreconciled", "manual"}:
+            variance_buckets["\u20b91,000+"] += 1
+
+        # 6. Scatter Points
+        date_str = t.get("date") or ""
+        if date_str and date_str.strip().lower() not in ("nan", "none", "", "\u2014"):
+            d_clean = str(date_str).split("T")[0].split(" ")[0].strip()
+            point = {
+                "x": d_clean,
+                "y": abs_amt,
+                "id": t.get("id") or "",
+                "source": sname,
+                "sourceColor": t.get("source_color") or "#3b82f6",
+                "status": st,
+                "amount": amt,
+                "date": d_clean,
+                "utr": t.get("utr") or "",
+                "description": (t.get("description") or "")[:60],
+            }
+            point_index_by_id[t.get("id") or f"__idx_{idx}"] = len(scatter_points)
+            scatter_points.append(point)
+
+        # Track counterpart for cluster link formation
+        if counterpart:
+            c_id = counterpart.get("id")
+            if c_id:
+                pending_cluster_links.append((t.get("id") or "", c_id))
+
+        # 7. Gateway Performance
+        if sname not in gw_stats:
+            gw_stats[sname] = {"total": 0, "matched": 0, "fee_variance": 0.0}
+        gw_stats[sname]["total"] += 1
+        if st in {"settled", "matched", "auto", "similar", "llm"}:
+            gw_stats[sname]["matched"] += 1
+
+        fee_diff = 0.0
+        if isinstance(counterpart, dict):
+            cp_amt_val = counterpart.get("amount") or counterpart.get("net_amount")
+            if cp_amt_val is not None:
+                cp_amt = abs(float(cp_amt_val))
+            else:
+                cp_amt = _tx_amount_by_id.get(str(counterpart.get("id", "")), abs_amt)
+            fee_diff = abs(abs_amt - cp_amt)
+        elif t.get("amount_diff") is not None:
+            fee_diff = abs(float(t.get("amount_diff")))
+        elif t.get("fee_variance") is not None:
+            fee_diff = abs(float(t.get("fee_variance")))
+
+        if fee_diff > 0:
+            gw_stats[sname]["fee_variance"] += fee_diff
+
+    # Finalize cluster links
+    cluster_links = []
+    seen_links = set()
+    for t_id, c_id in pending_cluster_links:
+        if t_id in point_index_by_id and c_id in point_index_by_id:
+            i1 = point_index_by_id[t_id]
+            i2 = point_index_by_id[c_id]
+            if i1 != i2:
+                link = tuple(sorted([i1, i2]))
+                if link not in seen_links:
+                    seen_links.add(link)
+                    cluster_links.append(list(link))
+
+    # Assemble final chart structures
     status_breakdown = {
         "labels": ["SETTLED", "MATCHED", "SIMILAR", "UNMATCHED"],
         "counts": [settled_cnt, matched_cnt, similar_cnt, unmatched_cnt],
@@ -265,31 +479,12 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
         ]
     }
 
-    # ── 2. Status Composition (100% stacked horizontal bar) ──
     status_composition = {
         "labels": ["SETTLED", "MATCHED", "SIMILAR", "UNMATCHED"],
         "counts": [settled_cnt, matched_cnt, similar_cnt, unmatched_cnt],
         "total": total,
     }
 
-    # ── 3. Source-wise Contribution (stacked bar per source) ──
-    source_stats = {}
-    for t in transactions:
-        sname = t.get("source_name") or t.get("source_type_label") or "Primary Statement"
-        if sname not in source_stats:
-            source_stats[sname] = {"SETTLED": 0, "MATCHED": 0, "SIMILAR": 0, "UNMATCHED": 0}
-
-        st = (t.get("status") or "").lower()
-        if st == "settled" or (period_settled and st in {"auto", "matched"}):
-            source_stats[sname]["SETTLED"] += 1
-        elif st in {"auto", "matched"}:
-            source_stats[sname]["MATCHED"] += 1
-        elif st in {"manual", "llm", "similar", "review"}:
-            source_stats[sname]["SIMILAR"] += 1
-        else:
-            source_stats[sname]["UNMATCHED"] += 1
-
-    # Sort sources by total transaction count descending
     source_labels_sorted = sorted(
         source_stats.keys(),
         key=lambda s: sum(source_stats[s].values()),
@@ -305,164 +500,21 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
         }
     }
 
-    # ── 4. Amount Variance Distribution ──
-    # Compute variance between matched primary and counterpart amounts
-    variance_buckets = collections.OrderedDict([
-        ("\u20b90 (Exact)", 0),
-        ("\u20b90\u2013\u20b910", 0),
-        ("\u20b910\u2013\u20b9100", 0),
-        ("\u20b9100\u2013\u20b91,000", 0),
-        ("\u20b91,000+", 0),
-    ])
-    # Build a lookup of transaction amounts by id for counterpart comparison
-    _tx_amount_by_id = {}
-    for t in transactions:
-        tid = t.get("id") or t.get("primary_id")
-        if tid:
-            _tx_amount_by_id[tid] = abs(float(t.get("amount") or 0.0))
-
-    for t in transactions:
-        st = (t.get("status") or "").lower()
-        counterpart = t.get("counterpart")
-        if st in {"settled", "matched", "similar", "llm", "auto"} and counterpart:
-            cp_id = counterpart.get("id", "")
-            t_amt = abs(float(t.get("amount") or 0.0))
-            cp_amt = _tx_amount_by_id.get(cp_id, t_amt)
-            diff = abs(t_amt - cp_amt)
-            if diff == 0.0:
-                variance_buckets["\u20b90 (Exact)"] += 1
-            elif diff <= 10:
-                variance_buckets["\u20b90\u2013\u20b910"] += 1
-            elif diff <= 100:
-                variance_buckets["\u20b910\u2013\u20b9100"] += 1
-            elif diff <= 1000:
-                variance_buckets["\u20b9100\u2013\u20b91,000"] += 1
-            else:
-                variance_buckets["\u20b91,000+"] += 1
-        elif st in {"exception", "unmatched", "unreconciled", "manual"}:
-            # Unmatched transactions have unknown variance — count as missing
-            variance_buckets["\u20b91,000+"] += 1
-
     amount_variance = {
         "labels": list(variance_buckets.keys()),
         "counts": list(variance_buckets.values()),
     }
 
-    # ── 5. Mismatch Reasons ──
-    # Derive reasons from the reconciliation results CSV reason field and evidence
-    reason_map = collections.Counter()
-    for t in transactions:
-        st = (t.get("status") or "").lower()
-        if st not in {"exception", "unmatched", "unreconciled", "manual", "similar", "review"}:
-            continue
-        evidence = t.get("evidence") or {}
-        rule_text = (evidence.get("rule") or t.get("rule") or "").lower()
-        flags = evidence.get("flags") or []
-
-        # Classify mismatch reason from rule text and flags
-        classified = False
-        if "duplicate" in rule_text or "Duplicate Discrepancy" in flags:
-            reason_map["Duplicate Transaction"] += 1
-            classified = True
-        if "amount" in rule_text or "tolerance" in rule_text or "fee" in rule_text:
-            reason_map["Amount Mismatch"] += 1
-            classified = True
-        if "date" in rule_text or "time" in rule_text or "lag" in rule_text:
-            reason_map["Date/Time Mismatch"] += 1
-            classified = True
-        if "reference" in rule_text or "utr" in rule_text or "narration" in rule_text:
-            reason_map["Reference/UTR Mismatch"] += 1
-            classified = True
-        if "currency" in rule_text or "fx" in rule_text:
-            reason_map["Source Mismatch"] += 1
-            classified = True
-        if "no candidate" in rule_text or "no match" in rule_text or "overlap" in rule_text:
-            reason_map["Missing Transaction"] += 1
-            classified = True
-        if not classified:
-            reason_map["Other"] += 1
-
-    # Sort by count descending
     sorted_reasons = sorted(reason_map.items(), key=lambda x: x[1], reverse=True)
     mismatch_reasons = {
         "labels": [r[0] for r in sorted_reasons] if sorted_reasons else ["No Mismatches"],
         "counts": [r[1] for r in sorted_reasons] if sorted_reasons else [0],
     }
 
-    # ── 6. Time × Amount Scatter Map ──
-    scatter_points = []
-    cluster_links = []  # pairs of point indices that are matched
-    point_index_by_id = {}  # tx_id -> scatter index
-
-    for idx, t in enumerate(transactions):
-        date_str = t.get("date") or ""
-        amt = float(t.get("amount") or 0.0)
-        if not date_str or date_str.strip().lower() in ("nan", "none", "", "\u2014"):
-            continue
-        # Normalise date to ISO for JS parsing
-        d_clean = str(date_str).split("T")[0].split(" ")[0].strip()
-        st = (t.get("status") or "").lower()
-        point = {
-            "x": d_clean,
-            "y": abs(amt),
-            "id": t.get("id") or "",
-            "source": t.get("source_name") or "Unknown",
-            "sourceColor": t.get("source_color") or "#3b82f6",
-            "status": st,
-            "amount": amt,
-            "date": d_clean,
-            "utr": t.get("utr") or "",
-            "description": (t.get("description") or "")[:60],
-        }
-        point_index_by_id[t.get("id") or f"__idx_{idx}"] = len(scatter_points)
-        scatter_points.append(point)
-
-    # Build cluster links from matched counterparts
-    for t in transactions:
-        counterpart = t.get("counterpart")
-        if not counterpart:
-            continue
-        t_id = t.get("id") or ""
-        c_id = counterpart.get("id") or ""
-        if t_id in point_index_by_id and c_id in point_index_by_id:
-            i1 = point_index_by_id[t_id]
-            i2 = point_index_by_id[c_id]
-            if i1 != i2:
-                link = tuple(sorted([i1, i2]))
-                if link not in {tuple(sorted(l)) for l in cluster_links}:
-                    cluster_links.append(list(link))
-
     scatter_map = {
         "points": scatter_points,
         "links": cluster_links,
     }
-
-    # ── 7. Matching Cascade (Waterfall / Pass Breakdown) ──
-    pass_1_cnt = 0
-    pass_2_cnt = 0
-    pass_3_cnt = 0
-    pass_4_cnt = 0
-    unresolved_cnt = 0
-
-    for t in transactions:
-        st = (t.get("status") or "").lower()
-        evidence = t.get("evidence") or {}
-        rule_text = (evidence.get("rule") or t.get("rule") or "").lower()
-        conf = float(t.get("confidence") or 0.0)
-
-        if st in {"settled", "matched", "auto", "similar", "llm"}:
-            if "llm" in rule_text or "groq" in rule_text or st == "llm":
-                pass_4_cnt += 1
-            elif "split" in rule_text or "aggregate" in rule_text or "n:1" in rule_text:
-                pass_3_cnt += 1
-            elif "tolerance" in rule_text or "fee" in rule_text or "mdr" in rule_text or "lag" in rule_text:
-                pass_2_cnt += 1
-            elif "exact" in rule_text or "utr" in rule_text or "clean" in rule_text or conf >= 0.9:
-                pass_1_cnt += 1
-            else:
-                pass_2_cnt += 1
-        else:
-            unresolved_cnt += 1
 
     matching_cascade = {
         "labels": ["Pass 1: UTR Exact", "Pass 2: Fee Tolerance", "Pass 3: N:1 Split Batch", "Pass 4: Groq LLM Match", "Unresolved Exceptions"],
@@ -476,57 +528,6 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
         ]
     }
 
-    # ── 8. Exception Risk Exposure Matrix (Age vs Amount Exposure) ──
-    age_tiers = ["0–2 Days", "3–7 Days", "8–14 Days", "15+ Days"]
-    amount_tiers = ["< \u20b91k", "\u20b91k\u2013\u20b910k", "\u20b910k\u2013\u20b9100k", "\u20b9100k+"]
-    
-    # 4x4 matrix initialized with zeros
-    risk_matrix = [[{"count": 0, "amount": 0.0} for _ in range(4)] for _ in range(4)]
-    total_exposure = 0.0
-
-    today_dt = datetime.utcnow()
-
-    for t in transactions:
-        st = (t.get("status") or "").lower()
-        if st not in {"exception", "unmatched", "unreconciled", "manual", "similar", "review"}:
-            continue
-
-        amt = abs(float(t.get("amount") or 0.0))
-        total_exposure += amt
-
-        # Parse date to compute age in days
-        tx_date_str = str(t.get("date") or "").split("T")[0].split(" ")[0].strip()
-        days_open = 1
-        if tx_date_str and tx_date_str.lower() not in {"nan", "none", "", "\u2014"}:
-            try:
-                tx_dt = datetime.strptime(tx_date_str, "%Y-%m-%d")
-                days_open = max((today_dt - tx_dt).days, 0)
-            except Exception:
-                days_open = 1
-
-        # Classify amount tier index (0..3)
-        if amt < 1000:
-            amt_idx = 0
-        elif amt < 10000:
-            amt_idx = 1
-        elif amt < 100000:
-            amt_idx = 2
-        else:
-            amt_idx = 3
-
-        # Classify age tier index (0..3)
-        if days_open <= 2:
-            age_idx = 0
-        elif days_open <= 7:
-            age_idx = 1
-        elif days_open <= 14:
-            age_idx = 2
-        else:
-            age_idx = 3
-
-        risk_matrix[amt_idx][age_idx]["count"] += 1
-        risk_matrix[amt_idx][age_idx]["amount"] += round(amt, 2)
-
     exception_risk_matrix = {
         "age_tiers": age_tiers,
         "amount_tiers": amount_tiers,
@@ -534,37 +535,6 @@ def compute_overview_charts(transactions, exceptions, period_settled, percent):
         "total_exposure": round(total_exposure, 2),
         "total_exceptions": unresolved_cnt,
     }
-
-    # ── 9. Gateway Performance & MDR Leakage Matrix ──
-    gw_stats = {}
-    for t in transactions:
-        sname = t.get("source_name") or t.get("source_type_label") or "Primary Statement"
-        if sname not in gw_stats:
-            gw_stats[sname] = {"total": 0, "matched": 0, "fee_variance": 0.0}
-
-        gw_stats[sname]["total"] += 1
-        st = (t.get("status") or "").lower()
-        if st in {"settled", "matched", "auto", "similar", "llm"}:
-            gw_stats[sname]["matched"] += 1
-
-        fee_diff = 0.0
-        counterpart = t.get("counterpart")
-        if isinstance(counterpart, dict):
-            cp_id = counterpart.get("id", "")
-            cp_amt_val = counterpart.get("amount") or counterpart.get("net_amount")
-            if cp_amt_val is not None:
-                cp_amt = abs(float(cp_amt_val))
-            else:
-                cp_amt = _tx_amount_by_id.get(cp_id, abs(float(t.get("amount") or 0.0)))
-            t_amt = abs(float(t.get("amount") or 0.0))
-            fee_diff = abs(t_amt - cp_amt)
-        elif t.get("amount_diff") is not None:
-            fee_diff = abs(float(t.get("amount_diff")))
-        elif t.get("fee_variance") is not None:
-            fee_diff = abs(float(t.get("fee_variance")))
-
-        if fee_diff > 0:
-            gw_stats[sname]["fee_variance"] += fee_diff
 
     gw_labels_sorted = sorted(gw_stats.keys(), key=lambda s: gw_stats[s]["total"], reverse=True) if gw_stats else ["No Gateways"]
     gateway_performance_matrix = {
@@ -677,19 +647,32 @@ def compute_transaction_feature_flags(txn, counterpart=None, raw_row=None, match
         flags.append("Internal Transfer")
 
     # 3. Manual Override Check
-    rule_str = str(txn.get("evidence", {}).get("rule") or (match_info and match_info.get("rule")) or "").lower()
+    rule_str = str(txn.get("evidence", {}).get("rule") or (match_info and match_info.get("rule")) or txn.get("reason") or "").lower()
     status_str = str(txn.get("status") or "").lower()
     if "manual" in rule_str or "override" in rule_str or status_str in ["manual", "manually_edited", "manual_override"] or txn.get("manually_edited"):
         flags.append("Manual Override")
 
-    # 4. Exact UTR Match
-    if "exact" in rule_str or "pass 1" in rule_str or "reference match" in rule_str or (txn.get("utr") and str(txn.get("utr")).strip() not in ["—", "", "nan"] and status_str in ["settled", "matched"] and "manual" not in rule_str):
-        flags.append("Exact UTR Match")
+    # 4. Exact Reference & UTR Matches
+    utr_p = str(txn.get("utr") or "").strip()
+    has_valid_utr_p = bool(utr_p and utr_p.lower() not in ["—", "-", "nan", "none", "null", ""])
+    utr_c = str(counterpart.get("utr") or "").strip() if counterpart else ""
+    has_valid_utr_c = bool(utr_c and utr_c.lower() not in ["—", "-", "nan", "none", "null", ""])
 
-    # 5. Unmatched Reference
-    utr_val = str(txn.get("utr") or "").strip().lower()
-    if (not utr_val or utr_val in ["—", "nan", "none", "null", ""]) or status_str in ["unreconciled", "exception", "unmatched"]:
-        flags.append("Unmatched UTR")
+    is_matched_state = status_str in ["settled", "matched"]
+
+    if is_matched_state and "manual" not in rule_str:
+        if (has_valid_utr_p and has_valid_utr_c and utr_p.upper() == utr_c.upper()) or ("utr" in rule_str and has_valid_utr_p):
+            flags.append("Exact UTR Match")
+        elif "order" in rule_str or (txn.get("order_id") and counterpart and str(txn.get("order_id")).strip() == str(counterpart.get("order_id")).strip() and str(txn.get("order_id")).strip() not in ["", "nan"]):
+            flags.append("Order ID Match")
+        elif "exact" in rule_str or "pass 1" in rule_str:
+            flags.append("Exact Match")
+
+    # 5. Unmatched Reference (Only for unreconciled / exceptions, NEVER on matched/settled rows)
+    if not is_matched_state:
+        if (not has_valid_utr_p) or status_str in ["unreconciled", "exception", "unmatched"]:
+            if "Exact UTR Match" not in flags and "Exact Match" not in flags and "Order ID Match" not in flags:
+                flags.append("Unmatched UTR")
 
     # 6. Batch MDR Payout
     if "mdr" in rule_str or "batch" in rule_str or "1-to-n" in rule_str or "fee" in rule_str or "solver" in rule_str:
@@ -713,7 +696,7 @@ def compute_transaction_feature_flags(txn, counterpart=None, raw_row=None, match
         flags.append("Standard Commercial")
 
     # Derive primary transaction type string
-    priority_order = ["Manual Override", "International Txn", "Internal Transfer", "Batch MDR Payout", "Groq LLM Assisted", "Exact UTR Match", "Digit Transposition", "Duplicate Discrepancy", "Unmatched UTR", "Standard Commercial"]
+    priority_order = ["Manual Override", "International Txn", "Internal Transfer", "Batch MDR Payout", "Groq LLM Assisted", "Exact UTR Match", "Order ID Match", "Exact Match", "Digit Transposition", "Duplicate Discrepancy", "Unmatched UTR", "Standard Commercial"]
     primary_type = "Standard Commercial"
     for p in priority_order:
         if p in flags:
@@ -776,7 +759,7 @@ def _build_dashboard_run(period_label="Current Period"):
     raw_exceptions = read_csv_rows("results/exception_ledger.csv")
 
     # Helper functions for robust value extraction from dicts/rows
-    def _extract_currency(row, desc=""):
+    def _extract_currency(row, desc: Optional[str] = "") -> str:
         if not isinstance(row, dict):
             row = {}
         for k in ["currency", "ccy", "curr"]:
@@ -924,6 +907,7 @@ def _build_dashboard_run(period_label="Current Period"):
             amt_val = _extract_numeric_amount(row)
             dt_val = _extract_date_str(row) or datetime.utcnow().strftime("%Y-%m-%d")
             desc_val = _extract_desc_str(row)
+            curr_val = _extract_currency(row, desc_val)
             utr_val = str(row.get("utr") or row.get("auth_code") or "")
 
             direct_st_info = (
@@ -1229,15 +1213,6 @@ def _build_dashboard_run(period_label="Current Period"):
         exc["feature_flags"] = flags
         exc["transaction_type"] = p_type
         exc["type"] = p_type
-
-    def _format_ddmmyyyy(d_str):
-        if not d_str:
-            return ""
-        d_s = str(d_str).split("T")[0].split(" ")[0].strip()
-        parts = d_s.split("-")
-        if len(parts) == 3 and len(parts[0]) == 4:
-            return f"{parts[2]}/{parts[1]}/{parts[0]}"
-        return d_s
 
     # Calculate real min and max transaction date range
     valid_dates = [t["date"] for t in raw_transactions if t.get("date") and str(t["date"]).strip() not in ("", "None", "nan", "—")]
@@ -1664,24 +1639,45 @@ def delete_statement_endpoint(statement_id):
     return jsonify({"ok": True})
 
 
+def clear_all_data_state():
+    """Wipe all statements, generated CSVs, reconciliation runs, and reset pipeline state."""
+    try:
+        from frontend.api import pipeline_tracker
+        pipeline_tracker.finish_pipeline(success=False, error_msg="Kill switch activated / data cleared.")
+        pipeline_tracker.reset_tracker()
+    except Exception:
+        pass
+
+    try:
+        clear_reconciliation_results()
+    except Exception:
+        pass
+
+    try:
+        from frontend import statement_store
+        statement_store.clear_all_statements()
+    except Exception:
+        pass
+
+    try:
+        invalidate_dashboard_cache()
+    except Exception:
+        pass
+
+    _RUNS.clear()
+    _RUN_LOG.clear()
+
+    global _BEGINNING_BALANCE
+    _BEGINNING_BALANCE = 0.0
+    return True
+
+
 @api_bp.route("/data/clear", methods=["POST"])
 @api_bp.route("/clear_all_data", methods=["POST"])
 def clear_all_data_endpoint():
     """Clear all statements, generated CSVs, reconciliation runs, and activate kill switch (T6.3, T12.2)."""
     try:
-        from frontend.api import pipeline_tracker
-        pipeline_tracker.finish_pipeline(success=False, error_msg="Kill switch activated by user delete data request.")
-        pipeline_tracker.reset_tracker()
-
-        clear_reconciliation_results()
-        statement_store.clear_all_statements()
-        invalidate_dashboard_cache()
-        _RUNS.clear()
-        _RUN_LOG.clear()
-
-        global _BEGINNING_BALANCE
-        _BEGINNING_BALANCE = 0.0
-
+        clear_all_data_state()
         return jsonify({
             "ok": True,
             "success": True,
@@ -1689,6 +1685,7 @@ def clear_all_data_endpoint():
         })
     except Exception as e:
         return _error(f"Failed to clear data: {str(e)}")
+
 
 
 @api_bp.route("/load_test_case", methods=["POST"])
@@ -1798,7 +1795,7 @@ def append_statement_endpoint(statement_id):
         return _error("No file uploaded.")
 
     file_storage = request.files["file"]
-    if file_storage.filename == "":
+    if not file_storage.filename or file_storage.filename.strip() == "":
         return _error("No file selected.")
 
     if not _allowed_file(file_storage.filename):
@@ -1906,7 +1903,7 @@ def add_statement_transaction_endpoint(statement_id):
     Appends a new transaction to a statement and executes incremental reconciliation.
     """
     payload = request.get_json(silent=True) or {}
-    tx_date = (payload.get("transaction_date") or payload.get("date") or datetime.utcnow().strftime("%Y-%m-%d")).strip()
+    tx_date = (payload.get("transaction_date") or payload.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")).strip()
     net_amt = payload.get("net_amount") or payload.get("amount") or 0.0
     try:
         net_amt = float(net_amt)
@@ -1916,7 +1913,8 @@ def add_statement_transaction_endpoint(statement_id):
     desc = (payload.get("description") or "").strip()
     utr_val = (payload.get("utr") or "").strip()
     order_val = (payload.get("order_id") or "").strip()
-    curr_val = (payload.get("currency") or "INR").strip().upper()
+    raw_curr = payload.get("currency")
+    curr_val = str(raw_curr).strip().upper() if (raw_curr and str(raw_curr).strip()) else None
     channel_val = (payload.get("channel") or payload.get("mode") or "CREDIT").strip().upper()
     status_val = (payload.get("status") or "SETTLED").strip().upper()
 
@@ -2142,12 +2140,44 @@ def trigger_reconciliation():
 @api_bp.route("/reconciliation", methods=["GET"])
 def latest_reconciliation():
     run = _get_or_build_run()
+    page = request.args.get("page", type=int)
+    limit = request.args.get("limit", type=int)
+    if page and limit and page > 0 and limit > 0 and "transactions" in run:
+        txs = run.get("transactions", [])
+        total = len(txs)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_run = dict(run)
+        paginated_run["transactions"] = txs[start:end]
+        paginated_run["pagination"] = {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": (total + limit - 1) // limit if limit else 1
+        }
+        return jsonify({"ok": True, "run": paginated_run})
     return jsonify({"ok": True, "run": run})
 
 
 @api_bp.route("/reconciliation/<run_id>", methods=["GET"])
 def get_reconciliation(run_id):
     run = _get_or_build_run(run_id)
+    page = request.args.get("page", type=int)
+    limit = request.args.get("limit", type=int)
+    if page and limit and page > 0 and limit > 0 and "transactions" in run:
+        txs = run.get("transactions", [])
+        total = len(txs)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_run = dict(run)
+        paginated_run["transactions"] = txs[start:end]
+        paginated_run["pagination"] = {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "pages": (total + limit - 1) // limit if limit else 1
+        }
+        return jsonify({"ok": True, "run": paginated_run})
     return jsonify({"ok": True, "run": run})
 
 
@@ -2375,7 +2405,7 @@ def get_similar_payments():
     primary_amount = None
     if primary_amount_str:
         try:
-            primary_amount = float(pd.to_numeric(primary_amount_str.replace(",", "").replace("₹", ""), errors="coerce"))
+            primary_amount = float(primary_amount_str.replace(",", "").replace("₹", "").strip())
         except Exception:
             pass
 
@@ -2911,7 +2941,10 @@ def llm_smart_match_transaction():
     exc_id = str(payload.get("exception_id") or payload.get("settlement_id") or "").strip()
     settlement_id = str(payload.get("settlement_id") or exc_id).strip()
     raw_amount = payload.get("amount")
-    target_amount = float(pd.to_numeric(raw_amount, errors="coerce") or 0.0) if raw_amount is not None else 0.0
+    try:
+        target_amount = float(str(raw_amount or 0.0).replace(",", "").replace("₹", "").strip()) if raw_amount is not None else 0.0
+    except Exception:
+        target_amount = 0.0
     target_date = str(payload.get("date") or "").strip()
     target_desc = str(payload.get("description") or "").strip()
     target_source_type = str(payload.get("source_type") or "settlement").lower().strip()
@@ -2954,7 +2987,7 @@ def llm_smart_match_transaction():
         for idx, r in enumerate(stmt.get("rows", [])):
             r_amt_raw = r.get("amount") if r.get("amount") is not None else (r.get("credit") if r.get("credit") is not None else r.get("net_amount"))
             try:
-                r_amt = float(pd.to_numeric(str(r_amt_raw or 0).replace(",", "").replace("₹", ""), errors="coerce") or 0.0)
+                r_amt = float(str(r_amt_raw or 0).replace(",", "").replace("₹", "").strip())
             except Exception:
                 r_amt = 0.0
 
