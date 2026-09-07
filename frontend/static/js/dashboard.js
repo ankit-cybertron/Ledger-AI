@@ -4408,11 +4408,23 @@
         if (st.includes("manual") || (ev.rule && ev.rule.toLowerCase().includes("manual"))) {
           rawFlags.push("Manual Override");
         }
-        if (ev.identifier_matched || st === "settled" || st === "exact" || (ev.rule && ev.rule.toLowerCase().includes("exact"))) {
-          rawFlags.push("Exact UTR Match");
+        const isMatchedState = (st === "settled" || st === "matched");
+        const ruleLower = String(ev.rule || "").toLowerCase();
+        const hasUtrP = tx.utr && String(tx.utr).trim() !== "" && String(tx.utr).trim() !== "—" && String(tx.utr).toLowerCase() !== "nan";
+
+        if (isMatchedState && !ruleLower.includes("manual")) {
+          if (hasUtrP && (ruleLower.includes("utr") || (ev.identifier_matched && String(ev.rule || "").toLowerCase().includes("utr")))) {
+            rawFlags.push("Exact UTR Match");
+          } else if (ruleLower.includes("order") || (tx.order_id && String(tx.order_id).trim() !== "")) {
+            rawFlags.push("Order ID Match");
+          } else if (st === "settled" || st === "exact" || ruleLower.includes("exact")) {
+            rawFlags.push("Exact Match");
+          }
         }
-        if (st === "unmatched" || st === "exception" || st === "unreconciled" || (!tx.utr || tx.utr === "—")) {
-          rawFlags.push("Unmatched UTR");
+        if (!isMatchedState) {
+          if (st === "unmatched" || st === "exception" || st === "unreconciled" || !hasUtrP) {
+            rawFlags.push("Unmatched UTR");
+          }
         }
         if (ev.rule && (ev.rule.includes("MDR") || ev.rule.includes("Batch") || ev.rule.includes("1-to-N"))) {
           rawFlags.push("Batch MDR Payout");
@@ -4431,6 +4443,8 @@
       "Internal Transfer": "flag-info",
       "Manual Override": "flag-amber",
       "Exact UTR Match": "flag-success",
+      "Order ID Match": "flag-success",
+      "Exact Match": "flag-success",
       "Unmatched UTR": "flag-warning",
       "Batch MDR Payout": "flag-cyan",
       "Groq LLM Assisted": "flag-purple",
@@ -6058,8 +6072,17 @@
       rawDates.push(f.date);
       historicalData.push(null);
       projectedData.push(f.cumulative);
-      lowerBandData.push(f.lower_band);
-      upperBandData.push(f.upper_band);
+
+      let low = f.lower_band;
+      let up = f.upper_band;
+      // Defensive guard against daily-delta scale vs cumulative scale mismatch
+      if (low != null && Math.abs(low) < Math.abs(f.cumulative) * 0.2 && Math.abs(f.cumulative) > 1000) {
+        const offset = Math.abs(up - low) / 2 || 10000;
+        low = f.cumulative - offset;
+        up = f.cumulative + offset;
+      }
+      lowerBandData.push(low != null ? low : f.cumulative);
+      upperBandData.push(up != null ? up : f.cumulative);
     });
 
     const isLight = document.documentElement.getAttribute("data-theme") === "light";
@@ -6497,11 +6520,8 @@
     loadStatementsTable();
     hydrateExistingRun();
 
-    if (hasData) {
-      activateSub("sub-overview");
-    } else {
-      activateSub("sub-upload-bank");
-    }
+    // Always land on the Import page of dashboard with empty dataset on load/reload
+    activateSub("sub-upload-bank");
 
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);

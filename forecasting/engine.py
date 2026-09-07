@@ -27,8 +27,8 @@ import pandas as pd
 # 1. DATA PREPARATION
 # ---------------------------------------------------------------------------
 
-def _parse_date(val: Any) -> Optional[datetime]:
-    """Best-effort date parser.  Returns None on failure."""
+def _parse_date(val: Any, is_mm_dd: bool = False) -> Optional[datetime]:
+    """Best-effort date parser. Returns None on failure."""
     if val is None or (isinstance(val, float) and math.isnan(val)):
         return None
     if isinstance(val, datetime):
@@ -36,15 +36,28 @@ def _parse_date(val: Any) -> Optional[datetime]:
     s = str(val).strip()
     if not s or s.lower() in ("nat", "none", "nan", ""):
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%S",
-                "%d-%m-%Y", "%Y/%m/%d"):
+
+    # Handle slash dates intelligently (MM/DD/YYYY vs DD/MM/YYYY)
+    slash_m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", s)
+    if slash_m:
+        p1, p2, yr = int(slash_m.group(1)), int(slash_m.group(2)), int(slash_m.group(3))
+        if p2 > 12:  # 07/29/2026 -> must be MM/DD/YYYY
+            return datetime(yr, p1, p2)
+        if p1 > 12:  # 29/07/2026 -> must be DD/MM/YYYY
+            return datetime(yr, p2, p1)
+        if is_mm_dd:
+            return datetime(yr, p1, p2)
+        return datetime(yr, p2, p1)
+
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%S",
+                "%Y/%m/%d"):
         try:
             return datetime.strptime(s[:10], fmt)
         except ValueError:
             continue
     try:
         import dateutil.parser
-        return dateutil.parser.parse(s, dayfirst=True)
+        return dateutil.parser.parse(s, dayfirst=not is_mm_dd)
     except Exception:
         return None
 
@@ -93,9 +106,18 @@ def _build_daily_series(
     Returns DataFrame with columns: [date, net_inflow, tx_count]
     sorted by date ascending.
     """
+    # Detect if any transaction has unambiguous MM/DD/YYYY slash date (day > 12 in 2nd position)
+    has_mm_dd = False
+    for tx in transactions:
+        raw_str = str(tx.get("transaction_date") or tx.get("date") or "")
+        m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{4})", raw_str)
+        if m and int(m.group(2)) > 12:
+            has_mm_dd = True
+            break
+
     rows: List[Dict[str, Any]] = []
     for tx in transactions:
-        dt = _parse_date(tx.get("transaction_date") or tx.get("date"))
+        dt = _parse_date(tx.get("transaction_date") or tx.get("date"), is_mm_dd=has_mm_dd)
         amt = _parse_amount(tx.get("net_amount") or tx.get("amount") or 0)
         if dt is None:
             continue
@@ -153,10 +175,14 @@ def detect_recurring_patterns(
         desc = tx.get("description") or tx.get("bank_description") or ""
         dt = _parse_date(tx.get("transaction_date") or tx.get("date"))
         amt = _parse_amount(tx.get("net_amount") or tx.get("amount") or 0)
-        if dt is None or not desc.strip():
+        if dt is None or not desc.strip() or abs(amt) < 1.0:
             continue
         key = _normalise_desc(desc)
         if len(key) < 3:
+            continue
+        # Exclude non-financial audit notes and exception reasons
+        key_lower = key.lower()
+        if any(w in key_lower for w in ("cancellation", "duplicate charge", "chargeback", "dispute", "reversed", "refund")):
             continue
         desc_groups[key].append({"date": dt, "amount": amt, "desc": desc})
 
@@ -191,6 +217,8 @@ def detect_recurring_patterns(
         dates = [e["date"] for e in entries]
         amounts = [e["amount"] for e in entries]
         avg_amt = sum(amounts) / len(amounts)
+        if abs(avg_amt) < 1.0:
+            continue
 
         # Compute cadence (median inter-occurrence gap)
         gaps = [(dates[i + 1] - dates[i]).days for i in range(len(dates) - 1)]
@@ -318,8 +346,14 @@ def estimate_pending_settlements(
             else:
                 if amt > 0:
                     bank_credits.append({"date": dt, "amount": amt, "desc": desc})
-        elif status not in ("REFUND", "REVERSED", "CANCELLED", "VOID"):
-            unsettled.append({"date": dt, "amount": amt, "status": status,
+        elif amt > 0 and (
+            status in ("PENDING", "PROCESSING", "INITIATED", "UNSETTLED", "IN_TRANSIT", "SUBMITTED")
+            or (
+                status not in ("REFUND", "REVERSED", "CANCELLED", "VOID", "UNKNOWN", "FAILED", "ERROR")
+                and not any(w in desc for w in ("CANCELLATION", "DUPLICATE", "DISPUTE", "CHARGEBACK", "RETURN"))
+            )
+        ):
+            unsettled.append({"date": dt, "amount": amt, "status": status if status and status != "UNKNOWN" else "PENDING",
                               "desc": tx.get("description", "")[:80]})
 
     # Compute typical settlement lag from settled transactions (T+N)
@@ -348,6 +382,8 @@ def estimate_pending_settlements(
 
     pending = []
     for tx in unsettled:
+        if tx["amount"] <= 0:
+            continue
         age_days = (today - tx["date"]).days
         if 0 <= age_days <= typical_lag + 3:
             expected_date = tx["date"] + timedelta(days=typical_lag)
@@ -423,8 +459,11 @@ def build_forecast(
       }
     """
     if today is None:
-        today = datetime.utcnow()
-    today_date = today.date() if isinstance(today, datetime) else today
+        today_date = None
+        today_for_pending = None
+    else:
+        today_date = today.date() if isinstance(today, datetime) else today
+        today_for_pending = today if isinstance(today, datetime) else datetime.combine(today, datetime.min.time())
 
     # --- Historical daily series ---
     daily = _build_daily_series(transactions)
@@ -432,6 +471,11 @@ def build_forecast(
         return _empty_result()
 
     daily["date"] = pd.to_datetime(daily["date"]).dt.date
+    max_hist_date = daily["date"].max()
+
+    if today_date is None:
+        today_date = max_hist_date
+        today_for_pending = datetime.combine(max_hist_date, datetime.min.time())
 
     # Cumulative balance starting from beginning_balance
     daily["cumulative"] = beginning_balance + daily["net_inflow"].cumsum()
@@ -440,21 +484,28 @@ def build_forecast(
     patterns = detect_recurring_patterns(transactions)
 
     # --- Pending settlement projection ---
-    pending = estimate_pending_settlements(transactions, today)
+    pending = estimate_pending_settlements(transactions, today_for_pending)
 
     # --- Seasonal decomposition on net_inflow ---
     series = daily["net_inflow"].astype(float)
     period = 7  # weekly seasonality
     trend, seasonal = _seasonal_decompose(series, period)
 
-    # --- Historical variance for confidence band ---
+    # Historical residuals & variance for confidence band
     residuals = series - trend - seasonal
     std_dev = residuals.std() if len(residuals) > 1 else abs(series.mean()) * 0.2
     if math.isnan(std_dev) or std_dev == 0:
         std_dev = max(abs(series.mean()) * 0.15, 1.0)
 
+    # Natural unforced recent trend (moving-average level, without artificial growth compounding)
+    valid_trends = trend.dropna()
+    if not valid_trends.empty:
+        # Take the recent 7-day average of trend to avoid single-day boundary artifacts
+        last_trend = float(valid_trends.tail(min(7, len(valid_trends))).mean())
+    else:
+        last_trend = float(series.mean()) if not series.empty else 0.0
+
     # --- Project forward ---
-    last_trend = trend.iloc[-1] if not trend.empty else 0
     n_hist = len(series)
     last_cumulative = float(daily["cumulative"].iloc[-1])
 
@@ -470,21 +521,23 @@ def build_forecast(
                 continue
             # Project recurring hits into forecast window
             dt = next_dt
+            while dt <= today_date:
+                dt += timedelta(days=cad)
             for _ in range(forecast_days):
+                if dt > today_date + timedelta(days=forecast_days):
+                    break
                 key = dt.strftime("%Y-%m-%d")
                 pattern_overlay[key] = pattern_overlay.get(key, 0) + amt
                 dt += timedelta(days=cad)
-                if dt > today_date + timedelta(days=forecast_days):
-                    break
 
     forecast_rows = []
     cumulative = last_cumulative
     for d in range(1, forecast_days + 1):
         fdate = today_date + timedelta(days=d)
         pos = (n_hist + d - 1) % period
-        seasonal_component = seasonal.iloc[pos % len(seasonal)] if len(seasonal) > 0 else 0
+        seasonal_component = seasonal.iloc[pos % len(seasonal)] if len(seasonal) > 0 else 0.0
 
-        # Base projection = trend + seasonal
+        # Base daily projection = natural trend + seasonal variation
         base = last_trend + seasonal_component
 
         # Add recurring pattern overlay if present
@@ -498,14 +551,16 @@ def build_forecast(
                 base += ps["amount"]
 
         cumulative += base
-        band_width = std_dev * 1.5 * math.sqrt(d / 7)  # Widen with time
+        band_width = std_dev * 1.5 * math.sqrt(d / 7)  # Widen naturally with time
 
         forecast_rows.append({
             "date": fdate_key,
             "projected": round(base, 2),
-            "upper_band": round(base + band_width, 2),
-            "lower_band": round(base - band_width, 2),
+            "upper_band": round(cumulative + band_width, 2),
+            "lower_band": round(cumulative - band_width, 2),
             "cumulative": round(cumulative, 2),
+            "daily_upper": round(base + band_width, 2),
+            "daily_lower": round(base - band_width, 2),
         })
 
     # --- Format historical for chart ---
@@ -519,7 +574,7 @@ def build_forecast(
         })
 
     # --- Summary stats ---
-    avg_daily = float(series.mean())
+    avg_daily = float(series.mean()) if not series.empty else 0.0
     total_inflow = float(series[series > 0].sum())
     total_outflow = float(series[series < 0].sum())
 
@@ -534,6 +589,7 @@ def build_forecast(
             "total_outflow": round(total_outflow, 2),
             "current_balance": round(last_cumulative, 2),
             "forecast_30d_projected": round(cumulative, 2) if forecast_rows else 0,
+            "projected_ending_cash": round(cumulative, 2) if forecast_rows else 0,
             "detected_patterns": len(patterns),
             "pending_count": len(pending),
             "forecast_days": forecast_days,
