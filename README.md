@@ -9,6 +9,7 @@
 ### Enterprise Multi-Source Financial Reconciliation, Batch Settlement & Forward Cash Forecasting Engine
 
 [![AWS Deployment](https://img.shields.io/badge/AWS%20Elastic%20Beanstalk-Live%20Deployment-232F3E?style=flat-square&logo=amazon-aws)](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com)
+[![Video Walkthrough](https://img.shields.io/badge/YouTube-Video%20Walkthrough-FF0000?style=flat-square&logo=youtube)](https://www.youtube.com/watch?v=kGxiT3-O7pc)
 [![Interactive Guide](https://img.shields.io/badge/Documentation-Interactive%20Guide-0066CC?style=flat-square)](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help)
 [![Test Suite](https://img.shields.io/badge/Test%20Suite-109%20Passed-107C41?style=flat-square&logo=pytest)](tests/)
 [![Python Version](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-3776AB?style=flat-square&logo=python)](https://www.python.org/)
@@ -16,8 +17,19 @@
 
 *“Verification capacity, not generation speed, is the bottleneck in corporate finance operations. Reconciliation, settlement verification, and cash forecasting require bounded mathematical determinism, transparent exception isolation, and complete auditability.”*
 
-[Live Application](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com) | [Interactive Guide](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help) | [Technical Docs](docs/README.md)
+[Live Application](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com) | [Video Walkthrough](https://www.youtube.com/watch?v=kGxiT3-O7pc) | [Interactive Guide](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help) | [Technical Docs](docs/README.md)
 
+</div>
+
+---
+
+## Video Demonstration & System Walkthrough
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=kGxiT3-O7pc" target="_blank" rel="noopener noreferrer">
+    <img src="https://img.youtube.com/vi/kGxiT3-O7pc/maxresdefault.jpg" alt="Ledger AI Video Walkthrough" width="760" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+  </a>
+  <p><em>Click the banner above to watch the end-to-end multi-statement ingestion, 4-pass reconciliation cascade, and forward cash forecasting engine in action on YouTube (<a href="https://www.youtube.com/watch?v=kGxiT3-O7pc">https://www.youtube.com/watch?v=kGxiT3-O7pc</a>).</em></p>
 </div>
 
 ---
@@ -156,6 +168,7 @@ python run.py
 - **Architecture Domain**: Autonomous Multi-Source Financial Operations, Transaction Matching & Cash Forecasting
 - **Core Engine**: 4-Pass Deterministic Cascade ($O(N+M)$ Hash Lookup $\to$ 1:N Settlement Equation Solver $\to$ 12D Classical ML Scorer $\to$ Gated Semantic Fallback)
 - **Live AWS Deployment**: [http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com)
+- **Video Walkthrough**: [https://www.youtube.com/watch?v=kGxiT3-O7pc](https://www.youtube.com/watch?v=kGxiT3-O7pc)
 - **Interactive System Guide**: [http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help)
 - **Public Repository**: [https://github.com/ankit-cybertron/Ledger-AI](https://github.com/ankit-cybertron/Ledger-AI)
 - **Accounting Verification**: 100% penny balance parity invariant on all multi-statement batches with transparent exception isolation.

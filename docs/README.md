@@ -1,6 +1,11 @@
 # Ledger AI — Architectural & Technical Documentation Directory
 
+[![Video Walkthrough](https://img.shields.io/badge/YouTube-Video%20Walkthrough-FF0000?style=flat-square&logo=youtube)](https://www.youtube.com/watch?v=kGxiT3-O7pc)
+[![Live Deployment](https://img.shields.io/badge/AWS%20Elastic%20Beanstalk-Live%20Deployment-232F3E?style=flat-square&logo=amazon-aws)](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com)
+
 Welcome to the canonical technical documentation suite for **Ledger AI**, an autonomous financial reconciliation, multi-source ingestion, transaction matching, cash flow forecasting, and audit reporting platform.
+
+[Live Application](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com) | [Video Walkthrough](https://www.youtube.com/watch?v=kGxiT3-O7pc) | [Interactive Guide](http://ledgerai-env.eba-ppb3tgip.ap-south-1.elasticbeanstalk.com/help) | [Main README](../README.md)
 
 The documentation is organized into clear, sequential, numbered text (`.txt`) files across logical subdirectories:
 
