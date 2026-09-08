@@ -144,8 +144,13 @@ cp .env.example .env
 
 ### 3. Run Verification Suite (109 Tests)
 ```bash
-PYTHONPATH=. ./.venv/bin/pytest -q
-# Expected result: 109 passed
+# Full verification suite
+pytest
+
+# Or run domain suites selectively:
+pytest tests/unit/          # Core domain & logic (52 tests)
+pytest tests/api/           # API contracts & security (41 tests)
+pytest tests/integration/   # E2E & benchmarks (16 tests, 9 skipped)
 ```
 
 ### 4. Launch Application

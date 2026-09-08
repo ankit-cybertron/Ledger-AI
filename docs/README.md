@@ -48,8 +48,14 @@ The documentation is organized into clear, sequential, numbered text (`.txt`) fi
 
 ## Verification & Test Suite
 
-Run the full pytest suite to validate system integrity:
+Run the full pytest suite or specific domain suites to validate system integrity:
 
 ```bash
-PYTHONPATH=. ./.venv/bin/pytest -q
+# Full test suite (109 tests passed)
+pytest
+
+# Selective domain suites
+pytest tests/unit/          # Domain engines & logic
+pytest tests/api/           # Web & API contract tests
+pytest tests/integration/   # E2E pipeline & benchmarks
 ```
