@@ -218,7 +218,7 @@ class TestMatcherRedesign(unittest.TestCase):
         from pathlib import Path
 
         # Verify function handles index columns properly without dropping keys
-        pdf_path = Path(__file__).resolve().parents[1] / "data" / "test_cases" / "05_Razorpay_Settlement_Summary.pdf"
+        pdf_path = Path(__file__).resolve().parents[3] / "data" / "test_cases" / "05_Razorpay_Settlement_Summary.pdf"
         if pdf_path.exists():
             tables = _read_pdf_tables(pdf_path, pdf_path.name, ["summary", "total"])
             self.assertTrue(len(tables) > 0)

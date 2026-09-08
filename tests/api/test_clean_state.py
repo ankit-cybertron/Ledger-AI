@@ -6,7 +6,8 @@ import pandas as pd
 from frontend import statement_store
 from frontend.app import app
 
-class TestPart12CleanState(unittest.TestCase):
+class TestCleanState(unittest.TestCase):
+    """Clean state initialization and database purge tests."""
     def setUp(self):
         app.config["TESTING"] = True
         self.app = app
@@ -21,7 +22,7 @@ class TestPart12CleanState(unittest.TestCase):
         db_data = statement_store._load_db()
         self.assertEqual(db_data.get("statements"), [])
 
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         gen_dir = os.path.join(base_dir, "data", "generated")
         for csv_name in ["bank_statement.csv", "primary_records.csv", "counterpart_records.csv", "razorpay_settlements.csv", "internal_orders.csv"]:
             path = os.path.join(gen_dir, csv_name)

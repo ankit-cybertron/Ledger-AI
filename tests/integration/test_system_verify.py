@@ -14,7 +14,7 @@ import unittest
 import pandas as pd
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 FRONTEND_DIR = ROOT / "frontend"
@@ -34,7 +34,10 @@ from frontend import statement_store
 
 def tearDownModule():
     statement_store.clear_all_statements()
-class TestPart11Verification(unittest.TestCase):
+
+
+class TestSystemVerification(unittest.TestCase):
+    """End-to-end system verification across schema, matcher, scoring, and pipeline."""
 
     def test_t11_1_schema_generic_and_no_statement_type(self):
         """T11.1: Verify no source_type or statement_type fields exist in CanonicalTransaction."""

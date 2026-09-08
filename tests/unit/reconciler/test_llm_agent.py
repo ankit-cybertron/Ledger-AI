@@ -13,7 +13,7 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -28,7 +28,8 @@ def tearDownModule():
     statement_store.clear_all_statements()
 
 
-class TestPart5LLMReconciler(unittest.TestCase):
+class TestLLMAgent(unittest.TestCase):
+    """LLM agent integration and reconciliation fallback tests."""
 
     def test_agent_import_live(self):
         """Verify chat_routes.py imports answer_question from agents.settlement_qa_agent."""

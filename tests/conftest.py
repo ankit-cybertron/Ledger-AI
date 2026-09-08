@@ -13,6 +13,7 @@ if str(FRONTEND_DIR) not in sys.path:
 GENERATED_DIR = ROOT / "data" / "generated"
 GROUND_TRUTH_DIR = ROOT / "data" / "ground_truth"
 RESULTS_DIR = ROOT / "data" / "results"
+DATA_DIR = ROOT / "data"
 
 SETTLEMENTS_PATH = GENERATED_DIR / "razorpay_settlements.csv"
 GROUND_TRUTH_PATH = GROUND_TRUTH_DIR / "relationships.csv"

@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 GENERATED_DIR = ROOT / "data" / "generated"
 GROUND_TRUTH_DIR = ROOT / "data" / "ground_truth"

@@ -12,7 +12,7 @@ import io
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -20,7 +20,8 @@ from frontend import statement_store
 from frontend.app import app
 
 
-class TestPart13RealtimeSync(unittest.TestCase):
+class TestRealtimeSync(unittest.TestCase):
+    """Real-time reconciliation sync, amounts, and state invalidation tests."""
     def setUp(self):
         app.config["TESTING"] = True
         self.client = app.test_client()

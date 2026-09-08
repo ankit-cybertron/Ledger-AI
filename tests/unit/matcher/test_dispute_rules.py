@@ -17,7 +17,7 @@ from matcher.tolerance_matcher import tolerance_match
 from matcher.eligibility_guards import candidates_compatible
 from exceptions.exception_ledger import classify_exception
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 TEST_DATA_DIR = ROOT / "Test_data"
 
 

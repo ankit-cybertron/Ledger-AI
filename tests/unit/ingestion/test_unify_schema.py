@@ -74,7 +74,7 @@ class TestUnifyIngestion(unittest.TestCase):
         self.assertEqual(stmt.get("row_count"), 2)
 
         # Check generated CSV outputs
-        gen_dir = Path(__file__).resolve().parents[1] / "data" / "generated"
+        gen_dir = Path(__file__).resolve().parents[3] / "data" / "generated"
         pri_file = gen_dir / "primary_records.csv"
         cnt_file = gen_dir / "counterpart_records.csv"
 
