@@ -55,11 +55,26 @@ input, textarea, select {
   font-size: var(--text-base);
 }
 
-/* ── Utility: Monospace (amounts, IDs, UTRs) ─────────────────────────────── */
+/* ── Utility: Monospace (amounts, IDs, UTRs, table numbers) ─────────────── */
+.mono, .amount, .tx-id, .utr-id, .period-badge-val, .progress-percentage, .kpi-val, .stat-value, table td {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+  font-feature-settings: "tnum" 1;
+}
+
 .mono, .amount, .tx-id, .utr-id {
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ── Interactive Press States (Apple HIG Buttons) ───────────────────────── */
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+.page-topbar-link:active,
+.btn-topbar-automatch:active:not(:disabled),
+.btn-topbar-import:active:not(:disabled) {
+  transform: scale(0.975);
+  transition: transform var(--transition-fast);
 }
 
 /* ── Utility: Amount Colors ─────────────────────────────────────────────── */
@@ -89,7 +104,7 @@ input, textarea, select {
 .text-accent    { color: var(--accent-blue);    }
 
 /* ── Scrollbar Styling ───────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
@@ -103,10 +118,11 @@ input, textarea, select {
   color: var(--text-primary);
 }
 
-/* ── Focus Visible ───────────────────────────────────────────────────────── */
+/* ── Focus Visible (Apple HIG Accessible Focus Ring) ─────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent-blue);
   outline-offset: 2px;
+  box-shadow: var(--shadow-focus);
 }
 
 /* ── Flex + Layout Utilities ─────────────────────────────────────────────── */
@@ -134,3 +150,76 @@ input, textarea, select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Apple HIG Print & PDF Export Stylesheet ─────────────────────────────── */
+@media print {
+  *, *::before, *::after {
+    background: transparent !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+
+  .page-topbar,
+  .topbar,
+  .bg-grid,
+  .bg-glow,
+  .floating-chat-widget,
+  #floatingChatWidget,
+  .chat-toggle-btn,
+  #chatToggleBtn,
+  .btn-append,
+  .stmt-header-actions,
+  .tag-filter-bar,
+  .table-filter-bar,
+  .theme-toggle-landing-btn,
+  .theme-toggle,
+  .modal-backdrop,
+  .toast-container {
+    display: none !important;
+  }
+
+  .app-shell,
+  .main-content,
+  .report-content {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+    font-size: 9pt !important;
+  }
+
+  th {
+    background: #f3f4f6 !important;
+    font-weight: 700 !important;
+  }
+
+  a, a:visited {
+    text-decoration: underline;
+    color: #111827 !important;
+  }
+
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+}
+

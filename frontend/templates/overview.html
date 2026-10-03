@@ -54,22 +54,22 @@
       <!-- 5-CARD EXECUTIVE KPI GRID -->
       <div class="stat-cards-5">
         <div class="stat-card-lg" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <div class="stat-card-lg-value" style="color: #10b981;">{{ percent_auto_matched ~ '%' if percent_auto_matched is not none else '0.0%' }}</div>
+          <div class="stat-card-lg-value" style="color: var(--color-success);">{{ percent_auto_matched ~ '%' if percent_auto_matched is not none else '0.0%' }}</div>
           <div class="stat-card-lg-label">Auto-Match Parity</div>
           <div class="stat-card-lg-hint">Zero human touch · Exact rules & tolerance</div>
         </div>
         <div class="stat-card-lg" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <div class="stat-card-lg-value" style="color: #3b82f6;">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '0.0%' }}</div>
+          <div class="stat-card-lg-value" style="color: var(--accent-blue);">{{ percent_reconciled ~ '%' if percent_reconciled is not none else '0.0%' }}</div>
           <div class="stat-card-lg-label">Reconciled Overall</div>
           <div class="stat-card-lg-hint">Taxonomy resolved across active periods</div>
         </div>
         <div class="stat-card-lg" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <div class="stat-card-lg-value" style="color: #f59e0b;">{{ open_exceptions if open_exceptions is not none else 0 }}</div>
+          <div class="stat-card-lg-value" style="color: var(--color-warning);">{{ open_exceptions if open_exceptions is not none else 0 }}</div>
           <div class="stat-card-lg-label">Open Exceptions</div>
           <div class="stat-card-lg-hint">Variance or ambiguous items needing review</div>
         </div>
         <div class="stat-card-lg" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <div class="stat-card-lg-value" style="color: #8b5cf6;">{{ total_transactions if total_transactions is not none else 0 }}</div>
+          <div class="stat-card-lg-value" style="color: var(--color-purple);">{{ total_transactions if total_transactions is not none else 0 }}</div>
           <div class="stat-card-lg-label">Total Transactions</div>
           <div class="stat-card-lg-hint">Ingested bank, gateway & order rows</div>
         </div>
@@ -90,7 +90,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">SETTLED vs MATCHED vs SIMILAR vs UNMATCHED distribution</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartStatusBreakdown"></canvas>
+            <canvas id="ssrChartStatusBreakdown" role="img" aria-label="Taxonomy Status Breakdown Chart showing SETTLED, MATCHED, SIMILAR, and UNMATCHED distribution"></canvas>
+            <div class="sr-only">Status breakdown donut chart showing current distribution of reconciled transactions and open exceptions.</div>
           </div>
         </div>
 
@@ -101,7 +102,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Transaction volume flow across 4-pass cascade stages</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartReconFunnel"></canvas>
+            <canvas id="ssrChartReconFunnel" role="img" aria-label="Reconciliation Pipeline Funnel Chart showing transaction progression across matching stages"></canvas>
+            <div class="sr-only">Pipeline funnel chart displaying conversion of raw transactions into auto-matched, rule-resolved, and remaining items.</div>
           </div>
         </div>
 
@@ -112,7 +114,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Taxonomy status breakdown per statement source</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartSourceContribution"></canvas>
+            <canvas id="ssrChartSourceContribution" role="img" aria-label="Source-Wise Contribution Stacked Bar Chart displaying volumes per statement source"></canvas>
+            <div class="sr-only">Stacked bar chart comparing settled, matched, similar, and exception counts across all ingested statement sources.</div>
           </div>
         </div>
 
@@ -123,7 +126,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Scoring engine calibration & match mass distribution</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartConfidenceDist"></canvas>
+            <canvas id="ssrChartConfidenceDist" role="img" aria-label="Confidence Score Distribution Histogram showing matching probability brackets"></canvas>
+            <div class="sr-only">Histogram showing calibration of confidence scores between zero and one hundred percent for matched pairs.</div>
           </div>
         </div>
 
@@ -134,7 +138,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Age buckets for SIMILAR / manual-review items</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartExceptionAging"></canvas>
+            <canvas id="ssrChartExceptionAging" role="img" aria-label="Open Exception Aging Chart by days pending review"></canvas>
+            <div class="sr-only">Bar chart categorizing unresolved exceptions into duration buckets from zero to over thirty days.</div>
           </div>
         </div>
 
@@ -145,7 +150,8 @@
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Historical match percentage over pipeline import runs</div>
           </div>
           <div style="flex: 1; position: relative; width: 100%; min-height: 240px;">
-            <canvas id="ssrChartMatchTrend"></canvas>
+            <canvas id="ssrChartMatchTrend" role="img" aria-label="Reconciliation Match Rate Trend Line Chart showing match percentage history"></canvas>
+            <div class="sr-only">Trend line chart showing historical auto-match and settled rates across chronological reconciliation batches.</div>
           </div>
         </div>
 
@@ -154,14 +160,14 @@
       <!-- AUDIT INTEGRITY BOXES -->
       <div class="info-box-row-wide">
         <div class="info-box" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #10b981;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: var(--color-success);">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
             <path d="M8 12l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           <span style="font-size: 0.88rem; line-height: 1.5;">Every committed match balances to the penny. Anything that doesn't balance stays flagged, not buried, in the Exception Ledger with full lineage.</span>
         </div>
         <div class="info-box" style="border-radius: var(--radius-lg); border: 1px solid var(--border);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: #3b82f6;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0; color: var(--accent-blue);">
             <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
             <path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
@@ -385,10 +391,15 @@
     const clearBtn = document.getElementById("btnClearAllData");
     if (clearBtn) {
       clearBtn.addEventListener("click", function() {
-        if (confirm("Are you sure you want to delete all loaded statement data and reset the session?")) {
+        var executeReset = function() {
           fetch("/api/state/reset", { method: "POST" })
             .then(function() { window.location.reload(); })
             .catch(function() { window.location.reload(); });
+        };
+        if (window.promptClearDataModal) {
+          window.promptClearDataModal(executeReset);
+        } else if (confirm("Are you sure you want to delete all loaded statement data and reset the session?")) {
+          executeReset();
         }
       });
     }

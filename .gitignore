@@ -46,3 +46,6 @@ TEST_DATA/*.json
 
 # Logs
 *.log
+
+.agent/
+.agents/

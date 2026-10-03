@@ -1919,36 +1919,41 @@
       if (clearBtn.dataset.hasClearListener) return;
       clearBtn.dataset.hasClearListener = "true";
 
-      clearBtn.addEventListener("click", async () => {
-        const confirmed = confirm(
-          "Kill Switch & Reset:\n\nAre you sure you want to stop all active backend pipeline operations and clear ALL imported statement data?\n\nThis action will stop all processing and reload the page."
-        );
-        if (!confirmed) return;
+      clearBtn.addEventListener("click", () => {
+        const executeClear = async () => {
+          // Immediately kill client-side polling loops
+          if (window.pipelinePollInterval) clearInterval(window.pipelinePollInterval);
+          if (window.pipelinePollerInterval) clearInterval(window.pipelinePollerInterval);
 
-        // Immediately kill client-side polling loops
-        if (window.pipelinePollInterval) clearInterval(window.pipelinePollInterval);
-        if (window.pipelinePollerInterval) clearInterval(window.pipelinePollerInterval);
+          clearBtn.disabled = true;
+          clearBtn.classList.add("btn-clearing");
+          const originalHtml = clearBtn.innerHTML;
+          clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Killing & Clearing...</span>';
 
-        clearBtn.disabled = true;
-        clearBtn.classList.add("btn-clearing");
-        const originalHtml = clearBtn.innerHTML;
-        clearBtn.innerHTML = '<span class="spinner" style="width:13px;height:13px;border-width:2px;"></span> <span class="dustbin-text">Killing & Clearing...</span>';
-
-        try {
-          const res = await fetch("/api/clear_all_data", { method: "POST" });
-          const data = await res.json();
-          if (data.success || data.ok) {
-            window.location.href = "/?tab=sub-upload-bank";
-            window.location.reload();
-          } else {
-            alert(data.message || data.error || "Failed to clear data.");
+          try {
+            const res = await fetch("/api/clear_all_data", { method: "POST" });
+            const data = await res.json();
+            if (data.success || data.ok) {
+              window.location.href = "/?tab=sub-upload-bank";
+              window.location.reload();
+            } else {
+              alert(data.message || data.error || "Failed to clear data.");
+            }
+          } catch (err) {
+            alert("Error executing kill switch & clearing data: " + err.message);
+          } finally {
+            clearBtn.disabled = false;
+            clearBtn.classList.remove("btn-clearing");
+            clearBtn.innerHTML = originalHtml;
           }
-        } catch (err) {
-          alert("Error executing kill switch & clearing data: " + err.message);
-        } finally {
-          clearBtn.disabled = false;
-          clearBtn.classList.remove("btn-clearing");
-          clearBtn.innerHTML = originalHtml;
+        };
+
+        if (window.promptClearDataModal) {
+          window.promptClearDataModal(executeClear);
+        } else if (confirm(
+          "Kill Switch & Reset:\n\nAre you sure you want to stop all active backend pipeline operations and clear ALL imported statement data?\n\nThis action will stop all processing and reload the page."
+        )) {
+          executeClear();
         }
       });
     });

@@ -24,66 +24,74 @@
   --bg-overlay:   rgba(0, 0, 0, 0.65); /* modal backdrop */
   --bg-input:     #0F1216;   /* form input background */
 
+  /* ── Liquid Glass & Translucent Materials (HIG Materials) ─────────────── */
+  --glass-bg:        rgba(17, 20, 24, 0.75);
+  --glass-border:    rgba(255, 255, 255, 0.09);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-blur:      blur(20px) saturate(180%);
+  --glass-shadow:    0 12px 36px rgba(0, 0, 0, 0.32);
+  --table-stripe:    rgba(255, 255, 255, 0.018);
+
   /* ── Borders ─────────────────────────────────────────────────────────── */
   --border:       #252A31;   /* default 1px border */
   --border-light: #1A1E25;   /* very subtle separator */
-  --border-focus: #4C8DFF;   /* focused input outline */
+  --border-focus: #0A84FF;   /* focused input outline */
   --border-hover: #323A44;   /* border on hover */
 
-  /* ── Text ────────────────────────────────────────────────────────────── */
-  --text-primary:   #F1F3F5; /* headings, key values */
-  --text-secondary: #8B929C; /* labels, descriptions */
-  --text-muted:     #5F6670; /* placeholders, hints */
-  --text-disabled:  #3A3F47; /* disabled state */
+  /* ── Text (WCAG AA & Apple HIG Contrast Compliant) ───────────────────── */
+  --text-primary:   #F5F5F7; /* Apple system white, contrast >15:1 */
+  --text-secondary: #9DA4B0; /* subheadings, contrast >5.6:1 */
+  --text-muted:     #949CA9; /* table headers, metadata, contrast >5.2:1 */
+  --text-disabled:  #4B525D; /* disabled state */
   --text-inverse:   #0D1117; /* text on light backgrounds */
 
-  /* ── Brand Accent Colors ─────────────────────────────────────────────── */
-  --accent-blue:        #4C8DFF;    /* primary action, links, focus */
-  --accent-blue-hover:  #6AA3FF;    /* blue hover */
-  --accent-blue-subtle: rgba(76, 141, 255, 0.12); /* tinted bg */
-  --accent-blue-border: rgba(76, 141, 255, 0.30); /* tinted border */
+  /* ── Brand Accent Colors (Apple System Blue) ─────────────────────────── */
+  --accent-blue:        #0A84FF;    /* primary action, links, focus */
+  --accent-blue-hover:  #409CFF;    /* blue hover */
+  --accent-blue-subtle: rgba(10, 132, 255, 0.14); /* tinted bg */
+  --accent-blue-border: rgba(10, 132, 255, 0.35); /* tinted border */
 
-  /* ── Semantic Colors ─────────────────────────────────────────────────── */
-  /* Green  → matched, success, credit, positive */
-  --color-success:        #32C48D;
-  --color-success-subtle: rgba(50, 196, 141, 0.12);
-  --color-success-border: rgba(50, 196, 141, 0.30);
+  /* ── Semantic Colors (Apple System Colors - Dark Appearance) ──────────── */
+  /* Green  → matched, success, credit, positive (Apple System Green) */
+  --color-success:        #30D158;
+  --color-success-subtle: rgba(48, 209, 88, 0.14);
+  --color-success-border: rgba(48, 209, 88, 0.35);
 
-  /* Amber  → warning, pending, under review */
-  --color-warning:        #F5B942;
-  --color-warning-subtle: rgba(245, 185, 66, 0.12);
-  --color-warning-border: rgba(245, 185, 66, 0.30);
+  /* Amber / Orange → warning, pending, under review (Apple System Orange) */
+  --color-warning:        #FF9F0A;
+  --color-warning-subtle: rgba(255, 159, 10, 0.14);
+  --color-warning-border: rgba(255, 159, 10, 0.35);
 
-  /* Red    → error, debit, unmatched */
-  --color-danger:        #EF5B64;
-  --color-danger-subtle: rgba(239, 91, 100, 0.12);
-  --color-danger-border: rgba(239, 91, 100, 0.30);
+  /* Red    → error, debit, unmatched (Apple System Red) */
+  --color-danger:        #FF453A;
+  --color-danger-subtle: rgba(255, 69, 58, 0.14);
+  --color-danger-border: rgba(255, 69, 58, 0.35);
 
-  /* Purple → LLM / AI features */
-  --color-ai:        #9B72F8;
-  --color-ai-subtle: rgba(155, 114, 248, 0.12);
-  --color-ai-border: rgba(155, 114, 248, 0.30);
+  /* Purple → LLM / AI features (Apple System Purple) */
+  --color-ai:        #BF5AF2;
+  --color-ai-subtle: rgba(191, 90, 242, 0.14);
+  --color-ai-border: rgba(191, 90, 242, 0.35);
 
-  /* Teal   → informational, neutral highlight */
-  --color-info:        #38BDF8;
-  --color-info-subtle: rgba(56, 189, 248, 0.12);
-  --color-info-border: rgba(56, 189, 248, 0.30);
+  /* Teal / Cyan → informational, neutral highlight (Apple System Cyan) */
+  --color-info:        #64D2FF;
+  --color-info-subtle: rgba(100, 210, 255, 0.14);
+  --color-info-border: rgba(100, 210, 255, 0.35);
 
-  /* ── Typography ─────────────────────────────────────────────────────── */
-  --font-ui:   'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', monospace;
-  --font-serif: 'Georgia', serif; /* landing page only */
+  /* ── Typography (Apple System Font Priority + Tabular Numeric) ──────── */
+  --font-ui:   -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", 'Inter', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', monospace;
+  --font-serif: 'New York', 'Georgia', serif; /* landing page only */
 
-  /* Font Sizes */
-  --text-2xs: 0.625rem;  /* 10px — micro labels */
-  --text-xs:  0.6875rem; /* 11px — chip labels, metadata */
-  --text-sm:  0.75rem;   /* 12px — table headers, badges */
-  --text-base: 0.8125rem; /* 13px — body, table rows */
-  --text-md:  0.875rem;  /* 14px — secondary headings */
-  --text-lg:  1rem;      /* 16px — section titles */
-  --text-xl:  1.125rem;  /* 18px — stat label */
-  --text-2xl: 1.375rem;  /* 22px — stat figures */
-  --text-3xl: 1.75rem;   /* 28px — large hero stats */
+  /* Font Sizes (Desktop HIG scale) */
+  --text-2xs: 0.6875rem; /* 11px — minimum legible micro labels */
+  --text-xs:  0.75rem;   /* 12px — chip labels, metadata */
+  --text-sm:  0.8125rem; /* 13px — standard desktop body / table headers */
+  --text-base: 0.875rem; /* 14px — body, primary table rows */
+  --text-md:  0.9375rem; /* 15px — secondary headings */
+  --text-lg:  1.0625rem; /* 17px — section titles */
+  --text-xl:  1.25rem;   /* 20px — stat label */
+  --text-2xl: 1.5rem;    /* 24px — stat figures */
+  --text-3xl: 1.875rem;  /* 30px — large hero stats */
 
   /* Font Weights */
   --weight-normal:   400;
@@ -93,9 +101,9 @@
 
   /* Line Heights */
   --leading-tight:  1.2;
-  --leading-snug:   1.4;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.65;
+  --leading-snug:   1.35;
+  --leading-normal: 1.45;
+  --leading-relaxed: 1.6;
 
   /* ── Spacing ─────────────────────────────────────────────────────────── */
   --space-0:  0px;
@@ -111,35 +119,35 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* ── Border Radius ───────────────────────────────────────────────────── */
-  --radius-xs: 3px;   /* micro chips */
-  --radius-sm: 4px;   /* badges, tags */
-  --radius-md: 6px;   /* buttons, inputs, table cells */
-  --radius-lg: 8px;   /* cards, panels */
-  --radius-xl: 12px;  /* modals, drawers */
-  --radius-2xl: 16px; /* large cards */
+  /* ── Border Radius (Apple Continuous Squircle Scale) ─────────────────── */
+  --radius-xs: 4px;   /* micro chips */
+  --radius-sm: 6px;   /* badges, small tags */
+  --radius-md: 8px;   /* buttons, inputs, segmented items */
+  --radius-lg: 12px;  /* cards, dropdown menus */
+  --radius-xl: 16px;  /* modals, drawers, main panels */
+  --radius-2xl: 20px; /* large cards, dialogs */
   --radius-full: 9999px; /* pills */
 
-  /* ── Transitions ─────────────────────────────────────────────────────── */
-  --transition-fast:   0.1s ease;
-  --transition-base:   0.15s ease;
-  --transition-slow:   0.25s ease;
-  --transition-sidebar: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── Transitions (macOS Native Easing Curve) ─────────────────────────── */
+  --transition-fast:    0.1s ease;
+  --transition-base:    0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow:    0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-sidebar: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ── Shadows (used sparingly — prefer borders) ───────────────────────── */
-  --shadow-xs:  0 1px 2px rgba(0,0,0,0.3);
-  --shadow-sm:  0 2px 6px rgba(0,0,0,0.35);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.45);
-  --shadow-xl:  0 16px 48px rgba(0,0,0,0.5);
-  --shadow-focus: 0 0 0 3px rgba(76, 141, 255, 0.3);
+  /* ── Shadows (Apple Elevation Scale) ─────────────────────────────────── */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-md:  0 6px 18px rgba(0, 0, 0, 0.32);
+  --shadow-lg:  0 12px 36px rgba(0, 0, 0, 0.38);
+  --shadow-xl:  0 20px 54px rgba(0, 0, 0, 0.45);
+  --shadow-focus: 0 0 0 3px rgba(10, 132, 255, 0.35);
 
   /* ── Layout Dimensions ───────────────────────────────────────────────── */
   --sidebar-width:          220px;
   --sidebar-collapsed-width: 52px;
-  --table-row-height:       44px;
+  --table-row-height:       42px;
   --table-header-height:    36px;
-  --topbar-height:          52px; /* persistent header height */
+  --topbar-height:          54px; /* persistent header height */
 
   /* ── Z-index Scale ───────────────────────────────────────────────────── */
   --z-base:    0;
@@ -150,15 +158,15 @@
   --z-modal:   400;
   --z-tooltip: 500;
 
-  /* ── Chart Colors (semantic, 8-color palette) ────────────────────────── */
-  --chart-1: #4C8DFF;  /* blue   — primary series */
-  --chart-2: #32C48D;  /* green  — matched */
-  --chart-3: #F5B942;  /* amber  — pending */
-  --chart-4: #EF5B64;  /* red    — unmatched */
-  --chart-5: #9B72F8;  /* purple — LLM */
-  --chart-6: #38BDF8;  /* teal   — informational */
-  --chart-7: #FB923C;  /* orange — manual */
-  --chart-8: #A3E635;  /* lime   — other */
+  /* ── Chart Colors (Apple System Palette) ─────────────────────────────── */
+  --chart-1: #0A84FF;  /* blue   — primary series */
+  --chart-2: #30D158;  /* green  — matched */
+  --chart-3: #FF9F0A;  /* amber  — pending */
+  --chart-4: #FF453A;  /* red    — unmatched */
+  --chart-5: #BF5AF2;  /* purple — LLM */
+  --chart-6: #64D2FF;  /* cyan   — informational */
+  --chart-7: #FF9F0A;  /* orange — manual */
+  --chart-8: #32D74B;  /* lime   — other */
 
   /* ── Legacy compat (maps old vars to new tokens) ─────────────────────── */
   --bg:           var(--bg-base);
@@ -182,61 +190,79 @@
 
 [data-theme="light"] {
 
-  /* ── Background Layers (High Contrast) ───────────────────────────────── */
-  --bg-base:      #EBF0F5;   /* distinct cool gray page background */
+  /* ── Background Layers (High Contrast, Clean macOS Appearance) ──────── */
+  --bg-base:      #F5F5F7;   /* Apple signature off-white canvas */
   --bg-surface:   #FFFFFF;   /* crisp white card background */
-  --bg-elevated:  #F4F7FA;   /* dropdown, tooltip */
-  --bg-hover:     #E2E8F0;   /* crisp row & button hover */
-  --bg-overlay:   rgba(15, 23, 42, 0.65);
+  --bg-elevated:  #FFFFFF;   /* dropdown, tooltip */
+  --bg-hover:     #E8E8ED;   /* smooth row & button hover */
+  --bg-overlay:   rgba(0, 0, 0, 0.40);
   --bg-input:     #FFFFFF;
 
-  /* ── Borders (Crisp & Visible) ────────────────────────────────────────── */
-  --border:       #CBD5E1;   /* solid visible 1px border */
-  --border-light: #E2E8F0;
-  --border-focus: #2563EB;
-  --border-hover: #94A3B8;
+  /* ── Liquid Glass & Translucent Materials (Light Appearance) ─────────── */
+  --glass-bg:        rgba(255, 255, 255, 0.82);
+  --glass-border:    rgba(0, 0, 0, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-blur:      blur(20px) saturate(180%);
+  --glass-shadow:    0 8px 30px rgba(0, 0, 0, 0.08);
+  --table-stripe:    rgba(0, 0, 0, 0.02);
+
+  /* ── Borders (Crisp & Subtle) ────────────────────────────────────────── */
+  --border:       #D2D2D7;   /* Apple light border */
+  --border-light: #E5E5EA;   /* subtle divider */
+  --border-focus: #0071E3;
+  --border-hover: #AEAEB2;
 
   /* ── Text (Dark, High Contrast) ──────────────────────────────────────── */
-  --text-primary:   #0F172A;   /* deep charcoal/black for titles */
-  --text-secondary: #334155;   /* dark slate for subtext & row values */
-  --text-muted:     #475569;   /* visible slate gray for headers & metadata */
-  --text-disabled:  #94A3B8;
+  --text-primary:   #1D1D1F;   /* Apple Charcoal Black, contrast >16:1 */
+  --text-secondary: #424245;   /* Secondary slate, contrast >8:1 */
+  --text-muted:     #6E6E73;   /* Tertiary labels, contrast >5.3:1 */
+  --text-disabled:  #86868B;
   --text-inverse:   #FFFFFF;
 
-  /* ── Brand Accent ────────────────────────────────────────────────────── */
-  --accent-blue:        #1D4ED8;
-  --accent-blue-hover:  #1E40AF;
-  --accent-blue-subtle: #EFF6FF;
-  --accent-blue-border: #BFDBFE;
+  /* ── Brand Accent (Apple System Blue) ────────────────────────────────── */
+  --accent-blue:        #0071E3;
+  --accent-blue-hover:  #0077ED;
+  --accent-blue-subtle: rgba(0, 113, 227, 0.08);
+  --accent-blue-border: rgba(0, 113, 227, 0.28);
 
-  /* ── Semantic Colors (Vibrant & High-Contrast in Light Mode) ───────────── */
-  --color-success:        #16A34A;
-  --color-success-subtle: #DCFCE7;
-  --color-success-border: #86EFAC;
+  /* ── Semantic Colors (Apple System Colors - Light Appearance) ────────── */
+  --color-success:        #28CD41;
+  --color-success-subtle: rgba(40, 205, 65, 0.12);
+  --color-success-border: rgba(40, 205, 65, 0.32);
 
-  --color-warning:        #D97706;
-  --color-warning-subtle: #FEF3C7;
-  --color-warning-border: #FCD34D;
+  --color-warning:        #FF9500;
+  --color-warning-subtle: rgba(255, 149, 0, 0.12);
+  --color-warning-border: rgba(255, 149, 0, 0.32);
 
-  --color-danger:        #DC2626;
-  --color-danger-subtle: #FEE2E2;
-  --color-danger-border: #FCA5A5;
+  --color-danger:        #FF3B30;
+  --color-danger-subtle: rgba(255, 59, 48, 0.10);
+  --color-danger-border: rgba(255, 59, 48, 0.28);
 
-  --color-ai:        #6D28D9;
-  --color-ai-subtle: #F3E8FF;
-  --color-ai-border: #DDD6FE;
+  --color-ai:        #AF52DE;
+  --color-ai-subtle: rgba(175, 82, 222, 0.10);
+  --color-ai-border: rgba(175, 82, 222, 0.28);
 
-  --color-info:        #0284C7;
-  --color-info-subtle: #E0F2FE;
-  --color-info-border: #BAE6FD;
+  --color-info:        #0071E3;
+  --color-info-subtle: rgba(0, 113, 227, 0.08);
+  --color-info-border: rgba(0, 113, 227, 0.28);
 
-  /* ── Shadows (Crisp Soft Elevation for Light Mode Cards) ──────────────── */
-  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md:  0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
-  --shadow-lg:  0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
-  --shadow-xl:  0 20px 25px -5px rgba(15, 23, 42, 0.10);
-  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.20);
+  /* ── Shadows (Apple Soft Elevation) ─────────────────────────────────── */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-md:  0 4px 14px rgba(0, 0, 0, 0.08);
+  --shadow-lg:  0 10px 28px rgba(0, 0, 0, 0.10);
+  --shadow-xl:  0 18px 42px rgba(0, 0, 0, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(0, 113, 227, 0.25);
+
+  /* ── Chart Colors (Light Appearance) ─────────────────────────────────── */
+  --chart-1: #0071E3;
+  --chart-2: #28CD41;
+  --chart-3: #FF9500;
+  --chart-4: #FF3B30;
+  --chart-5: #AF52DE;
+  --chart-6: #32ADE6;
+  --chart-7: #FF9500;
+  --chart-8: #30B0C7;
 
   /* ── Legacy compat ───────────────────────────────────────────────────── */
   --bg:           var(--bg-base);
